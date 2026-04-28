@@ -3,6 +3,7 @@
 # ==================================================================
 
 from fastapi import FastAPI
+from app.routers import auth, activities
 
 # Import Database models  
 app = FastAPI(
@@ -10,6 +11,9 @@ app = FastAPI(
     description="S.P.E.C.I.A.L. Edition — Life Management RPG Backend",
     version="0.1.0",
 )
+
+app.include_router(auth.router)
+app.include_router(activities.router)
 
 # Import API routes
 @app.get("/health", tags=["health"])

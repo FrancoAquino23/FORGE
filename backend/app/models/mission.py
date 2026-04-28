@@ -4,7 +4,7 @@
 
 import uuid
 from datetime import datetime
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, SmallInteger, String, Text, func, text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, SmallInteger, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
@@ -42,9 +42,9 @@ class Mission(Base):
     )
     generated_by_model: Mapped[str | None] = mapped_column(String(60))
     prompt_tokens_used: Mapped[int | None] = mapped_column(Integer)
-    issued_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    expires_at: Mapped[datetime] = mapped_column(nullable=False)
-    completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     target_attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]
 
 # Model GmContextSnapshot (Game Master Context Snapshots)
@@ -60,4 +60,4 @@ class GmContextSnapshot(Base):
         nullable=False,
     )
     snapshot_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

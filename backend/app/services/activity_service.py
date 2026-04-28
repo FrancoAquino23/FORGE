@@ -1,9 +1,11 @@
+# ==================================================================
+# ACTIVITY SERVICE 
+# ==================================================================
+
 import uuid
 from datetime import date, datetime, timedelta, timezone
-
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.exceptions import NotFoundError, RateLimitError
 from app.models.activity import ActivityLog, PlayerConsumable
 from app.models.catalog import Attribute, BuffType, ConsumableType
@@ -13,16 +15,15 @@ from app.schemas.activity import ActivityLogRequest, ActivityLogResponse, LevelU
 from app.services.reward_service import RewardService
 from app.services.streak_service import StreakService
 
+# Constants for rate limiting and overcharge logic
 _RATE_LIMIT_COUNT = 10
 _RATE_LIMIT_WINDOW = timedelta(hours=1)
 _OVERCHARGE_CODE = "OVERCHARGE_CHIP"
 
-
+# Service ActivityService (Business Logic)
 class ActivityService:
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
-
-    # ── Public entry point ────────────────────────────────────────────────────
 
     async def log_activity(
         self,
@@ -45,9 +46,9 @@ class ActivityService:
             player_attr.material_bonus,
         )
 
-        # ── Atomic transaction ────────────────────────────────────────────────
         today = date.today()
 
+        # Create the activity log entry before applying rewards
         log_entry = ActivityLog(
             player_id=player.id,
             attribute_id=attr.id,
@@ -59,18 +60,22 @@ class ActivityService:
             activity_date=today,
         )
         self._db.add(log_entry)
-        await self._db.flush()  # get log_entry.id before commit
+        await self._db.flush() 
 
+        # Apply rewards and update player state
         new_xp, new_level, new_xp_to_next, leveled_up = await self._update_attribute_xp(
             player_attr, xp_earned
         )
 
+        # Update inventory with materials earned
         new_balance = await self._update_inventory(player.id, attr.id, material_earned)
 
+        # Update streak and check for breaks/shields
         streak_broken, shield_used, new_streak = await self._update_streak(player, today)
 
         await self._db.commit()
 
+        # Construct response with all relevant info for frontend display
         return ActivityLogResponse(
             activity_id=log_entry.id,
             attribute_code=attr.code,
@@ -88,8 +93,7 @@ class ActivityService:
             overcharge_was_active=overcharge_active,
         )
 
-    # ── Private helpers ───────────────────────────────────────────────────────
-
+    # Helper (Rate Limiting)
     async def _enforce_rate_limit(self, player_id: uuid.UUID) -> None:
         window_start = datetime.now(timezone.utc) - _RATE_LIMIT_WINDOW
         count = await self._db.scalar(
@@ -101,6 +105,7 @@ class ActivityService:
         if count and count >= _RATE_LIMIT_COUNT:
             raise RateLimitError()
 
+    # Helper (Data Access - Attribute)
     async def _get_attribute(self, code: str) -> Attribute:
         attr = await self._db.scalar(
             select(Attribute).where(Attribute.code == code)
@@ -109,6 +114,7 @@ class ActivityService:
             raise NotFoundError(f"Attribute '{code}'")
         return attr
 
+    # Helper (Data Access - Player Attribute)
     async def _get_player_attribute(
         self, player_id: uuid.UUID, attribute_id: int
     ) -> PlayerAttribute:
@@ -120,8 +126,8 @@ class ActivityService:
         )
         return result.scalar_one()
 
+    # Helper (Overcharge Logic)
     async def _get_overcharge(self, player_id: uuid.UUID) -> tuple:
-        """Returns (multiplier_decimal, is_active_bool)."""
         from decimal import Decimal
 
         now = datetime.now(timezone.utc)
@@ -144,8 +150,8 @@ class ActivityService:
             return active.multiplier, True
         return Decimal("1.0"), False
 
+    # Helper (XP Bonus Calculation)
     async def _get_xp_bonus(self, player_id: uuid.UUID, attribute_id: int):
-        """Returns cumulative XP bonus % for this attribute from prestige buffs."""
         from decimal import Decimal
 
         result = await self._db.scalar(
@@ -159,10 +165,11 @@ class ActivityService:
         )
         return result or Decimal("0.00")
 
+    # Helper (Apply XP & Handle Level-Ups)
     async def _update_attribute_xp(
         self, player_attr: PlayerAttribute, xp_earned: int
     ) -> tuple[int, int, int, bool]:
-        """Applies XP, handles level-ups. Row is already in session."""
+
         new_xp, new_level, new_xp_to_next, leveled_up = RewardService.apply_xp_to_attribute(
             player_attr.xp_current, player_attr.level, xp_earned
         )
@@ -171,13 +178,11 @@ class ActivityService:
         player_attr.xp_to_next = new_xp_to_next
         return new_xp, new_level, new_xp_to_next, leveled_up
 
+    # Helper (Update Inventory with Materials Earned)
     async def _update_inventory(
         self, player_id: uuid.UUID, attribute_id: int, amount: int
     ) -> int:
-        """
-        Locks the inventory row with SELECT FOR UPDATE, increments quantity.
-        Returns the new balance.
-        """
+
         result = await self._db.execute(
             select(PlayerInventory)
             .where(
@@ -190,13 +195,11 @@ class ActivityService:
         inventory.quantity += amount
         return inventory.quantity
 
+    # Helper (Update Streak & Handle Breaks/Shields)
     async def _update_streak(
         self, player: PlayerProfile, today: date
     ) -> tuple[bool, bool, int]:
-        """
-        Locks the player_profiles row, computes streak, optionally consumes
-        a Stability Potion. Returns (streak_broken, shield_used, new_streak).
-        """
+        
         locked = await self._db.execute(
             select(PlayerProfile)
             .where(PlayerProfile.id == player.id)
@@ -227,8 +230,9 @@ class ActivityService:
 
         return update.was_broken and not shield_used, shield_used, final.new_streak
 
+    # Helper (Consume Shield if Available)
     async def _try_consume_shield(self, player_id: uuid.UUID) -> bool:
-        """Consumes one Stability Potion. Returns True if consumed."""
+
         consumable_type = await self._db.scalar(
             select(ConsumableType).where(ConsumableType.code == "STABILITY_POTION")
         )

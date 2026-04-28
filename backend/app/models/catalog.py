@@ -2,10 +2,12 @@
 # CATALOG MODELS
 # ==================================================================
 
+from datetime import datetime
 from decimal import Decimal
 from sqlalchemy import (
     JSON,
     CheckConstraint,
+    DateTime,
     ForeignKey,
     Numeric,
     SmallInteger,
@@ -60,7 +62,7 @@ class ForgeConfig(Base):
     prestige_threshold_level: Mapped[int] = mapped_column(
         SmallInteger, nullable=False, default=10
     )
-    updated_at: Mapped[str] = mapped_column(server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 # Model VisualTier (Cosmetic)
 class VisualTier(Base):

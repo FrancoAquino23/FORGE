@@ -9,6 +9,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Date,
+    DateTime,
     ForeignKey,
     Integer,
     Numeric,
@@ -46,7 +47,7 @@ class ActivityLog(Base):
     material_earned: Mapped[int] = mapped_column(Integer, nullable=False)
     overcharge_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     activity_date: Mapped[date] = mapped_column(Date, nullable=False)
-    logged_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    logged_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]
 
 # Model PlayerConsumable (Consumables & Effects)
@@ -86,6 +87,6 @@ class PlayerActiveEffect(Base):
         SmallInteger, ForeignKey("consumable_types.id"), nullable=False
     )
     multiplier: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False)
-    activated_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+    activated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     consumable_type: Mapped["ConsumableType"] = relationship()  # type: ignore[name-defined]

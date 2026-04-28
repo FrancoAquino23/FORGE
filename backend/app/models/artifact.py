@@ -4,7 +4,7 @@
 
 import uuid
 from datetime import datetime
-from sqlalchemy import ForeignKey, Integer, JSON, SmallInteger, func, text
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, SmallInteger, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
@@ -31,9 +31,9 @@ class Artifact(Base):
     next_forge_cost: Mapped[dict] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}' :: jsonb"), default=dict
     )
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
     player: Mapped["PlayerProfile"] = relationship(back_populates="artifact")  # type: ignore[name-defined]
     current_visual_tier: Mapped["VisualTier | None"] = relationship()  # type: ignore[name-defined]
@@ -53,5 +53,5 @@ class ForgeHistory(Base):
     to_level: Mapped[int] = mapped_column(Integer, nullable=False)
     prestige_cycle: Mapped[int] = mapped_column(Integer, nullable=False)
     materials_spent: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    forged_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    forged_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     artifact: Mapped["Artifact"] = relationship(back_populates="forge_history")

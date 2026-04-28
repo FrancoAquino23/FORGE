@@ -5,7 +5,7 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, Numeric, SmallInteger, UniqueConstraint, func
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, Numeric, SmallInteger, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
@@ -25,7 +25,7 @@ class PrestigeHistory(Base):
     buff_type_id: Mapped[int] = mapped_column(
         SmallInteger, ForeignKey("buff_types.id"), nullable=False
     )
-    sacrificed_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    sacrificed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     buff_type: Mapped["BuffType"] = relationship()  # type: ignore[name-defined]
 
