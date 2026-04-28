@@ -1,0 +1,16 @@
+# Python (Backend)
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# Angular/Ionic (Frontend)
+node_modules/
+dist/
+.sourcemaps/
+.sass-cache/
+/www
+
+# IDEs
+.vscode/
+.idea/
