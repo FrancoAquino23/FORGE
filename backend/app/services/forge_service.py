@@ -3,29 +3,28 @@
 # ==================================================================
 
 import uuid
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.exceptions import InsufficientMaterialsError, NotFoundError
 from app.models.catalog import Attribute
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
 from app.schemas.forge import ForgeUpgradeResponse
 from app.services.reward_service import RewardService
 
-
+# Service ForgeService (Business Logic for Attribute Upgrades in the Forge)
 class ForgeService:
-    # Base cost for level 1 → 2; scales linearly: cost = BASE × current_level
     BASE_UPGRADE_COST = 25
 
+    # Function (Calculate Upgrade Cost)
     @staticmethod
     def attribute_upgrade_cost(current_level: int) -> int:
-        """Materials needed to upgrade from current_level to current_level + 1."""
         return ForgeService.BASE_UPGRADE_COST * current_level
 
+    # Function (Constructor)
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
+    # Function (Upgrade Attribute)
     async def upgrade_attribute(
         self,
         player: PlayerProfile,
@@ -57,12 +56,14 @@ class ForgeService:
             new_material_balance=inventory.quantity,
         )
 
+    # Function (Get Attribute by Code)
     async def _get_attribute(self, code: str) -> Attribute:
         attr = await self._db.scalar(select(Attribute).where(Attribute.code == code))
         if not attr:
             raise NotFoundError(f"Attribute '{code}'")
         return attr
 
+    # Function (Lock Rows for Update)
     async def _lock_rows(
         self,
         player_id: uuid.UUID,

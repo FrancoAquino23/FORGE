@@ -42,10 +42,10 @@ class RateLimitError(ForgeException):
 
 # Exception (InsufficientMaterialsError) for 422 when forging without enough materials
 class InsufficientMaterialsError(ForgeException):
-    def __init__(self) -> None:
+    def __init__(self, detail: str = "Insufficient materials to forge") -> None:
         super().__init__(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Insufficient materials to forge",
+            detail=detail,
         )
 
 # Exception (PrestigeNotAvailableError) for 422 when trying to prestige without meeting requirements

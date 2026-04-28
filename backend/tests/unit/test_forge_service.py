@@ -1,13 +1,12 @@
-"""
-Unit tests for ForgeService cost math — zero I/O, pure logic.
-Run: venv/Scripts/pytest.exe tests/unit/test_forge_service.py -v
-"""
-import pytest
+# ==================================================================
+# FORGE SERVICE TESTS
+# ==================================================================
 
+import pytest
 from app.services.forge_service import ForgeService
 from app.services.reward_service import RewardService
 
-
+# Service TestAttributeUpgradeCost (Upgrade Cost Calculation)
 class TestAttributeUpgradeCost:
     def test_level_1_to_2_costs_25(self):
         assert ForgeService.attribute_upgrade_cost(1) == 25
@@ -29,17 +28,15 @@ class TestAttributeUpgradeCost:
         assert all(ForgeService.attribute_upgrade_cost(i) > 0 for i in range(1, 20))
 
     def test_linear_scaling(self):
-        # cost(N) should equal N * BASE_UPGRADE_COST
         base = ForgeService.BASE_UPGRADE_COST
         for level in range(1, 10):
             assert ForgeService.attribute_upgrade_cost(level) == base * level
 
-
+# Service TestForgeXpReset (XP Reset After Forge Upgrade)
 class TestForgeXpReset:
     """Verifies xp_to_next after a forge level-up uses the correct RewardService formula."""
 
     def test_xp_to_next_after_forge_to_level_2(self):
-        # After forging to level 2, xp_to_next must match xp_for_level(2)
         assert RewardService.xp_for_level(2) == 282
 
     def test_xp_to_next_after_forge_to_level_5(self):

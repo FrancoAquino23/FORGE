@@ -3,14 +3,13 @@
 # ==================================================================
 
 from pydantic import BaseModel
-
 from app.schemas.activity import AttributeCode
 
-
+# Model ForgeUpgradeRequest (Endpoint Request)
 class ForgeUpgradeRequest(BaseModel):
     attribute_code: AttributeCode
 
-
+# Model ForgeUpgradeResponse (Data)
 class ForgeUpgradeResponse(BaseModel):
     attribute_code: str
     from_level: int

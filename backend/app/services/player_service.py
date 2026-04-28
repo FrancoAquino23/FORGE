@@ -5,18 +5,19 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
 from app.schemas.player import AttributeProfile, PlayerProfileResponse
 
-
+# Service PlayerService (Business Logic for Player Profile Retrieval)
 class PlayerService:
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
+    # Function (get_profile) to retrieve the player's profile, streak, and inventory
     async def get_profile(self, player: PlayerProfile) -> PlayerProfileResponse:
         user = await self._db.scalar(select(User).where(User.id == player.user_id))
 
+        # Retrieve (Player Attributes & Inventory)
         attr_rows = (
             await self._db.scalars(
                 select(PlayerAttribute)
@@ -25,6 +26,7 @@ class PlayerService:
             )
         ).all()
 
+        # Retrieve (Inventory for Material Balances)
         inv_rows = (
             await self._db.scalars(
                 select(PlayerInventory)
@@ -33,6 +35,7 @@ class PlayerService:
             )
         ).all()
 
+        # Create a mapping of attribute_id to quantity for quick lookup
         inv_by_attr: dict[int, int] = {row.attribute_id: row.quantity for row in inv_rows}
 
         attributes = [
@@ -48,6 +51,7 @@ class PlayerService:
             for pa in sorted(attr_rows, key=lambda x: x.attribute_id)
         ]
 
+        # Return the full player profile response
         return PlayerProfileResponse(
             username=user.username,
             prestige_count=player.prestige_count,
