@@ -1,12 +1,7 @@
 # ==================================================================
-# FORGE - DATABASE CONFIGURATION
+# FORGE - INITIAL DATABASE SCHEMA MIGRATION
 # ==================================================================
-"""initial_schema
 
-Revision ID: 618235e9966a
-Revises:
-Create Date: 2026-04-28
-"""
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
@@ -16,10 +11,9 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
-
+# Upgrade function to create all tables and indexes for the initial schema
 def upgrade() -> None:
-    # ── CATALOG TABLES ────────────────────────────────────────────────────────
-
+    # Core game tables
     op.create_table(
         "attributes",
         sa.Column("id", sa.SmallInteger(), primary_key=True),
@@ -78,8 +72,7 @@ def upgrade() -> None:
         sa.Column("effect_duration_hours", sa.SmallInteger(), nullable=True),
     )
 
-    # ── USER & PLAYER TABLES ─────────────────────────────────────────────────
-
+    # Player tables
     op.create_table(
         "users",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -130,8 +123,7 @@ def upgrade() -> None:
         sa.CheckConstraint("quantity >= 0", name="non_negative_quantity"),
     )
 
-    # ── ARTIFACT TABLES ───────────────────────────────────────────────────────
-
+    # Artifact tables
     op.create_table(
         "artifacts",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -157,8 +149,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_forge_history_artifact_forged", "forge_history", ["artifact_id", "forged_at"])
 
-    # ── PRESTIGE TABLES ───────────────────────────────────────────────────────
-
+    # Prestige tables
     op.create_table(
         "prestige_history",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -180,8 +171,7 @@ def upgrade() -> None:
         sa.CheckConstraint("stack_count > 0", name="positive_stack"),
     )
 
-    # ── ACTIVITY & CONSUMABLE TABLES ──────────────────────────────────────────
-
+    # Activity & consumable tables
     op.create_table(
         "activity_logs",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -220,8 +210,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_active_effects_player_expires", "player_active_effects", ["player_id", "expires_at"])
 
-    # ── MISSION & AI TABLES ───────────────────────────────────────────────────
-
+    # Mission & AI tables
     op.create_table(
         "missions",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -253,7 +242,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_gm_snapshots_player_created", "gm_context_snapshots", ["player_id", "created_at"])
 
-
+# Downgrade function to drop all tables and indexes created in the upgrade
 def downgrade() -> None:
     op.drop_table("gm_context_snapshots")
     op.drop_table("missions")
