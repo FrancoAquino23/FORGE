@@ -3,13 +3,23 @@
 # ==================================================================
 
 from fastapi import FastAPI
-from app.routers import auth, activities, player, forge, missions, prestige, gm
+from fastapi.middleware.cors import CORSMiddleware
+from app.routers import auth, activities, player, forge, missions, prestige, gm, consumables
 
 # Import Database models  
 app = FastAPI(
     title="The Forge API",
     description="S.P.E.C.I.A.L. Edition — Life Management RPG Backend",
     version="0.1.0",
+)
+
+# CORS Middleware Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:4200"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include API routers for different modules
@@ -20,6 +30,7 @@ app.include_router(forge.router)
 app.include_router(missions.router)
 app.include_router(prestige.router)
 app.include_router(gm.router)
+app.include_router(consumables.router)
 
 # Import API routes
 @app.get("/health", tags=["health"])
