@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    # Database configuration
+    # Database & API configuration
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ANTHROPIC_API_KEY: str = ""
+    AI_MODEL: str = "claude-opus-4-7"
+    USE_AI_MOCK: bool = True
 
     # Database URLs for async and sync connections
     @property

@@ -20,10 +20,12 @@ class MissionProgress(BaseModel):
     reward_material_qty: int
     expires_at: datetime
     is_completable: bool
+    ai_generated: bool = False
 
 # Model MissionListResponse (Data - Response for listing missions)
 class MissionListResponse(BaseModel):
     missions: list[MissionProgress]
+    ai_ready: bool = False
 
 # Model MissionClaimResponse (Data - Response for claiming a mission)
 class MissionClaimResponse(BaseModel):

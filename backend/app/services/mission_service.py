@@ -51,10 +51,11 @@ class MissionService:
             await self._generate_missions(player_id)
             missions = await self._load_active_missions(player_id)
 
+        ai_ready = any(m.generated_by_model is not None for m in missions)
         progress_list = [
             await self._build_progress(m, player_id, today) for m in missions
         ]
-        return MissionListResponse(missions=progress_list)
+        return MissionListResponse(missions=progress_list, ai_ready=ai_ready)
 
     # Helper to claim a completed mission and receive rewards
     async def claim(
@@ -172,6 +173,7 @@ class MissionService:
             reward_material_qty=mission.reward_material_qty,
             expires_at=mission.expires_at,
             is_completable=(progress >= mission.objective_target),
+            ai_generated=(mission.generated_by_model is not None),
         )
 
     # Helper to calculate current progress value for a mission based on its objective type

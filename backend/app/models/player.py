@@ -63,6 +63,8 @@ class PlayerProfile(Base):
     ai_calls_today: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     ai_calls_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     ai_budget_reset_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    stamina_current: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
+    stamina_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

@@ -3,7 +3,7 @@
 # ==================================================================
 
 from fastapi import FastAPI
-from app.routers import auth, activities, player, forge, missions, prestige
+from app.routers import auth, activities, player, forge, missions, prestige, gm
 
 # Import Database models  
 app = FastAPI(
@@ -12,12 +12,14 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Include API routers for different modules
 app.include_router(auth.router)
 app.include_router(activities.router)
 app.include_router(player.router)
 app.include_router(forge.router)
 app.include_router(missions.router)
 app.include_router(prestige.router)
+app.include_router(gm.router)
 
 # Import API routes
 @app.get("/health", tags=["health"])
