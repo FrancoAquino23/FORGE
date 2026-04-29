@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel
 
-
+# Model MissionProgress (Data - Represents a mission with progress details)
 class MissionProgress(BaseModel):
     mission_id: uuid.UUID
     title: str
@@ -21,11 +21,11 @@ class MissionProgress(BaseModel):
     expires_at: datetime
     is_completable: bool
 
-
+# Model MissionListResponse (Data - Response for listing missions)
 class MissionListResponse(BaseModel):
     missions: list[MissionProgress]
 
-
+# Model MissionClaimResponse (Data - Response for claiming a mission)
 class MissionClaimResponse(BaseModel):
     mission_id: uuid.UUID
     attribute_code: str

@@ -4,10 +4,8 @@
 
 import uuid
 from decimal import Decimal
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.exceptions import NotFoundError, PrestigeNotAvailableError
 from app.models.catalog import Attribute, BuffType, ForgeConfig
 from app.models.player import PlayerAttribute, PlayerProfile
@@ -15,23 +13,26 @@ from app.models.prestige import PlayerBuff, PrestigeHistory
 from app.schemas.prestige import PrestigeSacrificeResponse
 from app.services.reward_service import RewardService
 
+# Default prestige threshold if not set in ForgeConfig
 _DEFAULT_THRESHOLD = 10
 
-
+# Model PrestigeService (Business Logic for Prestige Sacrifice)
 class PrestigeService:
+    # Function to check if an attribute level meets the prestige threshold
     @staticmethod
     def is_eligible(attribute_level: int, threshold: int) -> bool:
-        """Returns True when the attribute level meets the prestige threshold."""
         return attribute_level >= threshold
 
+    # Function to compute new total bonus for a buff after adding a stack
     @staticmethod
     def compute_new_bonus(current_total: Decimal, bonus_per_stack: Decimal) -> Decimal:
-        """Additive buff stacking: each prestige adds one bonus_per_stack to the total."""
         return current_total + bonus_per_stack
 
+    # Constructor to initialize the service with a database session
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
+    # Helper to sacrifice an attribute for a prestige buff, reset the attribute, and record history
     async def sacrifice(
         self,
         player: PlayerProfile,
@@ -148,6 +149,7 @@ class PrestigeService:
             new_total_bonus=new_total,
         )
 
+    # Helper to load an attribute by code, ensuring it exists
     async def _get_attribute(self, code: str) -> Attribute:
         attr = await self._db.scalar(select(Attribute).where(Attribute.code == code))
         if not attr:

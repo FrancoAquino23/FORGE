@@ -5,11 +5,9 @@
 import random
 import uuid
 from datetime import date, datetime, timedelta, timezone
-
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models.activity import ActivityLog
 from app.models.catalog import Attribute
@@ -18,29 +16,33 @@ from app.models.player import PlayerAttribute, PlayerInventory
 from app.schemas.mission import MissionClaimResponse, MissionListResponse, MissionProgress
 from app.services.reward_service import RewardService
 
+# Temporary hardcoded mission configs
 _MISSION_CONFIGS = [
     {"obj_type": "LOG_COUNT",   "target": 1,  "reward_xp": 50,  "reward_mat": 20},
     {"obj_type": "LOG_MINUTES", "target": 60, "reward_xp": 100, "reward_mat": 40},
     {"obj_type": "LOG_MINUTES", "target": 90, "reward_xp": 200, "reward_mat": 80},
 ]
 
-
+# Model MissionService (Business Logic for Missions)
 class MissionService:
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
+    # Function to build mission title based on objective type and target
     @staticmethod
     def build_title(obj_type: str, target: int, attr_name: str) -> str:
         if obj_type == "LOG_MINUTES":
             return f"Dedicar {target} minutos a {attr_name}"
         return f"Registrar {target} actividad(es) de {attr_name}"
 
+    # Function to build mission description based on objective type and target
     @staticmethod
     def build_description(obj_type: str, target: int, attr_name: str) -> str:
         if obj_type == "LOG_MINUTES":
             return f"Acumula al menos {target} minutos de actividad de {attr_name} hoy."
         return f"Completa {target} registro(s) de actividad de {attr_name} hoy."
 
+    # Helper to get active missions with progress for a player
     async def get_active_with_progress(
         self, player_id: uuid.UUID, today: date
     ) -> MissionListResponse:
@@ -54,6 +56,7 @@ class MissionService:
         ]
         return MissionListResponse(missions=progress_list)
 
+    # Helper to claim a completed mission and receive rewards
     async def claim(
         self, player_id: uuid.UUID, mission_id: uuid.UUID
     ) -> MissionClaimResponse:
@@ -112,8 +115,7 @@ class MissionService:
             leveled_up=leveled_up,
         )
 
-    # ── Private helpers ───────────────────────────────────────────────────────
-
+    # Helper to load active missions for a player
     async def _load_active_missions(self, player_id: uuid.UUID) -> list[Mission]:
         now = datetime.now(timezone.utc)
         return (
@@ -128,6 +130,7 @@ class MissionService:
             )
         ).all()
 
+    # Helper to generate new missions for a player randomly
     async def _generate_missions(self, player_id: uuid.UUID) -> None:
         all_attrs = (await self._db.scalars(select(Attribute))).all()
         selected = random.sample(all_attrs, k=min(len(_MISSION_CONFIGS), len(all_attrs)))
@@ -151,6 +154,7 @@ class MissionService:
             )
         await self._db.commit()
 
+    # Helper to build mission progress details for a mission and player
     async def _build_progress(
         self, mission: Mission, player_id: uuid.UUID, today: date
     ) -> MissionProgress:
@@ -170,6 +174,7 @@ class MissionService:
             is_completable=(progress >= mission.objective_target),
         )
 
+    # Helper to calculate current progress value for a mission based on its objective type
     async def _get_progress_value(
         self, mission: Mission, player_id: uuid.UUID, today: date
     ) -> int:
@@ -191,6 +196,7 @@ class MissionService:
             )
         return result or 0
 
+    # Helper to load a mission for claiming, ensuring it belongs to the player and is claimable
     async def _load_mission_for_claim(
         self, player_id: uuid.UUID, mission_id: uuid.UUID
     ) -> Mission:

@@ -1,5 +1,5 @@
 # ==================================================================
-# FORGE - ADD MISSION OBJECTIVE FIELDS MIGRATION
+# FORGE - MISSION OBJECTIVE FIELDS MIGRATION
 # ==================================================================
 
 from alembic import op
@@ -10,7 +10,7 @@ down_revision = "618235e9966a"
 branch_labels = None
 depends_on = None
 
-
+# Function Upgrade (Apply Migration)
 def upgrade() -> None:
     op.add_column(
         "missions",
@@ -31,7 +31,7 @@ def upgrade() -> None:
         ),
     )
 
-
+# Function Downgrade (Revert Migration)
 def downgrade() -> None:
     op.drop_column("missions", "objective_target")
     op.drop_column("missions", "objective_type")

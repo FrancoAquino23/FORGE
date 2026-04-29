@@ -2,13 +2,8 @@
 # PRESTIGE SERVICE TESTS
 # ==================================================================
 
-"""Unit tests for PrestigeService — zero I/O, pure math.
-Run: venv/Scripts/pytest.exe tests/unit/test_prestige_service.py -v
-"""
 from decimal import Decimal
-
 import pytest
-
 from app.services.prestige_service import PrestigeService
 from app.services.reward_service import RewardService
 
@@ -67,7 +62,6 @@ class TestComputeNewBonus:
 
 # Service TestAttributeResetContract (Attribute Reset After Prestige)
 class TestAttributeResetContract:
-    """Verifies that the post-reset XP values align with the reward formula."""
 
     def test_reset_xp_to_next_at_level_1(self):
         # After prestige reset, level=1, xp_to_next must equal xp_for_level(1) = 100
@@ -89,7 +83,6 @@ class TestAttributeResetContract:
 
 # Service TestMissionBuilders (Title and Description Templates)
 class TestMissionBuilders:
-    """Tests for pure static string builders in MissionService."""
 
     def test_log_minutes_title(self):
         from app.services.mission_service import MissionService

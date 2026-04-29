@@ -42,6 +42,8 @@ class Mission(Base):
     )
     generated_by_model: Mapped[str | None] = mapped_column(String(60))
     prompt_tokens_used: Mapped[int | None] = mapped_column(Integer)
+    objective_type: Mapped[str] = mapped_column(String(30), nullable=False, default="LOG_MINUTES")
+    objective_target: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

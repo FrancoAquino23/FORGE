@@ -2,6 +2,7 @@
 # ACTIVITY SERVICE 
 # ==================================================================
 
+import random
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import func, select
@@ -19,6 +20,9 @@ from app.services.streak_service import StreakService
 _RATE_LIMIT_COUNT = 10
 _RATE_LIMIT_WINDOW = timedelta(hours=1)
 _OVERCHARGE_CODE = "OVERCHARGE_CHIP"
+_STABILITY_CODE = "STABILITY_POTION"
+_DROP_RATE_OVERCHARGE = 0.05   
+_DROP_RATE_STABILITY = 0.10    
 
 # Service ActivityService (Business Logic)
 class ActivityService:
@@ -73,9 +77,12 @@ class ActivityService:
         # Update streak and check for breaks/shields
         streak_broken, shield_used, new_streak = await self._update_streak(player, today)
 
+        # Attempt consumable drop
+        dropped = await self._try_drop_consumable(player.id)
+
         await self._db.commit()
 
-        # Construct response with all relevant info for frontend display
+        #  # Construct response with all relevant info for frontend display
         return ActivityLogResponse(
             activity_id=log_entry.id,
             attribute_code=attr.code,
@@ -91,6 +98,7 @@ class ActivityService:
             streak_shield_used=shield_used,
             material_balance=new_balance,
             overcharge_was_active=overcharge_active,
+            dropped_consumable=dropped,
         )
 
     # Helper (Rate Limiting)
@@ -253,3 +261,35 @@ class ActivityService:
 
         potion_slot.quantity -= 1
         return True
+
+    # Helper Attempt Consumable Drop After Activity
+    async def _try_drop_consumable(self, player_id: uuid.UUID) -> str | None:
+
+        roll = random.random()
+        if roll < _DROP_RATE_OVERCHARGE:
+            code = _OVERCHARGE_CODE
+        elif roll < _DROP_RATE_OVERCHARGE + _DROP_RATE_STABILITY:
+            code = _STABILITY_CODE
+        else:
+            return None
+
+        ct = await self._db.scalar(
+            select(ConsumableType).where(ConsumableType.code == code)
+        )
+        if not ct:
+            return None
+
+        result = await self._db.execute(
+            select(PlayerConsumable)
+            .where(
+                PlayerConsumable.player_id == player_id,
+                PlayerConsumable.consumable_type_id == ct.id,
+            )
+            .with_for_update()
+        )
+        slot = result.scalar_one_or_none()
+        if not slot:
+            return None
+
+        slot.quantity += 1
+        return ct.name
