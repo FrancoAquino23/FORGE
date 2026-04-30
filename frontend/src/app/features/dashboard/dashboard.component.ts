@@ -4,6 +4,17 @@
 
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import {
+  LucideAngularModule,
+  LucideIconData,
+  Hammer,
+  Eye,
+  Shield,
+  Gem,
+  Cpu,
+  Zap,
+  Sparkles,
+} from 'lucide-angular';
 import { ApiService, AttributeProfile, PlayerProfile } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
 import { InventoryComponent, ConsumableUsedEvent } from '../inventory/inventory.component';
@@ -29,6 +40,28 @@ const ATTR_GLOW: Record<string, string> = {
   L: 'hover:shadow-[0_0_18px_rgba(251,146,60,0.3)]',
 };
 
+// Hex color values
+const ATTR_BAR_COLORS: Record<string, string> = {
+  S: '#f87171',
+  P: '#60a5fa',
+  E: '#4ade80',
+  C: '#fde047',
+  I: '#c084fc',
+  A: '#22d3ee',
+  L: '#fb923c',
+};
+
+// Lucide icon map for material balance row
+const ATTR_ICONS: Record<string, LucideIconData> = {
+  S: Hammer,
+  P: Eye,
+  E: Shield,
+  C: Gem,
+  I: Cpu,
+  A: Zap,
+  L: Sparkles,
+};
+
 // Prestige gem border color thresholds
 const GEM_COLORS = [
   { min: 10, color: '#bf00ff' },
@@ -44,7 +77,7 @@ const PRESTIGE_THRESHOLD = 10;
 // Main dashboard component that displays player profile, attributes, and inventory
 @Component({
   selector: 'app-dashboard',
-  imports: [FormsModule, InventoryComponent],
+  imports: [FormsModule, InventoryComponent, LucideAngularModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -150,6 +183,11 @@ export class DashboardComponent implements OnInit {
   }
 
   // Function to get color class for an attribute based on its code
+  xpBarColor(code: string): string {
+    return ATTR_BAR_COLORS[code] ?? '#f59e0b';
+  }
+
+  // Function to get the text color class for an attribute based on its code
   attrColor(code: string): string {
     return ATTR_COLORS[code] ?? 'text-forge-primary';
   }
@@ -157,5 +195,10 @@ export class DashboardComponent implements OnInit {
   // Function to get glow class for an attribute based on its code
   attrGlow(code: string): string {
     return ATTR_GLOW[code] ?? '';
+  }
+
+  // Function to get the appropriate icon for an attribute based on its code
+  getIconName(code: string): LucideIconData {
+    return ATTR_ICONS[code] ?? Sparkles;
   }
 }

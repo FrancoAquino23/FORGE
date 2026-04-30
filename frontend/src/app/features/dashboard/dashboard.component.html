@@ -115,7 +115,7 @@
           </div>
           <div>
             <p class="text-forge-text text-xs font-semibold">{{ attr.name }}</p>
-            <p class="text-forge-muted text-xs truncate">{{ attr.material_name }}</p>
+            <p class="text-forge-muted text-[10px] whitespace-nowrap overflow-hidden">{{ attr.material_name }}</p>
           </div>
           <div>
             <div class="flex justify-between text-xs text-forge-muted mb-1">
@@ -123,11 +123,11 @@
               <span>{{ attr.xp_current }}/{{ attr.xp_to_next }}</span>
             </div>
             <div class="progress-bar">
-              <div class="progress-fill bg-forge-primary" [style.width.%]="xpPct(attr)"></div>
+              <div class="progress-fill" [style.background]="xpBarColor(attr.code)" [style.width.%]="xpPct(attr)"></div>
             </div>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-forge-muted text-xs">Mat.</span>
+            <lucide-icon [img]="getIconName(attr.code)" [size]="14" [class]="attrColor(attr.code)"></lucide-icon>
             <span class="font-bold text-sm" [class]="attrColor(attr.code)">
               {{ attr.material_balance }}
             </span>
