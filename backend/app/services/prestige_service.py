@@ -6,11 +6,15 @@ import uuid
 from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.core.exceptions import NotFoundError, PrestigeNotAvailableError
 from app.models.catalog import Attribute, BuffType, ForgeConfig
 from app.models.player import PlayerAttribute, PlayerProfile
 from app.models.prestige import PlayerBuff, PrestigeHistory
-from app.schemas.prestige import PrestigeSacrificeResponse
+from app.schemas.prestige import (
+    BuffTypeInfo, PlayerBuffInfo,
+    PrestigeSacrificeResponse, PrestigeStatusResponse,
+)
 from app.services.reward_service import RewardService
 
 # Default prestige threshold if not set in ForgeConfig
@@ -147,6 +151,48 @@ class PrestigeService:
             buff_display_name=buff_type.display_name,
             new_stack_count=new_stack,
             new_total_bonus=new_total,
+        )
+
+    # Returns full prestige status for the "Altar de Prestigio" view
+    async def get_status(self, player: PlayerProfile) -> PrestigeStatusResponse:
+        config = await self._db.scalar(select(ForgeConfig))
+        threshold = config.prestige_threshold_level if config else _DEFAULT_THRESHOLD
+
+        buffs_result = await self._db.execute(
+            select(PlayerBuff)
+            .options(selectinload(PlayerBuff.buff_type))
+            .where(PlayerBuff.player_id == player.id)
+        )
+        buffs = buffs_result.scalars().all()
+
+        buff_types_result = await self._db.execute(
+            select(BuffType).options(selectinload(BuffType.attribute))
+        )
+        buff_types = buff_types_result.scalars().all()
+
+        return PrestigeStatusResponse(
+            prestige_count=player.prestige_count,
+            threshold_level=threshold,
+            active_buffs=[
+                PlayerBuffInfo(
+                    buff_type_code=b.buff_type.code,
+                    display_name=b.buff_type.display_name,
+                    target_type=b.buff_type.target_type,
+                    stack_count=b.stack_count,
+                    total_bonus=b.total_bonus,
+                )
+                for b in buffs
+            ],
+            available_buff_types=[
+                BuffTypeInfo(
+                    code=bt.code,
+                    display_name=bt.display_name,
+                    target_type=bt.target_type,
+                    bonus_percent=bt.bonus_percent,
+                    attribute_code=bt.attribute.code if bt.attribute else None,
+                )
+                for bt in buff_types
+            ],
         )
 
     # Helper to load an attribute by code, ensuring it exists
