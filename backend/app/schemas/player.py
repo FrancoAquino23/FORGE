@@ -20,6 +20,4 @@ class PlayerProfileResponse(BaseModel):
     prestige_count: int
     streak_current: int
     streak_max: int
-    stamina_current: int
-    stamina_max: int
     attributes: list[AttributeProfile]

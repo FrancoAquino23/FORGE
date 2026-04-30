@@ -3,48 +3,91 @@
      ================================================================== -->
 
 <div class="max-w-6xl mx-auto px-4 py-8">
-  <!-- PROFILE HEADER -->
+  <!-- IDENTITY PANEL -->
   @if (profile()) {
-    <div class="forge-card p-5 mb-6 flex flex-wrap gap-5 items-center justify-between">
-      <div>
-        <h2 class="text-xl font-black text-forge-primary tracking-widest">
-          {{ profile()!.username }}
-        </h2>
-        <p class="text-forge-muted text-xs mt-0.5">
-          Prestige {{ profile()!.prestige_count }} &bull; Racha
-          <span class="text-forge-text font-bold">{{ profile()!.streak_current }}</span>
-          día(s) &bull; Récord {{ profile()!.streak_max }}
-        </p>
-      </div>
+    <div class="panel-header forge-card p-5 mb-6">
+      <div class="flex flex-wrap items-center justify-between gap-5">
+        <!-- PRESTIGE GEM -->
+        <div class="flex items-center gap-4">
+          <div class="relative flex flex-col items-center">
+            <span class="text-[9px] font-black tracking-[0.2em] text-forge-muted mb-1 leading-none uppercase">
+              Prestige
+            </span>
 
-      <div class="flex flex-col gap-1.5 min-w-48">
-        <div class="flex justify-between text-xs text-forge-muted">
-          <span class="uppercase tracking-wider">Estamina</span>
-          <div class="flex items-center gap-2">
+            <div [style.filter]="prestigeGemGlow(profile()!.prestige_count)">
+              <div class="hex-gem-border" [style.background]="prestigeGemColor(profile()!.prestige_count)">
+                <div class="hex-gem-inner">
+                  <span
+                    class="font-black text-sm leading-none"
+                    [style.color]="prestigeGemColor(profile()!.prestige_count)"
+                  >
+                    {{ profile()!.prestige_count }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 class="text-xl font-black text-forge-primary tracking-widest leading-none">
+              {{ profile()!.username }}
+            </h2>
             @if (overchargeActive()) {
               <span
-                class="badge bg-purple-900/40 border border-purple-500/50 text-purple-300 animate-overcharge-glow"
-                title="Overcharge activo — XP multiplicado"
+                class="badge bg-purple-900/40 border border-purple-500/50 text-purple-300 animate-overcharge-glow text-xs mt-1 inline-block"
               >
                 ⚡ Overcharge
               </span>
             }
-            <span class="text-forge-text font-bold">{{ profile()!.stamina_current }}/{{ profile()!.stamina_max }}</span>
           </div>
         </div>
 
-        <div class="progress-bar" [class.animate-stamina-pulse]="staminaPulse()">
-          <div
-            class="progress-fill"
-            [class]="staminaBarColor(profile()!.stamina_current, profile()!.stamina_max)"
-            [style.width.%]="pct(profile()!.stamina_current, profile()!.stamina_max)"
-          ></div>
+        <!-- S.P.E.C.I.A.L. -->
+        <div class="flex-1 flex justify-center overflow-x-auto px-4">
+          <div class="flex gap-3">
+            @for (attr of profile()!.attributes; track attr.code) {
+              <div class="flex flex-col items-center gap-1.5">
+                <span class="text-[11px] font-black tracking-wider" [class]="attrColor(attr.code)">
+                  {{ attr.code }}
+                </span>
+                <div class="flex gap-[2px]">
+                  @for (seg of SEGMENTS; track seg) {
+                    <div class="w-[5px] h-3 rounded-[1px]" [class]="segmentClass(attr, seg)"></div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
         </div>
 
-        <p class="text-xs text-forge-muted">+5 por hora (regen pasiva)</p>
-      </div>
+        <!-- STREAK -->
+        <div class="flex flex-col gap-2 min-w-[140px]">
+          <div
+            class="flex justify-between items-center px-3 py-1.5 bg-forge-surface/30 border border-forge-border/40 rounded-sm"
+          >
+            <span class="text-[9px] font-black tracking-[0.2em] text-forge-muted mb-1 leading-none uppercase">
+              Streak
+            </span>
+            <span class="text-xs font-black text-forge-text">
+              {{ profile()!.streak_current }}
+              <small class="font-normal ml-0.5 opacity-60 text-[10px]">d</small>
+            </span>
+          </div>
 
-      <a routerLink="/missions" class="forge-btn-ghost text-xs">⚔ Misiones</a>
+          <!-- RECORD -->
+          <div
+            class="flex justify-between items-center px-3 py-1.5 bg-forge-surface/30 border border-forge-border/40 rounded-sm"
+          >
+            <span class="text-[9px] font-black tracking-[0.2em] text-forge-muted mb-1 leading-none uppercase">
+              Record
+            </span>
+            <span class="text-xs font-black text-forge-text">
+              {{ profile()!.streak_max }}
+              <small class="font-normal ml-0.5 opacity-60 text-[10px]">d</small>
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   } @else if (loadError()) {
     <div class="forge-card p-6 text-red-400 text-sm mb-6">{{ loadError() }}</div>
@@ -52,7 +95,7 @@
     <div class="text-forge-muted text-sm animate-pulse mb-6">Cargando perfil...</div>
   }
 
-  <!-- S.P.E.C.I.A.L. GRID -->
+  <!-- S.P.E.C.I.A.L. ATTRIBUTE GRID -->
   @if (profile()) {
     <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">Atributos S.P.E.C.I.A.L.</h3>
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
@@ -93,7 +136,7 @@
       }
     </div>
 
-    <!-- ACTIVITY LOG -->
+    <!-- ACTIVITY LOG + INVENTORY -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="forge-card p-5">
         <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-4">🔥 Registrar Actividad</h3>

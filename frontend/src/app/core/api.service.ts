@@ -23,8 +23,6 @@ export interface PlayerProfile {
   prestige_count: number;
   streak_current: number;
   streak_max: number;
-  stamina_current: number;
-  stamina_max: number;
   attributes: AttributeProfile[];
 }
 

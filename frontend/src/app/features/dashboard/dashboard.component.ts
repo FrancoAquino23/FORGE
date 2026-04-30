@@ -4,7 +4,6 @@
 
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { ApiService, AttributeProfile, PlayerProfile } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
 import { InventoryComponent, ConsumableUsedEvent } from '../inventory/inventory.component';
@@ -30,10 +29,22 @@ const ATTR_GLOW: Record<string, string> = {
   L: 'hover:shadow-[0_0_18px_rgba(251,146,60,0.3)]',
 };
 
-// Main dashboard component that displays player profile, attributes, and allows quick activity logging
+// Prestige gem border color thresholds
+const GEM_COLORS = [
+  { min: 10, color: '#bf00ff' },
+  { min: 7, color: '#3b82f6' },
+  { min: 3, color: '#10b981' },
+  { min: 1, color: '#f59e0b' },
+  { min: 0, color: '#475569' },
+] as const;
+
+// Number of segments in each attribute bar before reaching prestige
+const PRESTIGE_THRESHOLD = 10;
+
+// Main dashboard component that displays player profile, attributes, and inventory
 @Component({
   selector: 'app-dashboard',
-  imports: [FormsModule, RouterLink, InventoryComponent],
+  imports: [FormsModule, InventoryComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -44,12 +55,15 @@ export class DashboardComponent implements OnInit {
   profile = signal<PlayerProfile | null>(null);
   loadError = signal('');
   logging = signal(false);
-  staminaPulse = signal(false);
   overchargeActive = signal(false);
   xpFlash = signal('');
+
   logAttr = '';
   logMinutes: number | null = null;
   logDesc = '';
+
+  // 10 segment indices (1–10) used in the @for loop
+  readonly SEGMENTS = Array.from({ length: PRESTIGE_THRESHOLD }, (_, i) => i + 1);
 
   // Load component
   ngOnInit(): void {
@@ -102,8 +116,6 @@ export class DashboardComponent implements OnInit {
   // Function to handle effects when a consumable item is used
   onConsumableUsed(event: ConsumableUsedEvent): void {
     if (event.effectType === 'streak_shield') {
-      this.staminaPulse.set(true);
-      setTimeout(() => this.staminaPulse.set(false), 3200);
       this.loadProfile();
     }
     if (event.effectType === 'overcharge') {
@@ -115,22 +127,26 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  // Function to calculate XP percentage for an attribute
+  // Function to determine the CSS class for each segment in the attribute bars
+  segmentClass(attr: AttributeProfile, seg: number): string {
+    if (attr.level >= PRESTIGE_THRESHOLD) return 'seg-prestige';
+    return attr.level >= seg ? 'seg-active' : 'seg-off';
+  }
+
+  // Function to determine the color of the prestige gem based on the player's prestige count
+  prestigeGemColor(count: number): string {
+    return GEM_COLORS.find((g) => count >= g.min)!.color;
+  }
+
+  // Function to determine the glow effect of the prestige gem based on the player's prestige count
+  prestigeGemGlow(count: number): string {
+    if (count < PRESTIGE_THRESHOLD) return 'none';
+    return `drop-shadow(0 0 10px ${this.prestigeGemColor(count)})`;
+  }
+
+  // Function to calculate the XP percentage for an attribute, used for the XP bar fill
   xpPct(attr: AttributeProfile): number {
     return attr.xp_to_next ? Math.min(100, (attr.xp_current / attr.xp_to_next) * 100) : 0;
-  }
-
-  // General percentage function (used for stamina bar)
-  pct(value: number, max: number): number {
-    return Math.min(100, (value / max) * 100);
-  }
-
-  // Function to determine stamina bar color based on current percentage
-  staminaBarColor(current: number, max: number): string {
-    const p = (current / max) * 100;
-    if (p > 60) return 'bg-green-500';
-    if (p > 30) return 'bg-yellow-500';
-    return 'bg-red-500';
   }
 
   // Function to get color class for an attribute based on its code
