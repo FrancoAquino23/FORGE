@@ -1,0 +1,50 @@
+<!-- ==================================================================
+     FORGE(APPLICATION STRUCTURE)
+     ================================================================== -->
+
+<!-- HEADER -->
+<div class="min-h-screen bg-forge-bg text-forge-text font-mono">
+  @if (auth.isLoggedIn()) {
+    <nav
+      class="sticky top-0 z-40 border-b border-forge-border bg-forge-surface/90 backdrop-blur px-6 py-3 flex items-center justify-between"
+    >
+      <!-- NAVIGATION BAR -->
+      <a
+        routerLink="/dashboard"
+        class="text-forge-primary font-black tracking-widest text-base uppercase hover:text-amber-400 transition-colors"
+      >
+        ⚡ THE FORGE
+      </a>
+      <div class="flex items-center gap-6 text-xs uppercase tracking-wider">
+        <a
+          routerLink="/dashboard"
+          routerLinkActive="text-forge-primary"
+          class="text-forge-muted hover:text-forge-text transition-colors"
+        >
+          Dashboard
+        </a>
+        <a
+          routerLink="/missions"
+          routerLinkActive="text-forge-primary"
+          class="text-forge-muted hover:text-forge-text transition-colors"
+        >
+          Misiones
+        </a>
+        <a
+          routerLink="/prestige"
+          routerLinkActive="text-forge-primary"
+          class="text-forge-muted hover:text-forge-text transition-colors"
+        >
+          Altar
+        </a>
+        <button (click)="auth.logout()" class="text-forge-muted hover:text-red-400 transition-colors cursor-pointer">
+          Salir
+        </button>
+      </div>
+    </nav>
+  }
+  <!-- MAIN CONTENT -->
+  <router-outlet />
+</div>
+
+<app-toast />

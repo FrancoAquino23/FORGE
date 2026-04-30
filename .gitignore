@@ -37,6 +37,20 @@ dist/
 /www
 *.js.map
 
+# Angular CLI build artefacts
+frontend/tmp/
+frontend/out-tsc/
+frontend/bazel-out/
+frontend/.angular/cache/
+frontend/coverage/
+frontend/typings/
+frontend/__screenshots__/
+npm-debug.log
+yarn-error.log
+
+# Local history (VS Code extension)
+.history/
+
 # OS artefacts
 .DS_Store
 Thumbs.db
