@@ -23,6 +23,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),
   },
   {
+    // Register route (public)
+    path: 'register',
+    loadComponent: () =>
+      import('./features/register/register.component').then((m) => m.RegisterComponent),
+  },
+  {
     // Dashboard route (protected)
     path: 'dashboard',
     canActivate: [authGuard],

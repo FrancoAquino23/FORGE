@@ -1,5 +1,5 @@
 <!-- ==================================================================
-     LOGIN COMPONENT TEMPLATE
+     REGISTER COMPONENT TEMPLATE
      ================================================================== -->
 
 <!-- HEADER -->
@@ -10,11 +10,26 @@
       <p class="text-special-rainbow text-xs tracking-[0.3em] uppercase font-bold">S.P.E.C.I.A.L. Edition</p>
     </div>
 
-    <!-- LOGIN FORM -->
+    <!-- REGISTER FORM -->
     <div class="forge-card p-6 shadow-forge">
-      <h2 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-5">Iniciar sesión</h2>
+      <h2 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-5">Crear cuenta</h2>
 
       <form (ngSubmit)="submit()" class="flex flex-col gap-4">
+        <div>
+          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Nombre de usuario</label>
+          <input
+            class="forge-input"
+            type="text"
+            [(ngModel)]="username"
+            name="username"
+            placeholder="guerrero_forge"
+            required
+            minlength="3"
+            maxlength="50"
+            autocomplete="username"
+          />
+        </div>
+
         <div>
           <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Email</label>
           <input
@@ -35,9 +50,10 @@
             type="password"
             [(ngModel)]="password"
             name="password"
-            placeholder="••••••••"
+            placeholder="•••••••• (mín. 8 caracteres)"
             required
-            autocomplete="current-password"
+            minlength="8"
+            autocomplete="new-password"
           />
         </div>
 
@@ -46,20 +62,20 @@
             {{ error() }}
           </p>
         }
-        <!-- SUBMIT BUTTON-->
+        <!-- SUBMIT BUTTON -->
         <button class="forge-btn-primary btn-shimmer w-full mt-1" type="submit" [disabled]="loading()">
           @if (loading()) {
-            Forjando acceso...
+            Forjando tu leyenda...
           } @else {
-            Entrar al Forge
+            Forjar mi cuenta
           }
         </button>
       </form>
     </div>
-    <!-- REGISTER INSTRUCTION -->
+    <!-- LOGIN INSTRUCTION -->
     <p class="text-center text-forge-muted text-xs mt-4">
-      ¿Sin cuenta?
-      <a routerLink="/register" class="text-forge-primary hover:text-amber-400 transition-colors">Registrarse</a>
+      ¿Ya tienes cuenta?
+      <a routerLink="/login" class="text-forge-primary hover:text-amber-400 transition-colors">Iniciar sesión</a>
     </p>
   </div>
 </div>

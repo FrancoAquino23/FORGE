@@ -7,7 +7,12 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs';
 
-// Service (Authentication - Login, Logout, Check Auth Status)
+// Interface for the token response from the backend
+interface TokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly BASE = 'http://localhost:8000';
@@ -18,12 +23,16 @@ export class AuthService {
   login(email: string, password: string) {
     const body = new URLSearchParams({ username: email, password });
     return this.http
-      .post<{
-        access_token: string;
-        token_type: string;
-      }>(`${this.BASE}/auth/login`, body.toString(), {
+      .post<TokenResponse>(`${this.BASE}/auth/login`, body.toString(), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
+      .pipe(tap((res) => localStorage.setItem('forge_token', res.access_token)));
+  }
+
+  // Method (Register - Get Token from API and Store in Local Storage)
+  register(username: string, email: string, password: string) {
+    return this.http
+      .post<TokenResponse>(`${this.BASE}/auth/register`, { username, email, password })
       .pipe(tap((res) => localStorage.setItem('forge_token', res.access_token)));
   }
 
