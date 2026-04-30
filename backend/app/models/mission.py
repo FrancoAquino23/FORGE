@@ -12,6 +12,12 @@ from app.models.base import Base
 # Model Mission (Daily & Weekly Tasks)
 class Mission(Base):
     __tablename__ = "missions"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('ACTIVE', 'COMPLETED', 'EXPIRED', 'ABANDONED', 'PENDING')",
+            name="valid_mission_status",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -34,16 +40,12 @@ class Mission(Base):
         server_default=text("'ACTIVE'"),
         default="ACTIVE",
     )
-    __table_args__ = (
-        CheckConstraint(
-            "status IN ('ACTIVE', 'COMPLETED', 'EXPIRED', 'ABANDONED')",
-            name="valid_mission_status",
-        ),
-    )
+    # Player-assigned category
+    category: Mapped[str | None] = mapped_column(String(20), nullable=True)
     generated_by_model: Mapped[str | None] = mapped_column(String(60))
     prompt_tokens_used: Mapped[int | None] = mapped_column(Integer)
-    objective_type: Mapped[str] = mapped_column(String(30), nullable=False, default="LOG_MINUTES")
-    objective_target: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+    objective_type: Mapped[str] = mapped_column(String(30), nullable=False, default="LOG_COUNT")
+    objective_target: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

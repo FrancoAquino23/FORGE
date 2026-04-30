@@ -8,11 +8,7 @@ from decimal import Decimal
 # Model RewardService (Data)
 class RewardService:
     BASE_XP: int = 25
-    XP_PER_MINUTE: float = 0.5
-    MAX_XP_PER_ACTIVITY: int = 100
     BASE_MATERIALS: int = 20
-    MATERIAL_PER_MINUTE: float = 0.2
-    MAX_MATERIAL_DURATION_BONUS: int = 20
 
     # XP required to advance from a given level to the next (Following a 1.5 power curve)
     @staticmethod
@@ -21,36 +17,16 @@ class RewardService:
 
     # Calculates XP earned for an activity
     @staticmethod
-    def calculate_xp(
-        duration_minutes: int | None,
-        xp_bonus_pct: Decimal,
-        overcharge_multiplier: Decimal,
-    ) -> int:
-        base = RewardService.BASE_XP
-        if duration_minutes:
-            duration_bonus = int(duration_minutes * RewardService.XP_PER_MINUTE)
-            base = min(base + duration_bonus, RewardService.MAX_XP_PER_ACTIVITY)
-
+    def calculate_xp(xp_bonus_pct: Decimal, overcharge_multiplier: Decimal) -> int:
         multiplier = (1 + float(xp_bonus_pct) / 100) * float(overcharge_multiplier)
-        return max(1, int(base * multiplier))
+        return max(1, int(RewardService.BASE_XP * multiplier))
 
     # Calculates materials earned for an activity
     @staticmethod
-    def calculate_materials(
-        duration_minutes: int | None,
-        global_bonus_pct: Decimal,
-        attribute_bonus_pct: Decimal,
-    ) -> int:
-        base = RewardService.BASE_MATERIALS
-        if duration_minutes:
-            duration_bonus = min(
-                int(duration_minutes * RewardService.MATERIAL_PER_MINUTE),
-                RewardService.MAX_MATERIAL_DURATION_BONUS,
-            )
-            base += duration_bonus
+    def calculate_materials(global_bonus_pct: Decimal, attribute_bonus_pct: Decimal) -> int:
         total_pct = float(global_bonus_pct) + float(attribute_bonus_pct)
         multiplier = 1 + total_pct / 100
-        return max(1, int(base * multiplier))
+        return max(1, int(RewardService.BASE_MATERIALS * multiplier))
 
     # Applies earned XP to an attribute
     @staticmethod

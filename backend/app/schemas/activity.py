@@ -12,7 +12,6 @@ AttributeCode = Literal["S", "P", "E", "C", "I", "A", "L"]
 # Model ActivityLogRequest (Request to log an activity)
 class ActivityLogRequest(BaseModel):
     attribute_code: AttributeCode
-    duration_minutes: int | None = Field(default=None, ge=1, le=1440)
     description: str | None = Field(default=None, max_length=500)
 
     @field_validator("description", mode="before")
@@ -20,7 +19,7 @@ class ActivityLogRequest(BaseModel):
     def strip_description(cls, v: str | None) -> str | None:
         return v.strip() if isinstance(v, str) else v
 
-# Model LevepUpInfo (Information about level-up events)
+# Model LevelUpInfo (Information about level-up events)
 class LevelUpInfo(BaseModel):
     occurred: bool
     new_level: int

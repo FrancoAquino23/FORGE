@@ -15,7 +15,6 @@ from sqlalchemy import (
     Numeric,
     SmallInteger,
     String,
-    Text,
     UniqueConstraint,
     func,
 )
@@ -39,10 +38,6 @@ class ActivityLog(Base):
         SmallInteger, ForeignKey("attributes.id"), nullable=False
     )
     description: Mapped[str | None] = mapped_column(String(500))
-    duration_minutes: Mapped[int | None] = mapped_column(
-        Integer,
-        CheckConstraint("duration_minutes BETWEEN 1 AND 1440", name="valid_duration"),
-    )
     xp_earned: Mapped[int] = mapped_column(Integer, nullable=False)
     material_earned: Mapped[int] = mapped_column(Integer, nullable=False)
     overcharge_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
