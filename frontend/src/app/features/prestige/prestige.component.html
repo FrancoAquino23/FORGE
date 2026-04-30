@@ -1,0 +1,192 @@
+<!-- ==================================================================
+     PRESTIGE COMPONENT TEMPLATE
+     ================================================================== -->
+
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <!-- HEADER -->
+  <div class="text-center mb-10">
+    <p class="text-forge-muted text-xs uppercase tracking-[0.4em] mb-2">S.P.E.C.I.A.L.</p>
+    <h1 class="text-4xl font-black tracking-[0.2em] text-forge-primary uppercase">Altar de Prestigio</h1>
+    <p class="text-forge-muted text-xs mt-2 max-w-lg mx-auto leading-relaxed">
+      Sacrifica un atributo al umbral máximo para grabar un buff permanente en el Artefacto de Forja
+    </p>
+  </div>
+
+  @if (profile() && status()) {
+    <!-- ARTIFACT -->
+    <div class="flex justify-center mb-10">
+      <div
+        class="relative forge-card overflow-hidden text-center px-10 py-8 w-full max-w-xl transition-shadow duration-1000"
+        [class]="artifactGlowClass()"
+        [class.animate-artifact-evolve]="prestigeFlash()"
+      >
+        <div
+          class="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          aria-hidden="true"
+        >
+          <span class="text-[220px] opacity-[0.04] text-forge-primary leading-none">⚙</span>
+        </div>
+
+        <div class="relative z-10 flex flex-col items-center gap-5">
+          <p class="text-xs text-forge-muted uppercase tracking-[0.4em]">Artefacto de Forja</p>
+
+          <div class="flex flex-col items-center">
+            <span class="text-8xl font-black text-forge-primary leading-none tabular-nums">
+              {{ status()!.prestige_count }}
+            </span>
+            <span class="text-xs text-forge-muted uppercase tracking-widest mt-1">Sacrificios Grabados</span>
+          </div>
+
+          @if (status()!.active_buffs.length) {
+            <div class="flex flex-wrap justify-center gap-2 pt-4 border-t border-forge-border w-full">
+              @for (buff of status()!.active_buffs; track buff.buff_type_code) {
+                <div
+                  class="flex flex-col items-center bg-forge-surface border border-forge-border rounded-lg px-4 py-2 min-w-28"
+                >
+                  <span class="text-[10px] text-forge-muted uppercase tracking-wider text-center w-full truncate">
+                    {{ buff.display_name }}
+                  </span>
+                  <span class="text-xl font-black text-forge-primary">+{{ buff.total_bonus }}%</span>
+                  <span class="text-[10px] text-forge-muted">x{{ buff.stack_count }} stack(s)</span>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="text-xs text-forge-muted italic pt-4 border-t border-forge-border w-full text-center">
+              Sin mejoras grabadas — realiza tu primer sacrificio
+            </p>
+          }
+
+          <p class="text-xs text-forge-muted">
+            Umbral de sacrificio: Nivel
+            <span class="text-forge-primary font-bold">{{ status()!.threshold_level }}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATERIAL RESERVES -->
+    <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">⚗ Reservas de Materiales</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
+      @for (attr of profile()!.attributes; track attr.code) {
+        <div class="forge-card p-3 text-center">
+          <span class="text-3xl font-black leading-none block mb-1" [class]="attrColor(attr.code)">
+            {{ attr.code }}
+          </span>
+          <p class="text-forge-muted text-[10px] truncate mb-1.5">{{ attr.material_name }}</p>
+          <p class="font-black text-xl" [class]="attrColor(attr.code)">{{ attr.material_balance }}</p>
+        </div>
+      }
+    </div>
+
+    <!--SACRIFICE TABLE -->
+    <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">⚔ Tabla de Sacrificio</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      @for (attr of profile()!.attributes; track attr.code) {
+        <div
+          class="forge-card p-5 flex flex-col gap-3 transition-shadow duration-500"
+          [class.animate-eligible-pulse]="isEligible(attr)"
+        >
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-4xl font-black leading-none" [class]="attrColor(attr.code)">
+                {{ attr.code }}
+              </span>
+              <p class="text-forge-text text-xs font-semibold mt-0.5">{{ attr.name }}</p>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <span class="badge bg-forge-surface border border-forge-border text-forge-muted text-sm font-black">
+                Nv.{{ attr.level }}
+              </span>
+              @if (isEligible(attr)) {
+                <span class="text-[10px] text-forge-primary font-black uppercase tracking-wider animate-pulse">
+                  ★ Elegible
+                </span>
+              }
+            </div>
+          </div>
+
+          <!-- PROGRESS BAR -->
+          <div>
+            <div class="flex justify-between text-xs text-forge-muted mb-1">
+              <span>Progreso al umbral</span>
+              <span [class]="isEligible(attr) ? 'text-forge-primary font-bold' : ''">
+                {{ attr.level }}/{{ status()!.threshold_level }}
+              </span>
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress-fill transition-all duration-700"
+                [class]="isEligible(attr) ? 'bg-forge-primary' : 'bg-forge-primary/40'"
+                [style.width.%]="progressPct(attr)"
+              ></div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center text-xs border-t border-forge-border pt-2">
+            <span class="text-forge-muted">{{ attr.material_name }}</span>
+            <span class="font-bold" [class]="attrColor(attr.code)">{{ attr.material_balance }}</span>
+          </div>
+          <!-- BUFF SELECTION -->
+          @if (isEligible(attr)) {
+            <div>
+              <label class="block text-[10px] text-forge-muted mb-1 uppercase tracking-wider">Buff a Grabar</label>
+              <select class="forge-input text-xs" [(ngModel)]="selectedBuff[attr.code]">
+                <option value="">— Seleccionar buff —</option>
+                @for (bt of status()!.available_buff_types; track bt.code) {
+                  <option [value]="bt.code">{{ bt.display_name }} (+{{ bt.bonus_percent }}%)</option>
+                }
+              </select>
+            </div>
+
+            <!-- BUTTON -->
+            <div class="group relative">
+              <button
+                class="forge-btn-primary w-full text-xs py-2.5 tracking-widest"
+                (click)="sacrifice(attr)"
+                [disabled]="!canSacrifice(attr)"
+              >
+                @if (sacrificing() === attr.code) {
+                  <span class="animate-pulse">Sacrificando...</span>
+                } @else {
+                  🔥 Realizar Sacrificio
+                }
+              </button>
+
+              <!-- BUFF PREVIEW -->
+              @if (selectedBuff[attr.code]) {
+                <div
+                  class="absolute bottom-full left-0 right-0 mb-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                >
+                  <div class="forge-card border border-forge-primary/50 p-3 text-xs shadow-forge">
+                    <p class="text-forge-primary font-bold mb-2 uppercase tracking-wider text-[10px]">
+                      ⚡ Preview del Sacrificio
+                    </p>
+                    <p class="text-forge-muted">• {{ attr.name }} reinicia → Nivel 1</p>
+                    <p class="text-forge-muted">• XP y progreso se pierden</p>
+                    <p class="text-forge-primary">• +{{ buffPreviewBonus(attr.code) }}% bonus permanente</p>
+                    <p class="text-red-400/70 mt-2 text-[10px] uppercase tracking-wider">Acción irreversible</p>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <!-- LEVEL REQUIREMENT -->
+            <div class="text-center py-1">
+              <p class="text-forge-muted text-[11px]">
+                Faltan
+                <span class="text-forge-text font-bold">
+                  {{ status()!.threshold_level - attr.level }}
+                </span>
+                nivel(es)
+              </p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- LOADING -->
+    <div class="text-forge-muted text-sm animate-pulse text-center py-20">Cargando el Altar...</div>
+  }
+</div>

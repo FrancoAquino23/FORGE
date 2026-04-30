@@ -1,0 +1,101 @@
+<!-- ==================================================================
+     MISSIONS COMPONENT TEMPLATE
+     ================================================================== -->
+
+<!-- HEADER-->
+<div class="max-w-3xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h2 class="text-xl font-black text-forge-primary tracking-widest">Misiones Diarias</h2>
+      <p class="text-forge-muted text-xs mt-0.5">Restablece cada 24 h</p>
+    </div>
+    <div class="flex gap-3 items-center">
+      @if (data() && !data()!.ai_ready) {
+        <span class="badge bg-purple-900/40 border border-purple-500/40 text-purple-300 animate-pulse">
+          ⚡ Generando con IA...
+        </span>
+      }
+      @if (data()?.ai_ready) {
+        <span class="badge bg-forge-surface border border-forge-primary/30 text-forge-primary">✦ AI activa</span>
+      }
+      <a routerLink="/dashboard" class="forge-btn-ghost text-xs">← Dashboard</a>
+    </div>
+  </div>
+  <!-- FILTERS -->
+  @if (data()) {
+    <div class="flex flex-col gap-4">
+      @for (m of data()!.missions; track m.mission_id) {
+        <div class="forge-card p-5 flex flex-col gap-4" [class.shadow-forge]="m.is_completable">
+          <div class="flex items-start gap-3">
+            <span class="text-2xl leading-none shrink-0">{{ attrIcon(m.attribute_code) }}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap mb-1">
+                <span class="font-bold text-forge-text text-sm">{{ m.title }}</span>
+                @if (m.ai_generated) {
+                  <span class="badge bg-purple-900/40 border border-purple-500/30 text-purple-300 text-xs">✦ IA</span>
+                }
+                @if (m.is_completable) {
+                  <span class="badge bg-green-900/40 border border-green-500/40 text-green-400 text-xs">✓ Lista</span>
+                }
+              </div>
+              <p class="text-forge-muted text-xs leading-relaxed">{{ m.objective_description }}</p>
+            </div>
+          </div>
+
+          <!-- PROGRESS -->
+          <div>
+            <div class="flex justify-between text-xs text-forge-muted mb-1.5">
+              <span class="uppercase tracking-wider">Progreso</span>
+              <span class="text-forge-text font-bold">
+                {{ m.current_progress }} / {{ m.objective_target }}
+                {{ m.objective_type === 'LOG_MINUTES' ? 'min' : 'registros' }}
+              </span>
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                [class]="m.is_completable ? 'bg-green-500' : 'bg-forge-primary'"
+                [style.width.%]="progressPct(m)"
+              ></div>
+            </div>
+          </div>
+          <!-- REWARDS -->
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex gap-4 text-xs text-forge-muted">
+              <span>
+                ⚡
+                <b class="text-forge-primary">+{{ m.reward_xp }}</b>
+                XP
+              </span>
+              <span>
+                🔩
+                <b class="text-forge-primary">+{{ m.reward_material_qty }}</b>
+                mat.
+              </span>
+              <span class="text-forge-border">|</span>
+              <span>Expira {{ timeLeft(m.expires_at) }}</span>
+            </div>
+            <button
+              class="forge-btn-primary text-xs"
+              (click)="claim(m)"
+              [disabled]="!m.is_completable || claiming() === m.mission_id"
+            >
+              @if (claiming() === m.mission_id) {
+                Reclamando...
+              } @else if (m.is_completable) {
+                Reclamar
+              } @else {
+                Incompleta
+              }
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+    <!-- LOADING STATE -->
+  } @else if (loadError()) {
+    <div class="forge-card p-6 text-red-400 text-sm">{{ loadError() }}</div>
+  } @else {
+    <div class="text-forge-muted text-sm animate-pulse">Cargando misiones...</div>
+  }
+</div>

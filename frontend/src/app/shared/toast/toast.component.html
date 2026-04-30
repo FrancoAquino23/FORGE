@@ -1,0 +1,28 @@
+<!-- ==================================================================
+     TOAST COMPONENT TEMPLATE
+     ================================================================== -->
+
+<!-- CONTAINER -->
+<div class="fixed top-4 right-4 z-50 flex flex-col gap-2 w-80 pointer-events-none">
+  @for (toast of svc.toasts(); track toast.id) {
+    <div
+      class="forge-card border p-4 flex items-start gap-3 shadow-xl pointer-events-auto"
+      [class]="borderClass(toast.type)"
+      [class.animate-drop-in]="toast.type === 'loot'"
+      [class.animate-slide-in]="toast.type !== 'loot'"
+    >
+      <span class="text-2xl leading-none shrink-0">{{ toast.icon }}</span>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-xs uppercase tracking-widest">{{ toast.title }}</p>
+        <p class="text-xs mt-0.5 text-forge-muted leading-snug">{{ toast.message }}</p>
+      </div>
+      <!-- DISMISS BUTTON -->
+      <button
+        class="text-forge-muted hover:text-white text-lg leading-none shrink-0 cursor-pointer transition-colors"
+        (click)="svc.dismiss(toast.id)"
+      >
+        &times;
+      </button>
+    </div>
+  }
+</div>

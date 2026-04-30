@@ -1,0 +1,73 @@
+<!-- ==================================================================
+     INVENTORY COMPONENT TEMPLATE
+     ================================================================== -->
+
+<!-- INVENTORY CARD -->
+<div class="forge-card p-5 h-full flex flex-col gap-4">
+  <div class="flex items-center justify-between">
+    <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest">⚗ Saco de Forja</h3>
+    <button
+      class="text-forge-muted hover:text-forge-primary text-xs transition-colors cursor-pointer"
+      (click)="load()"
+      title="Actualizar inventario"
+    >
+      ↺
+    </button>
+  </div>
+  <!-- ITEMS LIST -->
+  @if (items().length) {
+    <div class="flex flex-col gap-3">
+      @for (item of items(); track item.consumable_code) {
+        <div class="border rounded-lg p-4 transition-colors" [class]="itemBorderClass(item)">
+          <div class="flex items-start gap-3">
+            <span class="text-3xl leading-none shrink-0">{{ itemIcon(item) }}</span>
+
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2 mb-1">
+                <span class="font-bold text-forge-text text-sm">{{ item.name }}</span>
+                <span class="badge border font-black text-base px-2.5" [class]="quantityBadgeClass(item)">
+                  x{{ item.quantity }}
+                </span>
+              </div>
+
+              @if (item.description) {
+                <p class="text-forge-muted text-xs leading-snug mb-2">{{ item.description }}</p>
+              }
+
+              @if (item.is_active && item.active_until) {
+                <div class="flex items-center gap-1.5 mb-2">
+                  <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+                  <span class="text-xs text-purple-400 font-bold">
+                    ACTIVO · Expira {{ timeLeft(item.active_until) }}
+                  </span>
+                </div>
+              }
+              <!-- BUTTON -->
+              <button
+                class="forge-btn text-xs w-full mt-1"
+                [class]="useButtonClass(item)"
+                (click)="use(item)"
+                [disabled]="item.quantity === 0 || item.is_active || using() === item.consumable_code"
+              >
+                @if (using() === item.consumable_code) {
+                  Activando...
+                } @else if (item.is_active) {
+                  En curso
+                } @else if (item.quantity === 0) {
+                  Sin stock
+                } @else {
+                  Usar {{ itemIcon(item) }}
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+    <!-- LOADING -->
+  } @else if (loading()) {
+    <p class="text-forge-muted text-xs animate-pulse">Cargando inventario...</p>
+  } @else {
+    <p class="text-forge-muted text-xs">Inventario vacío. Registra actividades para obtener drops.</p>
+  }
+</div>
