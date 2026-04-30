@@ -13,7 +13,6 @@
             <span class="text-[9px] font-black tracking-[0.2em] text-forge-muted mb-1 leading-none uppercase">
               Prestige
             </span>
-
             <div [style.filter]="prestigeGemGlow(profile()!.prestige_count)">
               <div class="hex-gem-border" [style.background]="prestigeGemColor(profile()!.prestige_count)">
                 <div class="hex-gem-inner">
@@ -136,46 +135,97 @@
       }
     </div>
 
-    <!-- ACTIVITY LOG + INVENTORY -->
+    <!-- MISSION + INVENTORY -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="forge-card p-5">
-        <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-4">🔥 Registrar Actividad</h3>
+        <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-4">⚔ Quest Dispatch</h3>
         <div class="flex flex-col gap-3">
+          <!-- ATTRIBUTE SELECTOR -->
           <div>
             <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Atributo</label>
-            <select class="forge-input" [(ngModel)]="logAttr">
-              <option value="">— Seleccionar —</option>
-              @for (a of profile()!.attributes; track a.code) {
-                <option [value]="a.code">{{ a.code }} – {{ a.name }}</option>
+            <div class="relative">
+              <button
+                type="button"
+                class="forge-input w-full flex items-center gap-2 text-left cursor-pointer"
+                (click)="attrDropdownOpen = !attrDropdownOpen"
+              >
+                @if (logAttr) {
+                  <lucide-icon [img]="getIconName(logAttr)" [size]="13" [class]="attrColor(logAttr)"></lucide-icon>
+                  <span class="text-forge-text text-xs flex-1">{{ getAttrName(logAttr) }}</span>
+                } @else {
+                  <span class="text-forge-muted text-xs flex-1">— Seleccionar —</span>
+                }
+                <span class="text-forge-muted text-[10px]">▾</span>
+              </button>
+
+              @if (attrDropdownOpen) {
+                <div
+                  class="absolute z-20 w-full mt-0.5 bg-forge-surface border border-forge-border rounded-sm shadow-lg overflow-hidden"
+                >
+                  @for (a of profile()!.attributes; track a.code) {
+                    <button
+                      type="button"
+                      class="w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-forge-card"
+                      [class.bg-forge-card]="logAttr === a.code"
+                      (click)="selectAttr(a.code)"
+                    >
+                      <lucide-icon [img]="getIconName(a.code)" [size]="13" [class]="attrColor(a.code)"></lucide-icon>
+                      <span class="text-forge-text text-xs">{{ a.name }}</span>
+                    </button>
+                  }
+                </div>
               }
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Duración (min)</label>
-            <input class="forge-input" type="number" min="1" max="1440" [(ngModel)]="logMinutes" placeholder="30" />
-          </div>
-          <div>
-            <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Descripción</label>
-            <input
-              class="forge-input"
-              type="text"
-              [(ngModel)]="logDesc"
-              placeholder="Sesión de entrenamiento..."
-              maxlength="500"
-            />
+            </div>
           </div>
 
+          <!-- QUEST CATEGORY -->
+          <div>
+            <label class="block text-xs text-forge-muted mb-1.5 uppercase tracking-wider">Categoría</label>
+            <div class="flex gap-2">
+              @for (cat of CATEGORIES; track cat.value) {
+                <button
+                  type="button"
+                  class="flex-1 text-[11px] px-2 py-1.5 rounded-sm border font-bold tracking-wide transition-colors"
+                  [class]="
+                    logCategory === cat.value
+                      ? 'bg-forge-primary/15 border-forge-primary text-forge-primary'
+                      : 'border-forge-border text-forge-muted hover:border-forge-primary/40 hover:text-forge-text'
+                  "
+                  (click)="logCategory = cat.value"
+                >
+                  {{ cat.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- MISSION DESCRIPTION -->
+          <div>
+            <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Objetivo</label>
+            <textarea
+              class="forge-input w-full resize-none text-xs leading-relaxed"
+              rows="3"
+              maxlength="500"
+              placeholder="[ Define Quest Objective... ]"
+              [(ngModel)]="logDesc"
+            ></textarea>
+          </div>
+          <!-- OVERCHARGE NOTIFICATION -->
           @if (overchargeActive()) {
             <p class="text-xs text-purple-400 border border-purple-500/30 rounded px-3 py-2 bg-purple-900/10">
-              ⚡ Overcharge activo — XP multiplicado en este registro
+              ⚡ Overcharge activo — XP multiplicado al terminar
             </p>
           }
-
-          <button class="forge-btn-primary" (click)="submitLog()" [disabled]="logging() || !logAttr">
-            @if (logging()) {
-              Registrando...
+          <!-- DEPLOY BUTTON -->
+          <button
+            class="forge-btn-primary mt-1 uppercase tracking-widest text-xs font-black"
+            (click)="deployMission()"
+            [disabled]="deploying() || !logAttr"
+          >
+            @if (deploying()) {
+              Despachando...
             } @else {
-              Forjar Actividad
+              ⚔ Deploy Quest
             }
           </button>
         </div>

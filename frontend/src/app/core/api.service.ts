@@ -41,6 +41,8 @@ export interface MissionProgress {
   expires_at: string;
   is_completable: boolean;
   ai_generated: boolean;
+  status: string;
+  category: string | null;
 }
 
 // Interface (Mission List Response - Data)
@@ -60,10 +62,26 @@ export interface MissionClaimResponse {
   leveled_up: boolean;
 }
 
+// Interface (Deploy Mission Request - Data)
+export interface DeployMissionRequest {
+  attribute_code: string;
+  category: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND';
+  description?: string;
+}
+
+// Interface (Deploy Mission Response - Data)
+export interface DeployMissionResponse {
+  mission_id: string;
+  title: string;
+  category: string;
+  attribute_code: string;
+  reward_xp: number;
+  reward_material_qty: number;
+}
+
 // Interface (Activity Log Request - Data)
 export interface ActivityLogRequest {
   attribute_code: string;
-  duration_minutes?: number;
   description?: string;
 }
 
@@ -169,6 +187,11 @@ export class ApiService {
   // Method (Get Active Missions)
   getActiveMissions(): Observable<MissionListResponse> {
     return this.http.get<MissionListResponse>(`${this.BASE}/missions/active`);
+  }
+
+  // Method (Deploy Mission)
+  deployMission(payload: DeployMissionRequest): Observable<DeployMissionResponse> {
+    return this.http.post<DeployMissionResponse>(`${this.BASE}/missions/deploy`, payload);
   }
 
   // Method (Log Activity)

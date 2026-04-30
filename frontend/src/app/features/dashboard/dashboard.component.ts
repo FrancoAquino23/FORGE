@@ -29,6 +29,7 @@ const ATTR_COLORS: Record<string, string> = {
   A: 'text-cyan-400',
   L: 'text-orange-400',
 };
+
 // Glow effect mappings for attributes (used on hover)
 const ATTR_GLOW: Record<string, string> = {
   S: 'hover:shadow-[0_0_18px_rgba(248,113,113,0.3)]',
@@ -77,7 +78,7 @@ const PRESTIGE_THRESHOLD = 10;
 // Main dashboard component that displays player profile, attributes, and inventory
 @Component({
   selector: 'app-dashboard',
-  imports: [FormsModule, InventoryComponent, LucideAngularModule],
+  imports: [InventoryComponent, LucideAngularModule, FormsModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -87,16 +88,22 @@ export class DashboardComponent implements OnInit {
 
   profile = signal<PlayerProfile | null>(null);
   loadError = signal('');
-  logging = signal(false);
+  deploying = signal(false);
   overchargeActive = signal(false);
   xpFlash = signal('');
 
   logAttr = '';
-  logMinutes: number | null = null;
+  logCategory: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND' = 'DAILY_GRIND';
   logDesc = '';
+  attrDropdownOpen = false;
 
-  // 10 segment indices (1–10) used in the @for loop
   readonly SEGMENTS = Array.from({ length: PRESTIGE_THRESHOLD }, (_, i) => i + 1);
+
+  readonly CATEGORIES = [
+    { value: 'MAIN_QUEST' as const, label: 'Main Quest' },
+    { value: 'SIDE_QUEST' as const, label: 'Side Quest' },
+    { value: 'DAILY_GRIND' as const, label: 'Daily Grind' },
+  ];
 
   // Load component
   ngOnInit(): void {
@@ -111,37 +118,46 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // Handle activity log submission
-  submitLog(): void {
-    if (!this.logAttr || this.logging()) return;
-    const targetCode = this.logAttr;
-    this.logging.set(true);
+  // Handle attribute selection from dropdown
+  selectAttr(code: string): void {
+    this.logAttr = code;
+    this.attrDropdownOpen = false;
+  }
+
+  // Deploy a new mission based on user input
+  deployMission(): void {
+    if (!this.logAttr || this.deploying()) return;
+    this.deploying.set(true);
 
     this.api
-      .logActivity({
-        attribute_code: targetCode,
-        duration_minutes: this.logMinutes ?? undefined,
-        description: this.logDesc || undefined,
+      .deployMission({
+        attribute_code: this.logAttr,
+        category: this.logCategory,
+        description: this.logDesc.trim() || undefined,
       })
       .subscribe({
         next: (res) => {
-          this.toast.fromActivityLog(res);
-          this.logging.set(false);
-          this.logAttr = '';
-          this.logMinutes = null;
-          this.logDesc = '';
-          this.xpFlash.set(targetCode);
+          this.toast.show({
+            type: 'claim',
+            icon: '⚔',
+            title: 'Misión despachada',
+            message: `${res.title} (+${res.reward_xp} XP al terminar)`,
+          });
+          this.deploying.set(false);
+          this.xpFlash.set(this.logAttr);
           setTimeout(() => this.xpFlash.set(''), 700);
-          this.loadProfile();
+          this.logAttr = '';
+          this.logDesc = '';
+          this.logCategory = 'DAILY_GRIND';
         },
         error: (err) => {
           this.toast.show({
             type: 'error',
             icon: '❌',
             title: 'Error',
-            message: err.error?.detail ?? 'No se pudo registrar la actividad',
+            message: err.error?.detail ?? 'No se pudo despachar la misión',
           });
-          this.logging.set(false);
+          this.deploying.set(false);
         },
       });
   }
@@ -200,5 +216,10 @@ export class DashboardComponent implements OnInit {
   // Function to get the appropriate icon for an attribute based on its code
   getIconName(code: string): LucideIconData {
     return ATTR_ICONS[code] ?? Sparkles;
+  }
+
+  // Function to get the display name of an attribute based on its code
+  getAttrName(code: string): string {
+    return this.profile()?.attributes.find((a) => a.code === code)?.name ?? code;
   }
 }

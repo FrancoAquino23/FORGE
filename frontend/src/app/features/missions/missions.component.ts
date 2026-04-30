@@ -64,29 +64,46 @@ export class MissionsComponent implements OnInit, OnDestroy {
           type: 'error',
           icon: '❌',
           title: 'Error',
-          message: err.error?.detail ?? 'No se pudo reclamar la misión',
+          message: err.error?.detail ?? 'No se pudo completar la misión',
         });
         this.claiming.set('');
       },
     });
   }
 
-  // Function to calculate progress percentage for a mission
+  // Function to determine if a mission is pending (ready to claim but not yet claimed)
+  isPending(m: MissionProgress): boolean {
+    return m.status === 'PENDING';
+  }
+
+  // Function to calculate the progress percentage of a mission
   progressPct(m: MissionProgress): number {
+    if (this.isPending(m)) return 100;
     if (!m.objective_target) return 0;
     return Math.min(100, (m.current_progress / m.objective_target) * 100);
   }
 
-  // Function to calculate time left until mission expires
+  // Function to calculate the time left until a mission expires
   timeLeft(expiresAt: string): string {
     const diff = new Date(expiresAt).getTime() - Date.now();
     if (diff <= 0) return 'expirada';
+    const d = Math.floor(diff / 86_400_000);
+    if (d >= 1) return `${d}d`;
     const h = Math.floor(diff / 3_600_000);
     const m = Math.floor((diff % 3_600_000) / 60_000);
     return `${h}h ${m}m`;
   }
 
-  // Function to get icon for an attribute based on its code
+  // Function to get a user-friendly label for a mission category
+  categoryLabel(cat: string | null): string {
+    const labels: Record<string, string> = {
+      MAIN_QUEST: 'Main Quest',
+      SIDE_QUEST: 'Side Quest',
+      DAILY_GRIND: 'Daily Grind',
+    };
+    return cat ? (labels[cat] ?? cat) : '';
+  }
+
   attrIcon(code: string): string {
     const icons: Record<string, string> = {
       S: '💪',
