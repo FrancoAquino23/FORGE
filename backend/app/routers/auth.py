@@ -9,9 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ConflictError, UnauthorizedError
 from app.core.security import create_access_token, hash_password, verify_password
 from app.database import get_db
-from app.models.activity import PlayerConsumable
 from app.models.artifact import Artifact
-from app.models.catalog import Attribute, ConsumableType
+from app.models.catalog import Attribute
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
 from app.schemas.auth import RegisterRequest, TokenResponse
 
@@ -57,11 +56,6 @@ async def register(
     for attr in attributes:
         session.add(PlayerAttribute(player_id=profile.id, attribute_id=attr.id))
         session.add(PlayerInventory(player_id=profile.id, attribute_id=attr.id))
-
-    # Create consumable slots so the player can receive potions/chips
-    consumable_types = (await session.scalars(select(ConsumableType))).all()
-    for ct in consumable_types:
-        session.add(PlayerConsumable(player_id=profile.id, consumable_type_id=ct.id))
 
     await session.commit()
 

@@ -12,7 +12,8 @@ from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models.activity import ActivityLog
 from app.models.catalog import Attribute
 from app.models.mission import Mission
-from app.models.player import PlayerAttribute, PlayerInventory
+from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
+from app.models.relic import Relic
 from app.schemas.mission import (
     DeployMissionRequest,
     DeployMissionResponse,
@@ -134,6 +135,17 @@ class MissionService:
         mission.status = "COMPLETED"
         mission.completed_at = now
 
+        # Apply relic bonuses to base rewards at claim time
+        attr_code = mission.target_attribute.code
+        relic_level = await self._get_relic_level(player_id, attr_code)
+        player_profile = await self._db.scalar(
+            select(PlayerProfile).where(PlayerProfile.id == player_id)
+        )
+        prestige_count = player_profile.prestige_count if player_profile else 0
+        xp_earned, mat_earned = RewardService.apply_mission_bonuses(
+            mission.reward_xp, mission.reward_material_qty, relic_level, prestige_count
+        )
+
         player_attr = (
             await self._db.execute(
                 select(PlayerAttribute)
@@ -146,7 +158,7 @@ class MissionService:
         ).scalar_one()
 
         new_xp, new_level, new_xp_to_next, leveled_up = RewardService.apply_xp_to_attribute(
-            player_attr.xp_current, player_attr.level, mission.reward_xp
+            player_attr.xp_current, player_attr.level, xp_earned
         )
         player_attr.xp_current = new_xp
         player_attr.level = new_level
@@ -162,7 +174,7 @@ class MissionService:
                 .with_for_update()
             )
         ).scalar_one()
-        inventory.quantity += mission.reward_material_qty
+        inventory.quantity += mat_earned
 
         await self._db.commit()
 
@@ -170,8 +182,8 @@ class MissionService:
             mission_id=mission.id,
             attribute_code=mission.target_attribute.code,
             material_name=mission.target_attribute.material_name,
-            xp_earned=mission.reward_xp,
-            material_earned=mission.reward_material_qty,
+            xp_earned=xp_earned,
+            material_earned=mat_earned,
             new_attribute_level=new_level,
             leveled_up=leveled_up,
         )
@@ -282,6 +294,21 @@ class MissionService:
                 ActivityLog.player_id == player_id,
                 ActivityLog.attribute_id == mission.target_attribute_id,
                 ActivityLog.activity_date == today,
+            )
+        )
+        return result or 0
+
+    # Helper to get the level of a relic for a given attribute and player
+    async def _get_relic_level(self, player_id: uuid.UUID, attr_code: str) -> int:
+        if attr_code == "L":
+            p = await self._db.scalar(
+                select(PlayerProfile).where(PlayerProfile.id == player_id)
+            )
+            return p.prestige_count if p else 0
+        result = await self._db.scalar(
+            select(Relic.level).where(
+                Relic.player_id == player_id,
+                Relic.attribute_code == attr_code,
             )
         )
         return result or 0

@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, activities, player, forge, missions, prestige, gm, consumables
+from app.routers import auth, activities, player, forge, missions, prestige, gm, relics
 
 # Import Database models  
 app = FastAPI(
@@ -30,7 +30,7 @@ app.include_router(forge.router)
 app.include_router(missions.router)
 app.include_router(prestige.router)
 app.include_router(gm.router)
-app.include_router(consumables.router)
+app.include_router(relics.router)
 
 # Import API routes
 @app.get("/health", tags=["health"])

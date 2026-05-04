@@ -14,8 +14,9 @@ from app.models.catalog import (
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
 from app.models.artifact import Artifact, ForgeHistory
 from app.models.prestige import PlayerBuff, PrestigeHistory
-from app.models.activity import ActivityLog, PlayerActiveEffect, PlayerConsumable
+from app.models.activity import ActivityLog
 from app.models.mission import GmContextSnapshot, Mission
+from app.models.relic import Relic
 
 # Import all models
 __all__ = [
@@ -35,8 +36,7 @@ __all__ = [
     "PrestigeHistory",
     "PlayerBuff",
     "ActivityLog",
-    "PlayerConsumable",
-    "PlayerActiveEffect",
     "Mission",
     "GmContextSnapshot",
+    "Relic",
 ]

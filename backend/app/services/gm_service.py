@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.config import settings
 from app.core.exceptions import ConflictError
-from app.models.activity import ActivityLog, PlayerActiveEffect, PlayerConsumable
+from app.models.activity import ActivityLog
 from app.models.catalog import Attribute
 from app.models.mission import GmContextSnapshot, Mission
 from app.models.player import PlayerAttribute, PlayerProfile
@@ -142,33 +142,12 @@ class GmService:
             )
         ).all()
 
-        now = datetime.now(timezone.utc)
-        active_effects = (
-            await self._db.scalars(
-                select(PlayerActiveEffect)
-                .where(
-                    PlayerActiveEffect.player_id == player_id,
-                    PlayerActiveEffect.expires_at > now,
-                )
-                .options(selectinload(PlayerActiveEffect.consumable_type))
-            )
-        ).all()
-
-        consumables = (
-            await self._db.scalars(
-                select(PlayerConsumable)
-                .where(PlayerConsumable.player_id == player_id)
-                .options(selectinload(PlayerConsumable.consumable_type))
-            )
-        ).all()
-
         activity_summary: dict[str, dict] = {}
         for log in recent_logs:
             code = log.attribute.code
             if code not in activity_summary:
-                activity_summary[code] = {"sessions": 0, "total_minutes": 0}
+                activity_summary[code] = {"sessions": 0}
             activity_summary[code]["sessions"] += 1
-            activity_summary[code]["total_minutes"] += log.duration_minutes or 0
 
         return {
             "streak_current": profile.streak_current,
@@ -186,23 +165,6 @@ class GmService:
                 for pa in profile.attributes
             ],
             f"activity_last_{days}d": activity_summary,
-            "active_effects": [
-                {
-                    "name": e.consumable_type.name,
-                    "multiplier": float(e.multiplier),
-                    "expires_at": e.expires_at.isoformat(),
-                }
-                for e in active_effects
-            ],
-            "consumable_inventory": [
-                {
-                    "name": c.consumable_type.name,
-                    "code": c.consumable_type.code,
-                    "quantity": c.quantity,
-                }
-                for c in consumables
-                if c.quantity > 0
-            ],
         }
 
     # Helper to generate a diagnostic report for a player based on their data and AI analysis

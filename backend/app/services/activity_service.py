@@ -2,16 +2,15 @@
 # ACTIVITY SERVICE 
 # ==================================================================
 
-import random
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import NotFoundError, RateLimitError
-from app.models.activity import ActivityLog, PlayerConsumable
-from app.models.catalog import Attribute, BuffType, ConsumableType
+from app.models.activity import ActivityLog
+from app.models.catalog import Attribute
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
-from app.models.prestige import PlayerBuff
+from app.models.relic import Relic
 from app.schemas.activity import ActivityLogRequest, ActivityLogResponse, LevelUpInfo
 from app.services.reward_service import RewardService
 from app.services.streak_service import StreakService
@@ -19,15 +18,13 @@ from app.services.streak_service import StreakService
 # Constants for rate limiting and overcharge logic
 _RATE_LIMIT_COUNT = 10
 _RATE_LIMIT_WINDOW = timedelta(hours=1)
-_OVERCHARGE_CODE = "OVERCHARGE_CHIP"
-_STABILITY_CODE = "STABILITY_POTION"
-_DROP_RATE_OVERCHARGE = 0.05
-_DROP_RATE_STABILITY = 0.10
 
+# Model ActivityService (Handles activity logging and related logic)
 class ActivityService:
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
+    # Helper method to log an activity and handle all related updates (XP, materials, streaks)
     async def log_activity(
         self,
         player: PlayerProfile,
@@ -37,14 +34,10 @@ class ActivityService:
 
         attr = await self._get_attribute(request.attribute_code)
         player_attr = await self._get_player_attribute(player.id, attr.id)
-        overcharge_mult, overcharge_active = await self._get_overcharge(player.id)
-        xp_bonus_pct = await self._get_xp_bonus(player.id, attr.id)
+        relic_level = await self._get_relic_level(player.id, attr.code, player.prestige_count)
 
-        xp_earned = RewardService.calculate_xp(xp_bonus_pct, overcharge_mult)
-        material_earned = RewardService.calculate_materials(
-            player.global_material_bonus,
-            player_attr.material_bonus,
-        )
+        xp_earned = RewardService.calculate_xp(relic_level, player.prestige_count)
+        material_earned = RewardService.calculate_materials(relic_level, player.prestige_count)
 
         today = date.today()
 
@@ -55,7 +48,7 @@ class ActivityService:
             description=request.description,
             xp_earned=xp_earned,
             material_earned=material_earned,
-            overcharge_active=overcharge_active,
+            overcharge_active=False,
             activity_date=today,
         )
         self._db.add(log_entry)
@@ -68,16 +61,13 @@ class ActivityService:
 
         # Update inventory with materials earned
         new_balance = await self._update_inventory(player.id, attr.id, material_earned)
-
+        
         # Update streak and check for breaks/shields
-        streak_broken, shield_used, new_streak = await self._update_streak(player, today)
-
-        # Attempt consumable drop
-        dropped = await self._try_drop_consumable(player.id)
+        streak_broken, _, new_streak = await self._update_streak(player, today)
 
         await self._db.commit()
 
-        #  # Construct response with all relevant info for frontend display
+        # Construct response with all relevant info for frontend display
         return ActivityLogResponse(
             activity_id=log_entry.id,
             attribute_code=attr.code,
@@ -90,10 +80,7 @@ class ActivityService:
             level_up=LevelUpInfo(occurred=leveled_up, new_level=new_level),
             streak_current=new_streak,
             streak_broken=streak_broken,
-            streak_shield_used=shield_used,
             material_balance=new_balance,
-            overcharge_was_active=overcharge_active,
-            dropped_consumable=dropped,
         )
 
     # Helper (Rate Limiting)
@@ -127,40 +114,19 @@ class ActivityService:
         )
         return result.scalar_one()
 
-    # Helper (Overcharge Logic)
-    async def _get_overcharge(self, player_id: uuid.UUID) -> tuple:
-        from decimal import Decimal
-        now = datetime.now(timezone.utc)
-        consumable = await self._db.scalar(
-            select(ConsumableType).where(ConsumableType.code == _OVERCHARGE_CODE)
-        )
-        if not consumable:
-            return Decimal("1.0"), False
-        from app.models.activity import PlayerActiveEffect
-        active = await self._db.scalar(
-            select(PlayerActiveEffect).where(
-                PlayerActiveEffect.player_id == player_id,
-                PlayerActiveEffect.consumable_type_id == consumable.id,
-                PlayerActiveEffect.expires_at > now,
-            )
-        )
-        if active:
-            return active.multiplier, True
-        return Decimal("1.0"), False
-
-    # Helper (XP Bonus Calculation)
-    async def _get_xp_bonus(self, player_id: uuid.UUID, attribute_id: int):
-        from decimal import Decimal
+    # Helper (Data Access - Relic Level)
+    async def _get_relic_level(
+        self, player_id: uuid.UUID, attr_code: str, prestige_count: int
+    ) -> int:
+        if attr_code == "L":
+            return prestige_count
         result = await self._db.scalar(
-            select(PlayerBuff.total_bonus)
-            .join(BuffType, BuffType.id == PlayerBuff.buff_type_id)
-            .where(
-                PlayerBuff.player_id == player_id,
-                BuffType.target_type == "XP",
-                BuffType.attribute_id == attribute_id,
+            select(Relic.level).where(
+                Relic.player_id == player_id,
+                Relic.attribute_code == attr_code,
             )
         )
-        return result or Decimal("0.00")
+        return result or 0
 
     # Helper (Apply XP & Handle Level-Ups)
     async def _update_attribute_xp(
@@ -205,63 +171,7 @@ class ActivityService:
         )
         if update.already_logged_today:
             return False, False, profile.streak_current
-        shield_used = False
-        if update.was_broken and StreakService.can_shield_protect(update.missed_days):
-            shield_used = await self._try_consume_shield(player.id)
-        if shield_used:
-            final = StreakService.apply_shield(profile.streak_current, profile.streak_max)
-        else:
-            final = update
-        profile.streak_current = final.new_streak
-        profile.streak_max = final.new_max
+        profile.streak_current = update.new_streak
+        profile.streak_max = update.new_max
         profile.streak_last_date = today
-        return update.was_broken and not shield_used, shield_used, final.new_streak
-
-    # Helper (Consume Shield if Available)
-    async def _try_consume_shield(self, player_id: uuid.UUID) -> bool:
-        consumable_type = await self._db.scalar(
-            select(ConsumableType).where(ConsumableType.code == "STABILITY_POTION")
-        )
-        if not consumable_type:
-            return False
-        result = await self._db.execute(
-            select(PlayerConsumable)
-            .where(
-                PlayerConsumable.player_id == player_id,
-                PlayerConsumable.consumable_type_id == consumable_type.id,
-            )
-            .with_for_update()
-        )
-        potion_slot = result.scalar_one_or_none()
-        if not potion_slot or potion_slot.quantity < 1:
-            return False
-        potion_slot.quantity -= 1
-        return True
-
-    # Helper Attempt Consumable Drop After Activity
-    async def _try_drop_consumable(self, player_id: uuid.UUID) -> str | None:
-        roll = random.random()
-        if roll < _DROP_RATE_OVERCHARGE:
-            code = _OVERCHARGE_CODE
-        elif roll < _DROP_RATE_OVERCHARGE + _DROP_RATE_STABILITY:
-            code = _STABILITY_CODE
-        else:
-            return None
-        ct = await self._db.scalar(
-            select(ConsumableType).where(ConsumableType.code == code)
-        )
-        if not ct:
-            return None
-        result = await self._db.execute(
-            select(PlayerConsumable)
-            .where(
-                PlayerConsumable.player_id == player_id,
-                PlayerConsumable.consumable_type_id == ct.id,
-            )
-            .with_for_update()
-        )
-        slot = result.scalar_one_or_none()
-        if not slot:
-            return None
-        slot.quantity += 1
-        return ct.name
+        return update.was_broken, False, update.new_streak

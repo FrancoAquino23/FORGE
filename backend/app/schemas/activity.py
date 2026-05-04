@@ -37,7 +37,4 @@ class ActivityLogResponse(BaseModel):
     level_up: LevelUpInfo
     streak_current: int
     streak_broken: bool
-    streak_shield_used: bool
     material_balance: int
-    overcharge_was_active: bool
-    dropped_consumable: str | None = None
