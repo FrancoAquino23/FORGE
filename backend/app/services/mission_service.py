@@ -20,6 +20,7 @@ from app.schemas.mission import (
     MissionClaimResponse,
     MissionListResponse,
     MissionProgress,
+    UpdateMissionRequest,
 )
 from app.services.reward_service import RewardService
 
@@ -63,6 +64,8 @@ class MissionService:
     async def get_active_with_progress(
         self, player_id: uuid.UUID, today: date
     ) -> MissionListResponse:
+        await self._reset_completed_favorite_dailies(player_id)
+
         pending = await self._load_pending_missions(player_id)
         active = await self._load_active_missions(player_id)
 
@@ -90,12 +93,13 @@ class MissionService:
         rewards = _CATEGORY_REWARDS.get(request.category, _CATEGORY_REWARDS["DAILY_GRIND"])
         label = _CATEGORY_LABELS.get(request.category, request.category)
 
-        description = request.description.strip() or f"Misión despachada por el jugador — {label} de {attr.name}."
+        objective = request.description.strip() or f"Misión despachada por el jugador — {label} de {attr.name}."
 
         mission = Mission(
             player_id=player_id,
             title=f"{label}: {attr.name}",
-            objective_description=description,
+            objective_description=objective,
+            description=request.detail.strip() if request.detail else None,
             target_attribute_id=attr.id,
             objective_type="MANUAL",
             objective_target=0,
@@ -104,6 +108,7 @@ class MissionService:
             status="PENDING",
             category=request.category,
             expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+            due_date=request.due_date,
         )
         self._db.add(mission)
         await self._db.flush()
@@ -188,6 +193,53 @@ class MissionService:
             leveled_up=leveled_up,
         )
 
+    # Helper to delete a PENDING or ACTIVE mission belonging to the player
+    async def delete(self, player_id: uuid.UUID, mission_id: uuid.UUID) -> None:
+        mission = await self._db.scalar(
+            select(Mission).where(Mission.id == mission_id)
+        )
+        if not mission:
+            raise NotFoundError("Mission")
+        if mission.player_id != player_id:
+            raise ForbiddenError("Mission does not belong to this player")
+        if mission.status not in ("ACTIVE", "PENDING"):
+            raise ConflictError(f"Cannot delete a mission with status '{mission.status}'")
+        await self._db.delete(mission)
+        await self._db.commit()
+
+    # Helper to update editable fields (objective, detail description, due_date) of a mission
+    async def update(
+        self, player_id: uuid.UUID, mission_id: uuid.UUID, request: UpdateMissionRequest
+    ) -> None:
+        mission = await self._db.scalar(
+            select(Mission).where(Mission.id == mission_id)
+        )
+        if not mission:
+            raise NotFoundError("Mission")
+        if mission.player_id != player_id:
+            raise ForbiddenError("Mission does not belong to this player")
+        if mission.status not in ("ACTIVE", "PENDING"):
+            raise ConflictError(f"Cannot edit a mission with status '{mission.status}'")
+        if request.objective_description:
+            mission.objective_description = request.objective_description.strip()
+        if request.detail is not None:
+            mission.description = request.detail.strip() or None
+        mission.due_date = request.due_date
+        await self._db.commit()
+
+    # Helper for toggling the is_favorite flag on a DAILY_GRIND mission; returns the new state
+    async def toggle_favorite(self, player_id: uuid.UUID, mission_id: uuid.UUID) -> bool:
+        mission = await self._db.scalar(
+            select(Mission).where(Mission.id == mission_id)
+        )
+        if not mission:
+            raise NotFoundError("Mission")
+        if mission.player_id != player_id:
+            raise ForbiddenError("Mission does not belong to this player")
+        mission.is_favorite = not mission.is_favorite
+        await self._db.commit()
+        return mission.is_favorite
+
     # Helper to load active missions for a player
     async def _load_active_missions(self, player_id: uuid.UUID) -> list[Mission]:
         now = datetime.now(timezone.utc)
@@ -264,6 +316,9 @@ class MissionService:
                 ai_generated=False,
                 status="PENDING",
                 category=mission.category,
+                due_date=mission.due_date,
+                description=mission.description,
+                is_favorite=mission.is_favorite,
             )
 
         progress = await self._get_progress_value(mission, player_id, today)
@@ -283,7 +338,32 @@ class MissionService:
             ai_generated=(mission.generated_by_model is not None),
             status=mission.status,
             category=mission.category,
+            due_date=mission.due_date,
+            description=mission.description,
+            is_favorite=mission.is_favorite,
         )
+
+    # Helper to reset completed favorite DAILY_GRIND missions from previous days back to active
+    async def _reset_completed_favorite_dailies(self, player_id: uuid.UUID) -> None:
+        now = datetime.now(timezone.utc)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        missions = (
+            await self._db.scalars(
+                select(Mission).where(
+                    Mission.player_id == player_id,
+                    Mission.is_favorite == True,  # noqa: E712
+                    Mission.category == "DAILY_GRIND",
+                    Mission.status == "COMPLETED",
+                    Mission.completed_at < today_start,
+                )
+            )
+        ).all()
+        for m in missions:
+            m.status = "PENDING" if m.objective_type == "MANUAL" else "ACTIVE"
+            m.completed_at = None
+            m.expires_at = today_start + timedelta(hours=24)
+        if missions:
+            await self._db.commit()
 
     # Helper to calculate current progress value for a mission based on its objective type
     async def _get_progress_value(

@@ -9,7 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_player
 from app.database import get_db
 from app.models.player import PlayerProfile
-from app.schemas.mission import DeployMissionRequest, DeployMissionResponse, MissionClaimResponse, MissionListResponse
+from app.schemas.mission import (
+    DeployMissionRequest,
+    DeployMissionResponse,
+    MissionClaimResponse,
+    MissionListResponse,
+    UpdateMissionRequest,
+)
 from app.services.gm_service import GmService
 from app.services.mission_service import MissionService
 
@@ -47,3 +53,36 @@ async def claim_mission(
 ) -> MissionClaimResponse:
     service = MissionService(session)
     return await service.claim(player.id, mission_id)
+
+# Endpoint (POST /missions/{mission_id}/favorite) — Toggle the is_favorite flag
+@router.post("/{mission_id}/favorite")
+async def toggle_favorite(
+    mission_id: uuid.UUID,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    service = MissionService(session)
+    new_state = await service.toggle_favorite(player.id, mission_id)
+    return {"is_favorite": new_state}
+
+# Endpoint (PATCH /missions/{mission_id}) — Edit objective, description, or due_date
+@router.patch("/{mission_id}")
+async def update_mission(
+    mission_id: uuid.UUID,
+    body: UpdateMissionRequest,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    service = MissionService(session)
+    await service.update(player.id, mission_id, body)
+    return {"ok": True}
+
+# Endpoint (DELETE /missions/{mission_id}) — Delete an ACTIVE or PENDING mission
+@router.delete("/{mission_id}", status_code=204)
+async def delete_mission(
+    mission_id: uuid.UUID,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> None:
+    service = MissionService(session)
+    await service.delete(player.id, mission_id)

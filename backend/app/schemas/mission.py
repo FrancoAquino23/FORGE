@@ -26,6 +26,9 @@ class MissionProgress(BaseModel):
     ai_generated: bool = False
     status: str = "ACTIVE"
     category: str | None = None
+    due_date: datetime | None = None
+    description: str | None = None
+    is_favorite: bool = False
 
 # Model MissionListResponse (Data - Response for listing missions)
 class MissionListResponse(BaseModel):
@@ -47,6 +50,8 @@ class DeployMissionRequest(BaseModel):
     attribute_code: str = Field(..., pattern="^[SPECIAL]$")
     category: MissionCategory
     description: str = Field(default="", max_length=500)
+    detail: str | None = Field(default=None, max_length=1000)
+    due_date: datetime | None = None
 
 # Model DeployMissionResponse (Response after dispatching a mission)
 class DeployMissionResponse(BaseModel):
@@ -56,3 +61,9 @@ class DeployMissionResponse(BaseModel):
     attribute_code: str
     reward_xp: int
     reward_material_qty: int
+
+# Model UpdateMissionRequest (Request to edit an existing mission)
+class UpdateMissionRequest(BaseModel):
+    objective_description: str | None = None
+    detail: str | None = None
+    due_date: datetime | None = None
