@@ -3,7 +3,7 @@
    ================================================================== */
 
 import { Injectable, signal } from '@angular/core';
-import { ActivityLogResponse, MissionClaimResponse } from './api.service';
+import { ActivityLogResponse, MissionClaimResponse, RelicUpgradeResponse } from './api.service';
 
 // Types (Toast - For Notifications)
 export type ToastType = 'xp' | 'levelup' | 'loot' | 'claim' | 'error';
@@ -17,7 +17,7 @@ export interface Toast {
   message: string;
 }
 
-// |
+// Service (ToastService - Manages Toast Notifications)
 @Injectable({ providedIn: 'root' })
 export class ToastService {
   readonly toasts = signal<Toast[]>([]);
@@ -52,39 +52,13 @@ export class ToastService {
         message: `+${res.xp_earned} XP · +${res.material_earned} ${res.material_name}`,
       });
     }
-
-    // Show Loot Drop Toast if a Consumable was Dropped
-    if (res.dropped_consumable) {
-      setTimeout(() => {
-        this.show(
-          {
-            type: 'loot',
-            icon: '💎',
-            title: '¡LOOT DROP!',
-            message: `${res.dropped_consumable} cayó en tu Saco de Forja`,
-          },
-          5500,
-        );
-      }, 700);
-    }
-
-    if (res.streak_broken && !res.streak_shield_used) {
+    if (res.streak_broken) {
       this.show(
         {
           type: 'error',
           icon: '💔',
           title: 'Racha Rota',
           message: 'Tu racha se ha reiniciado a 0',
-        },
-        5000,
-      );
-    } else if (res.streak_shield_used) {
-      this.show(
-        {
-          type: 'claim',
-          icon: '🧪',
-          title: 'Racha Protegida',
-          message: 'Tu Poción de Estabilidad absorbió el golpe',
         },
         5000,
       );
@@ -109,5 +83,15 @@ export class ToastService {
         });
       }, 600);
     }
+  }
+
+  // Method (Show Relic Upgrade, New Level, and Bonus Percentage Notifications)
+  fromRelicUpgrade(res: RelicUpgradeResponse): void {
+    this.show({
+      type: 'claim',
+      icon: '⚒',
+      title: 'Reliquia Mejorada',
+      message: `Nivel ${res.new_level} · +${res.new_bonus_pct}% bonus activo`,
+    });
   }
 }

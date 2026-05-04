@@ -31,13 +31,6 @@
             <h2 class="text-xl font-black text-forge-primary tracking-widest leading-none">
               {{ profile()!.username }}
             </h2>
-            @if (overchargeActive()) {
-              <span
-                class="badge bg-purple-900/40 border border-purple-500/50 text-purple-300 animate-overcharge-glow text-xs mt-1 inline-block"
-              >
-                ⚡ Overcharge
-              </span>
-            }
           </div>
         </div>
 
@@ -136,9 +129,9 @@
     </div>
 
     <!-- MISSION + INVENTORY -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="flex flex-col gap-6">
       <div class="forge-card p-5">
-        <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-4">⚔ Quest Dispatch</h3>
+        <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-4">⚔ Mission Dispatch</h3>
         <div class="flex flex-col gap-3">
           <!-- ATTRIBUTE SELECTOR -->
           <div>
@@ -206,17 +199,11 @@
               class="forge-input w-full resize-none text-xs leading-relaxed"
               rows="3"
               maxlength="500"
-              placeholder="[ Define Quest Objective... ]"
+              placeholder="[ Define Mission Objective... ]"
               [(ngModel)]="logDesc"
             ></textarea>
           </div>
-          <!-- OVERCHARGE NOTIFICATION -->
-          @if (overchargeActive()) {
-            <p class="text-xs text-purple-400 border border-purple-500/30 rounded px-3 py-2 bg-purple-900/10">
-              ⚡ Overcharge activo — XP multiplicado al terminar
-            </p>
-          }
-          <!-- DEPLOY BUTTON -->
+
           <button
             class="forge-btn-primary mt-1 uppercase tracking-widest text-xs font-black"
             (click)="deployMission()"
@@ -225,13 +212,14 @@
             @if (deploying()) {
               Despachando...
             } @else {
-              ⚔ Deploy Quest
+              ⚔ Deploy Mission
             }
           </button>
         </div>
       </div>
 
-      <app-inventory (used)="onConsumableUsed($event)" />
+      <!-- RELIC WORKSHOP -->
+      <app-relic-workshop />
     </div>
   }
 </div>

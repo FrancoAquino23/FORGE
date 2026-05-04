@@ -98,36 +98,34 @@ export interface ActivityLogResponse {
   level_up: { occurred: boolean; new_level: number };
   streak_current: number;
   streak_broken: boolean;
-  streak_shield_used: boolean;
   material_balance: number;
-  overcharge_was_active: boolean;
-  dropped_consumable: string | null;
 }
 
-// Interface (Consumable Item - Data)
-export interface ConsumableItem {
-  consumable_code: string;
-  name: string;
-  description: string | null;
-  effect_type: string;
-  quantity: number;
-  is_active: boolean;
-  active_until: string | null;
+// Interface (Relic Info - Data)
+export interface RelicInfo {
+  attribute_code: string;
+  attribute_name: string;
+  level: number;
+  total_invested: number;
+  bonus_pct: number;
+  upgrade_cost: number | null;
+  can_upgrade: boolean;
+  material_balance: number;
+  is_luck: boolean;
 }
 
-// Interface (Inventory Response - Data)
-export interface InventoryResponse {
-  items: ConsumableItem[];
+// Interface (Relic List Response - Data)
+export interface RelicListResponse {
+  relics: RelicInfo[];
 }
 
-// Interface (Use Consumable Response - Data)
-export interface UseConsumableResponse {
-  consumable_code: string;
-  name: string;
-  effect_type: string;
-  quantity_remaining: number;
-  active_until: string | null;
-  message: string;
+// Interface (Relic Upgrade Response - Data)
+export interface RelicUpgradeResponse {
+  attribute_code: string;
+  new_level: number;
+  material_spent: number;
+  new_balance: number;
+  new_bonus_pct: number;
 }
 
 // Interface (Buff Type Info - Data)
@@ -204,16 +202,16 @@ export class ApiService {
     return this.http.post<MissionClaimResponse>(`${this.BASE}/missions/${missionId}/claim`, {});
   }
 
-  // Method (Get Inventory)
-  getInventory(): Observable<InventoryResponse> {
-    return this.http.get<InventoryResponse>(`${this.BASE}/consumables/inventory`);
+  // Method (Get Relics)
+  getRelics(): Observable<RelicListResponse> {
+    return this.http.get<RelicListResponse>(`${this.BASE}/relics`);
   }
 
-  // Method (Use Consumable)
-  useConsumable(consumable_code: string): Observable<UseConsumableResponse> {
-    return this.http.post<UseConsumableResponse>(`${this.BASE}/consumables/use`, {
-      consumable_code,
-    });
+  // Method (Upgrade Relic)
+  upgradeRelic(attribute_code: string): Observable<RelicUpgradeResponse> {
+    return this.http.post<RelicUpgradeResponse>(
+      `${this.BASE}/relics/${attribute_code}/upgrade`, {}
+    );
   }
 
   // Method (Get Prestige Status)

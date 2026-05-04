@@ -1,0 +1,101 @@
+<!-- ==================================================================
+     RELIC WORKSHOP COMPONENT TEMPLATE
+     ================================================================== -->
+
+<div class="forge-card p-5">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest">⚒ Taller de Reliquias</h3>
+    <button
+      class="text-forge-muted hover:text-forge-primary text-xs transition-colors cursor-pointer"
+      (click)="load()"
+      title="Actualizar reliquias"
+    >
+      ↺
+    </button>
+  </div>
+
+  @if (loading() && !relics().length) {
+    <p class="text-forge-muted text-xs animate-pulse">Cargando reliquias...</p>
+  } @else {
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+      @for (r of relics(); track r.attribute_code) {
+        <div
+          class="bg-forge-surface border rounded-sm p-3 flex flex-col gap-2.5 transition-colors font-mono"
+          [class]="borderClass(r.attribute_code)"
+        >
+          <!-- HEADER -->
+          <div class="flex items-center gap-1.5">
+            <lucide-icon
+              [img]="getIcon(r.attribute_code)"
+              [size]="13"
+              [class]="attrColor(r.attribute_code)"
+            ></lucide-icon>
+            <span class="text-[8px] font-black tracking-wider truncate" [class]="attrColor(r.attribute_code)">
+              {{ relicName(r.attribute_code) }}
+            </span>
+          </div>
+
+          <!-- LEVEL BADGE -->
+          <div class="flex items-center justify-between">
+            <span class="text-[9px] text-forge-muted uppercase tracking-widest">Nivel</span>
+            <span class="text-sm font-black leading-none" [class]="attrColor(r.attribute_code)">
+              {{ formatLevel(r.level) }}
+            </span>
+          </div>
+
+          <!-- LEVEL BAR -->
+          <div class="progress-bar">
+            <div
+              class="progress-fill"
+              [style.background]="barColor(r.attribute_code)"
+              [style.width.%]="levelPct(r)"
+            ></div>
+          </div>
+
+          <!-- BONUS -->
+          <div class="text-center py-0.5">
+            <span class="font-black text-base leading-none" [class]="attrColor(r.attribute_code)">
+              +{{ r.bonus_pct }}%
+            </span>
+            <p class="text-[9px] text-forge-muted uppercase tracking-wider mt-0.5">Bonus Activo</p>
+          </div>
+
+          <!-- MATERIAL STOCK -->
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="text-forge-muted">Stock</span>
+            <span class="font-bold" [class]="r.can_upgrade ? attrColor(r.attribute_code) : 'text-forge-muted'">
+              {{ r.material_balance }}
+            </span>
+          </div>
+
+          <!-- UPGRADE BUTTON -->
+          @if (r.is_luck) {
+            <div class="text-[9px] text-forge-muted text-center py-1 border border-forge-border/30 rounded-sm">
+              Via Prestige
+            </div>
+          } @else if (r.level >= 10) {
+            <div
+              class="text-[9px] font-black text-center py-1 border rounded-sm"
+              [class]="attrColor(r.attribute_code) + ' border-current/30'"
+            >
+              ◆ MAX
+            </div>
+          } @else {
+            <button
+              class="forge-btn-primary text-[9px] uppercase tracking-widest font-black w-full py-1.5"
+              [disabled]="!r.can_upgrade || upgrading() === r.attribute_code"
+              (click)="upgrade(r)"
+            >
+              @if (upgrading() === r.attribute_code) {
+                Forjando...
+              } @else {
+                FORJAR MEJORA
+                <span class="block text-[8px] opacity-70 font-normal mt-0.5">{{ r.upgrade_cost }} mat</span>
+              }
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

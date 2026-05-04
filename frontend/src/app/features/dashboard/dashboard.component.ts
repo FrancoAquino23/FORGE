@@ -17,7 +17,7 @@ import {
 } from 'lucide-angular';
 import { ApiService, AttributeProfile, PlayerProfile } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
-import { InventoryComponent, ConsumableUsedEvent } from '../inventory/inventory.component';
+import { RelicWorkshopComponent } from '../relic-workshop/relic-workshop.component';
 
 // Color mappings for attributes
 const ATTR_COLORS: Record<string, string> = {
@@ -78,7 +78,7 @@ const PRESTIGE_THRESHOLD = 10;
 // Main dashboard component that displays player profile, attributes, and inventory
 @Component({
   selector: 'app-dashboard',
-  imports: [InventoryComponent, LucideAngularModule, FormsModule],
+  imports: [RelicWorkshopComponent, LucideAngularModule, FormsModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -89,7 +89,6 @@ export class DashboardComponent implements OnInit {
   profile = signal<PlayerProfile | null>(null);
   loadError = signal('');
   deploying = signal(false);
-  overchargeActive = signal(false);
   xpFlash = signal('');
 
   logAttr = '';
@@ -160,20 +159,6 @@ export class DashboardComponent implements OnInit {
           this.deploying.set(false);
         },
       });
-  }
-
-  // Function to handle effects when a consumable item is used
-  onConsumableUsed(event: ConsumableUsedEvent): void {
-    if (event.effectType === 'streak_shield') {
-      this.loadProfile();
-    }
-    if (event.effectType === 'overcharge') {
-      this.overchargeActive.set(true);
-      if (event.activeUntil) {
-        const msLeft = new Date(event.activeUntil).getTime() - Date.now();
-        setTimeout(() => this.overchargeActive.set(false), msLeft);
-      }
-    }
   }
 
   // Function to determine the CSS class for each segment in the attribute bars
