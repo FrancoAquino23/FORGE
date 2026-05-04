@@ -1,1 +1,13 @@
-// Missions view — all styling via global Tailwind utilities in missions.component.html
+/* ==================================================================
+   MISSIONS STYLES
+   ================================================================== */
+
+.mission-description {
+  overflow: hidden;
+  max-height: 20px;
+  transition: max-height 0.3s ease-out;
+
+  &.expanded {
+    max-height: 300px;
+  }
+}

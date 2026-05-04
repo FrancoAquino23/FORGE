@@ -43,6 +43,9 @@ export interface MissionProgress {
   ai_generated: boolean;
   status: string;
   category: string | null;
+  due_date: string | null;
+  description: string | null;
+  is_favorite: boolean;
 }
 
 // Interface (Mission List Response - Data)
@@ -67,6 +70,8 @@ export interface DeployMissionRequest {
   attribute_code: string;
   category: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND';
   description?: string;
+  detail?: string;
+  due_date?: string;
 }
 
 // Interface (Deploy Mission Response - Data)
@@ -77,6 +82,13 @@ export interface DeployMissionResponse {
   attribute_code: string;
   reward_xp: number;
   reward_material_qty: number;
+}
+
+// Interface (Update Mission Request - Data)
+export interface UpdateMissionRequest {
+  objective_description?: string;
+  detail?: string;
+  due_date?: string | null;
 }
 
 // Interface (Activity Log Request - Data)
@@ -200,6 +212,23 @@ export class ApiService {
   // Method (Claim Mission)
   claimMission(missionId: string): Observable<MissionClaimResponse> {
     return this.http.post<MissionClaimResponse>(`${this.BASE}/missions/${missionId}/claim`, {});
+  }
+
+  // Method (Delete Mission)
+  deleteMission(missionId: string): Observable<void> {
+    return this.http.delete<void>(`${this.BASE}/missions/${missionId}`);
+  }
+
+  // Method (Update Mission)
+  updateMission(missionId: string, payload: UpdateMissionRequest): Observable<{ ok: boolean }> {
+    return this.http.patch<{ ok: boolean }>(`${this.BASE}/missions/${missionId}`, payload);
+  }
+
+  // Method (Toggle Favorite)
+  toggleFavorite(missionId: string): Observable<{ is_favorite: boolean }> {
+    return this.http.post<{ is_favorite: boolean }>(
+      `${this.BASE}/missions/${missionId}/favorite`, {}
+    );
   }
 
   // Method (Get Relics)

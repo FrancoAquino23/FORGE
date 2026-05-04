@@ -2,15 +2,128 @@
    MISSIONS COMPONENT LOGIC
    ================================================================== */
 
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { ApiService, MissionListResponse, MissionProgress } from '../../core/api.service';
+import {
+  Component,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import {
+  LucideAngularModule,
+  LucideIconData,
+  Hammer,
+  Eye,
+  Shield,
+  Gem,
+  Cpu,
+  Zap,
+  Sparkles,
+  Star,
+  EllipsisVertical,
+} from 'lucide-angular';
+import {
+  ApiService,
+  MissionListResponse,
+  MissionProgress,
+  UpdateMissionRequest,
+} from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
 
-// Main missions component that displays active missions and allows claiming rewards
+export type MissionTab = 'DAILY_GRIND' | 'MAIN_QUEST' | 'SIDE_QUEST' | 'IA_FORGE';
+
+const ATTR_COLORS: Record<string, string> = {
+  S: 'text-red-400',
+  P: 'text-blue-400',
+  E: 'text-green-400',
+  C: 'text-yellow-300',
+  I: 'text-purple-400',
+  A: 'text-cyan-400',
+  L: 'text-orange-400',
+};
+
+const ATTR_BORDER: Record<string, string> = {
+  S: 'border-red-500/40',
+  P: 'border-blue-500/40',
+  E: 'border-green-500/40',
+  C: 'border-yellow-500/40',
+  I: 'border-purple-500/40',
+  A: 'border-cyan-500/40',
+  L: 'border-orange-500/40',
+};
+
+const ATTR_FAV_BORDER: Record<string, string> = {
+  S: 'border-red-400/60',
+  P: 'border-blue-400/60',
+  E: 'border-green-400/60',
+  C: 'border-yellow-400/60',
+  I: 'border-purple-400/60',
+  A: 'border-cyan-400/60',
+  L: 'border-orange-400/60',
+};
+
+const ATTR_FAV_BG: Record<string, string> = {
+  S: 'bg-red-950/40',
+  P: 'bg-blue-950/40',
+  E: 'bg-green-950/40',
+  C: 'bg-yellow-950/40',
+  I: 'bg-purple-950/40',
+  A: 'bg-cyan-950/40',
+  L: 'bg-orange-950/40',
+};
+
+const ATTR_GLOW: Record<string, string> = {
+  S: 'hover:shadow-[0_0_20px_rgba(248,113,113,0.18)]',
+  P: 'hover:shadow-[0_0_20px_rgba(96,165,250,0.18)]',
+  E: 'hover:shadow-[0_0_20px_rgba(74,222,128,0.18)]',
+  C: 'hover:shadow-[0_0_20px_rgba(253,224,71,0.18)]',
+  I: 'hover:shadow-[0_0_20px_rgba(192,132,252,0.18)]',
+  A: 'hover:shadow-[0_0_20px_rgba(34,211,238,0.18)]',
+  L: 'hover:shadow-[0_0_20px_rgba(251,146,60,0.18)]',
+};
+
+const ATTR_BAR: Record<string, string> = {
+  S: '#f87171',
+  P: '#60a5fa',
+  E: '#4ade80',
+  C: '#fde047',
+  I: '#c084fc',
+  A: '#22d3ee',
+  L: '#fb923c',
+};
+
+const RELIC_NAMES: Record<string, string> = {
+  S: 'Yunque de Poder',
+  P: 'Faro de Claridad',
+  E: 'Escudo de Eternidad',
+  C: 'Cáliz de Armonía',
+  I: 'Orbe de Lógica',
+  A: 'Elixir de Velocidad',
+  L: 'Tótem de Gracia',
+};
+
+const ATTR_ICONS: Record<string, LucideIconData> = {
+  S: Hammer,
+  P: Eye,
+  E: Shield,
+  C: Gem,
+  I: Cpu,
+  A: Zap,
+  L: Sparkles,
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  MAIN_QUEST: 'Main Quest',
+  SIDE_QUEST: 'Side Quest',
+  DAILY_GRIND: 'Daily Grind',
+};
+
 @Component({
   selector: 'app-missions',
-  imports: [RouterLink],
+  imports: [LucideAngularModule, FormsModule],
   templateUrl: './missions.component.html',
   styleUrl: './missions.component.scss',
 })
@@ -21,17 +134,73 @@ export class MissionsComponent implements OnInit, OnDestroy {
   data = signal<MissionListResponse | null>(null);
   loadError = signal('');
   claiming = signal('');
+  activeTab = signal<MissionTab>('MAIN_QUEST');
+  attrFilter = signal('');
+
+  private expandedSet = signal(new Set<string>());
+  hoverCardId = signal('');
+  menuOpenId = signal('');
+  editingId = signal('');
+  savingEdit = signal(false);
+  editForm = { objective: '', detail: '', due_date: '', category: '' };
+
+  // Lucide icon references for use in template
+  readonly starIcon: LucideIconData = Star;
+  readonly moreVerticalIcon: LucideIconData = EllipsisVertical;
+
+  readonly TABS: { value: MissionTab; label: string }[] = [
+    { value: 'MAIN_QUEST', label: 'Main Quests' },
+    { value: 'SIDE_QUEST', label: 'Side Quests' },
+    { value: 'DAILY_GRIND', label: 'Daily Grinds' },
+    { value: 'IA_FORGE', label: 'IA Forge' },
+  ];
+
+  readonly ATTRS = ['S', 'P', 'E', 'C', 'I', 'A', 'L'];
 
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Derived list of missions filtered by active tab and attribute selector
+  readonly filteredMissions = computed<MissionProgress[]>(() => {
+    const all = this.data()?.missions ?? [];
+    const tab = this.activeTab();
+    const attr = this.attrFilter();
+
+    let subset: MissionProgress[];
+    switch (tab) {
+      case 'MAIN_QUEST':
+        subset = all.filter((m) => m.status === 'PENDING' && m.category === 'MAIN_QUEST');
+        break;
+      case 'SIDE_QUEST':
+        subset = all.filter((m) => m.status === 'PENDING' && m.category === 'SIDE_QUEST');
+        break;
+      case 'IA_FORGE':
+        subset = all.filter((m) => m.ai_generated);
+        break;
+      default:
+        subset = all.filter(
+          (m) =>
+            !m.ai_generated &&
+            ((m.status === 'PENDING' && m.category === 'DAILY_GRIND') || m.status === 'ACTIVE'),
+        );
+    }
+
+    return attr ? subset.filter((m) => m.attribute_code === attr) : subset;
+  });
 
   // Load component
   ngOnInit(): void {
     this.loadMissions();
   }
 
-  // Cleanup on destroy
+  // Destroy component
   ngOnDestroy(): void {
     this.clearPoll();
+  }
+
+  // Close open overflow menu when clicking anywhere outside it
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.menuOpenId.set('');
   }
 
   // Function to load active missions from API with polling if AI generation is not ready
@@ -71,7 +240,152 @@ export class MissionsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Function to determine if a mission is pending (ready to claim but not yet claimed)
+  // Function to delete a mission and reload the board
+  deleteMission(m: MissionProgress): void {
+    this.menuOpenId.set('');
+    this.api.deleteMission(m.mission_id).subscribe({
+      next: () => {
+        this.toast.show({
+          type: 'claim',
+          icon: '🗑',
+          title: 'Misión eliminada',
+          message: m.objective_description,
+        });
+        this.loadMissions();
+      },
+      error: (err) => {
+        this.toast.show({
+          type: 'error',
+          icon: '❌',
+          title: 'Error',
+          message: err.error?.detail ?? 'No se pudo eliminar la misión',
+        });
+      },
+    });
+  }
+
+  // Function to enter edit mode for a mission card
+  startEdit(m: MissionProgress): void {
+    this.menuOpenId.set('');
+    this.editingId.set(m.mission_id);
+    this.editForm = {
+      objective: m.objective_description,
+      detail: m.description ?? '',
+      due_date: m.due_date ? m.due_date.substring(0, 10) : '',
+      category: m.category ?? '',
+    };
+  }
+
+  // Function to cancel inline edit without saving
+  cancelEdit(): void {
+    this.editingId.set('');
+  }
+
+  // Function to save inline edit changes to the API and reload
+  saveEdit(): void {
+    if (this.savingEdit()) return;
+    this.savingEdit.set(true);
+    const payload: UpdateMissionRequest = {
+      objective_description: this.editForm.objective || undefined,
+      detail: this.editForm.detail,
+      due_date: this.editForm.due_date || null,
+    };
+    this.api.updateMission(this.editingId(), payload).subscribe({
+      next: () => {
+        this.savingEdit.set(false);
+        this.editingId.set('');
+        this.loadMissions();
+      },
+      error: (err) => {
+        this.toast.show({
+          type: 'error',
+          icon: '❌',
+          title: 'Error',
+          message: err.error?.detail ?? 'No se pudo guardar la misión',
+        });
+        this.savingEdit.set(false);
+      },
+    });
+  }
+
+  // Function to toggle is_favorite on a daily mission; optimistically updates local data
+  toggleFavorite(m: MissionProgress): void {
+    this.api.toggleFavorite(m.mission_id).subscribe({
+      next: (res) => {
+        const current = this.data();
+        if (current) {
+          this.data.set({
+            ...current,
+            missions: current.missions.map((mission) =>
+              mission.mission_id === m.mission_id
+                ? { ...mission, is_favorite: res.is_favorite }
+                : mission,
+            ),
+          });
+        }
+      },
+      error: () => {
+        this.toast.show({
+          type: 'error',
+          icon: '❌',
+          title: 'Error',
+          message: 'No se pudo actualizar favorito',
+        });
+      },
+    });
+  }
+
+  // Function to toggle description expand/collapse for a card
+  toggleExpand(id: string): void {
+    const s = new Set(this.expandedSet());
+    s.has(id) ? s.delete(id) : s.add(id);
+    this.expandedSet.set(s);
+  }
+
+  // Function to return true when the description of a card is expanded
+  isExpanded(id: string): boolean {
+    return this.expandedSet().has(id);
+  }
+
+  // Function to toggle the overflow menu for a card; stops event bubbling to prevent immediate close
+  toggleMenu(id: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.menuOpenId.set(this.menuOpenId() === id ? '' : id);
+  }
+
+  // Function to keep the overflow menu open when the user interacts with it
+  stopPropagation(event: MouseEvent): void {
+    event.stopPropagation();
+  }
+
+  // Function to switch the active tab and resets the attribute filter
+  selectTab(tab: MissionTab): void {
+    this.activeTab.set(tab);
+    this.attrFilter.set('');
+    this.menuOpenId.set('');
+    this.editingId.set('');
+  }
+
+  // Function to return the number of missions visible in a given tab
+  tabCount(tab: MissionTab): number {
+    const all = this.data()?.missions ?? [];
+    switch (tab) {
+      case 'MAIN_QUEST':
+        return all.filter((m) => m.status === 'PENDING' && m.category === 'MAIN_QUEST').length;
+      case 'SIDE_QUEST':
+        return all.filter((m) => m.status === 'PENDING' && m.category === 'SIDE_QUEST').length;
+      case 'IA_FORGE':
+        return all.filter((m) => m.ai_generated).length;
+      default:
+        return all.filter(
+          (m) =>
+            (m.status === 'PENDING' && m.category === 'DAILY_GRIND') ||
+            (m.status === 'ACTIVE' && !m.ai_generated),
+        ).length;
+    }
+  }
+
+  // Function to return true when the mission is player-dispatched (PENDING, awaiting manual completion)
   isPending(m: MissionProgress): boolean {
     return m.status === 'PENDING';
   }
@@ -94,30 +408,68 @@ export class MissionsComponent implements OnInit, OnDestroy {
     return `${h}h ${m}m`;
   }
 
-  // Function to get a user-friendly label for a mission category
-  categoryLabel(cat: string | null): string {
-    const labels: Record<string, string> = {
-      MAIN_QUEST: 'Main Quest',
-      SIDE_QUEST: 'Side Quest',
-      DAILY_GRIND: 'Daily Grind',
-    };
-    return cat ? (labels[cat] ?? cat) : '';
+  // Function to map an attribute code to its relic display name
+  relicName(code: string): string {
+    return RELIC_NAMES[code] ?? code;
   }
 
-  attrIcon(code: string): string {
-    const icons: Record<string, string> = {
-      S: '💪',
-      P: '👁',
-      E: '🛡',
-      C: '💬',
-      I: '🧠',
-      A: '⚡',
-      L: '🍀',
-    };
-    return icons[code] ?? '⚔';
+  // Function to map an attribute code to its color class
+  attrColor(code: string): string {
+    return ATTR_COLORS[code] ?? 'text-forge-primary';
   }
 
-  // Function to get color class for an attribute based on its code
+  // Function to map an attribute code to its hex color
+  attrBarColor(code: string): string {
+    return ATTR_BAR[code] ?? '#f59e0b';
+  }
+
+  // Function to map an attribute code to its icon
+  getIcon(code: string): LucideIconData {
+    return ATTR_ICONS[code] ?? Sparkles;
+  }
+
+  // Function for building the border and hover-glow CSS for a mission card
+  cardClass(m: MissionProgress): string {
+    const glow = ATTR_GLOW[m.attribute_code] ?? '';
+    if (m.is_favorite) {
+      const border = ATTR_FAV_BORDER[m.attribute_code] ?? 'border-forge-border';
+      const bg = ATTR_FAV_BG[m.attribute_code] ?? '';
+      return `${border} ${glow} ${bg}`;
+    }
+    return `${ATTR_BORDER[m.attribute_code] ?? 'border-forge-border'} ${glow}`;
+  }
+
+  // Function to build the active/inactive filter toggle button
+  filterBtnClass(code: string): string {
+    return this.attrFilter() === code
+      ? `${this.attrColor(code)} border-current bg-forge-surface`
+      : 'text-forge-muted border-forge-border/40 hover:text-forge-text hover:border-forge-border';
+  }
+
+  // Function to format a due_date ISO string as "Month Day" (e.g. "May 6")
+  formatDueDate(dueDate: string | null): string {
+    if (!dueDate) return '';
+    return new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  // Function to return the time remaining until local midnight (end of today's activity window)
+  dailyTimeLeft(): string {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const diff = midnight.getTime() - now.getTime();
+    const h = Math.floor(diff / 3_600_000);
+    const m = Math.floor((diff % 3_600_000) / 60_000);
+    return `${h}h ${m}m`;
+  }
+
+  // Function to map a mission's category code and AI flag to a human-readable tab label
+  categoryLabel(category: string | null, aiGenerated = false): string {
+    if (aiGenerated) return 'IA Forge';
+    return category ? (CATEGORY_LABELS[category] ?? category) : '—';
+  }
+
+  // Function to cancel the active polling timer if one is running
   private clearPoll(): void {
     if (this.pollTimer !== null) {
       clearTimeout(this.pollTimer);

@@ -94,7 +94,11 @@ export class DashboardComponent implements OnInit {
   logAttr = '';
   logCategory: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND' = 'DAILY_GRIND';
   logDesc = '';
+  logDetail = '';
+  logDueDate = '';
   attrDropdownOpen = false;
+
+  readonly todayStr = new Date().toISOString().split('T')[0];
 
   readonly SEGMENTS = Array.from({ length: PRESTIGE_THRESHOLD }, (_, i) => i + 1);
 
@@ -133,6 +137,8 @@ export class DashboardComponent implements OnInit {
         attribute_code: this.logAttr,
         category: this.logCategory,
         description: this.logDesc.trim() || undefined,
+        detail: this.logDetail.trim() || undefined,
+        due_date: this.logDueDate || undefined,
       })
       .subscribe({
         next: (res) => {
@@ -147,6 +153,8 @@ export class DashboardComponent implements OnInit {
           setTimeout(() => this.xpFlash.set(''), 700);
           this.logAttr = '';
           this.logDesc = '';
+          this.logDetail = '';
+          this.logDueDate = '';
           this.logCategory = 'DAILY_GRIND';
         },
         error: (err) => {

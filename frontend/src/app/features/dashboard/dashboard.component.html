@@ -192,22 +192,47 @@
             </div>
           </div>
 
-          <!-- MISSION DESCRIPTION -->
+          <!-- DUE DATE -->
+          @if (logCategory !== 'DAILY_GRIND') {
+            <div>
+              <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Due Date</label>
+              <input type="date" class="forge-input w-full text-xs" [(ngModel)]="logDueDate" [min]="todayStr" />
+            </div>
+          }
+
+          <!-- MISSION OBJECTIVE -->
           <div>
             <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Objetivo</label>
             <textarea
               class="forge-input w-full resize-none text-xs leading-relaxed"
-              rows="3"
+              rows="2"
               maxlength="500"
               placeholder="[ Define Mission Objective... ]"
               [(ngModel)]="logDesc"
             ></textarea>
           </div>
 
+          <!-- MISSION DESCRIPTION -->
+          <div>
+            <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">
+              Descripción
+              <span class="normal-case text-forge-muted/50 font-normal">(opcional)</span>
+            </label>
+            <textarea
+              class="forge-input w-full resize-none text-xs leading-relaxed"
+              rows="3"
+              maxlength="1000"
+              placeholder="[ Detalles, contexto o notas de la misión... ]"
+              [(ngModel)]="logDetail"
+            ></textarea>
+          </div>
+
           <button
             class="forge-btn-primary mt-1 uppercase tracking-widest text-xs font-black"
             (click)="deployMission()"
-            [disabled]="deploying() || !logAttr"
+            [disabled]="
+              deploying() || !logAttr || ((logCategory === 'MAIN_QUEST' || logCategory === 'SIDE_QUEST') && !logDueDate)
+            "
           >
             @if (deploying()) {
               Despachando...
