@@ -35,6 +35,10 @@ class Mission(Base):
             "status IN ('ACTIVE', 'COMPLETED', 'EXPIRED', 'ABANDONED', 'PENDING')",
             name="valid_mission_status",
         ),
+        CheckConstraint(
+            "threat_level IN (0, 1, 2)",
+            name="valid_threat_level",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -70,6 +74,7 @@ class Mission(Base):
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"), default=False)
+    threat_level: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text("1"), default=1)
     target_attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]
     checkpoints: Mapped[list["Checkpoint"]] = relationship(
         "Checkpoint",

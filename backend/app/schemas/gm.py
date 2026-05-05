@@ -13,6 +13,7 @@ class AIMissionItem(BaseModel):
     objective_target: int
     reward_xp: int
     reward_material_qty: int
+    threat_level: str = "MAJOR"
 
 # Model for a batch of AI-generated missions
 class AIMissionBatch(BaseModel):

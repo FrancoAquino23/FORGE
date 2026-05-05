@@ -23,6 +23,9 @@ _STAMINA_MAX = 100
 _STAMINA_REGEN_PER_HOUR = 5
 _MOCK_MODEL_TAG = "mock-gm-v1"
 
+# Threat level
+_THREAT_VALUE: dict[str, int] = {"MINOR": 0, "MAJOR": 1, "CRITICAL": 2}
+
 # Tool schema for forcing Claude to return structured mission data
 _MISSION_TOOL = {
     "name": "create_missions",
@@ -50,6 +53,11 @@ _MISSION_TOOL = {
                         "objective_target": {"type": "integer", "minimum": 1},
                         "reward_xp": {"type": "integer", "minimum": 10, "maximum": 500},
                         "reward_material_qty": {"type": "integer", "minimum": 5, "maximum": 200},
+                        "threat_level": {
+                            "type": "string",
+                            "enum": ["MINOR", "MAJOR", "CRITICAL"],
+                            "description": "Nivel de prioridad: MINOR (rutinaria), MAJOR (importante), CRITICAL (urgente/alto impacto)",
+                        },
                     },
                     "required": [
                         "title",
@@ -59,6 +67,7 @@ _MISSION_TOOL = {
                         "objective_target",
                         "reward_xp",
                         "reward_material_qty",
+                        "threat_level",
                     ],
                 },
             }
@@ -277,6 +286,7 @@ class GmService:
                 "base_target": 30,
                 "base_xp": 50,
                 "base_mat": 20,
+                "threat_level": "MINOR",
             },
             {
                 "title": "[MOCK] Maratón de {name}",
@@ -285,6 +295,7 @@ class GmService:
                 "base_target": 60,
                 "base_xp": 100,
                 "base_mat": 40,
+                "threat_level": "MAJOR",
             },
             {
                 "title": "[MOCK] Registro Diario: {name}",
@@ -293,6 +304,7 @@ class GmService:
                 "base_target": 2,
                 "base_xp": 75,
                 "base_mat": 30,
+                "threat_level": "CRITICAL",
             },
         ]
 
@@ -317,6 +329,7 @@ class GmService:
                     objective_target=target,
                     reward_xp=xp,
                     reward_material_qty=mat,
+                    threat_level=tpl["threat_level"],
                 )
             )
 
@@ -584,6 +597,7 @@ class GmService:
                     expires_at=expires_at,
                     generated_by_model=model_tag,
                     prompt_tokens_used=tokens_used,
+                    threat_level=_THREAT_VALUE.get(item.threat_level, 1),
                 )
             )
 

@@ -5,7 +5,7 @@
 import random
 import uuid
 from datetime import date, datetime, timedelta, timezone
-from sqlalchemy import func, select
+from sqlalchemy import func, nullslast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
@@ -48,6 +48,11 @@ _CATEGORY_LABELS: dict[str, str] = {
     "DAILY_GRIND": "Daily Grind",
 }
 
+# Threat level mappings between integer storage and string labels
+_THREAT_LABEL: dict[int, str] = {0: "MINOR", 1: "MAJOR", 2: "CRITICAL"}
+_THREAT_VALUE: dict[str, int] = {"MINOR": 0, "MAJOR": 1, "CRITICAL": 2}
+_TL_ORDER: dict[str, int] = {"CRITICAL": 2, "MAJOR": 1, "MINOR": 0}
+
 # Service for managing missions (fetching, generating, claiming)
 class MissionService:
     def __init__(self, session: AsyncSession) -> None:
@@ -81,8 +86,17 @@ class MissionService:
             [await self._build_progress(m, player_id, today) for m in pending]
             + [await self._build_progress(m, player_id, today) for m in active]
         )
+
+        far_future = datetime(9999, 12, 31, tzinfo=timezone.utc)
+        progress_list.sort(
+            key=lambda p: (
+                -_TL_ORDER.get(p.threat_level, 1),
+                p.due_date or far_future,
+            )
+        )
+
         return MissionListResponse(missions=progress_list, ai_ready=ai_ready)
-    
+
     # Helper to claim a completed mission and receive rewards
     async def deploy(
         self, player_id: uuid.UUID, request: DeployMissionRequest
@@ -112,6 +126,7 @@ class MissionService:
             category=request.category,
             expires_at=datetime.now(timezone.utc) + timedelta(days=30),
             due_date=request.due_date,
+            threat_level=_THREAT_VALUE.get(request.threat_level, 1),
         )
         self._db.add(mission)
         await self._db.flush()
@@ -138,6 +153,7 @@ class MissionService:
             attribute_code=attr.code,
             reward_xp=mission.reward_xp,
             reward_material_qty=mission.reward_material_qty,
+            threat_level=_THREAT_LABEL.get(mission.threat_level, "MAJOR"),
         )
 
     # Helper to claim a completed mission and receive rewards
@@ -248,6 +264,8 @@ class MissionService:
         if request.detail is not None:
             mission.description = request.detail.strip() or None
         mission.due_date = request.due_date
+        if request.threat_level is not None:
+            mission.threat_level = _THREAT_VALUE.get(request.threat_level, 1)
 
         if request.checkpoints is not None:
             existing_by_id = {cp.id: cp for cp in mission.checkpoints}
@@ -320,6 +338,7 @@ class MissionService:
                     selectinload(Mission.target_attribute),
                     selectinload(Mission.checkpoints),
                 )
+                .order_by(Mission.threat_level.desc(), nullslast(Mission.due_date.asc()))
             )
         ).all()
 
@@ -338,7 +357,7 @@ class MissionService:
                     selectinload(Mission.target_attribute),
                     selectinload(Mission.checkpoints),
                 )
-                .order_by(Mission.issued_at.desc())
+                .order_by(Mission.threat_level.desc(), nullslast(Mission.due_date.asc()))
             )
         ).all()
 
@@ -380,6 +399,8 @@ class MissionService:
             for cp in mission.checkpoints
         ]
 
+        threat = _THREAT_LABEL.get(mission.threat_level, "MAJOR")
+
         if mission.status == "PENDING":
             has_steps = len(checkpoints) > 0
             all_done = all(cp.is_completed for cp in checkpoints) if has_steps else True
@@ -403,6 +424,7 @@ class MissionService:
                 description=mission.description,
                 is_favorite=mission.is_favorite,
                 checkpoints=checkpoints,
+                threat_level=threat,
             )
 
         progress = await self._get_progress_value(mission, player_id, today)
@@ -426,6 +448,7 @@ class MissionService:
             description=mission.description,
             is_favorite=mission.is_favorite,
             checkpoints=checkpoints,
+            threat_level=threat,
         )
 
     # Helper to reset completed favorite DAILY_GRIND missions from previous days back to active

@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 MissionCategory = Literal["MAIN_QUEST", "SIDE_QUEST", "DAILY_GRIND"]
+ThreatLevel = Literal["MINOR", "MAJOR", "CRITICAL"]
 
 # Model CheckpointSchema (Data - A single sub-task step within a mission)
 class CheckpointSchema(BaseModel):
@@ -37,6 +38,7 @@ class MissionProgress(BaseModel):
     description: str | None = None
     is_favorite: bool = False
     checkpoints: list[CheckpointSchema] = []
+    threat_level: str = "MAJOR"
 
 # Model MissionListResponse (Data - Response for listing missions)
 class MissionListResponse(BaseModel):
@@ -61,6 +63,7 @@ class DeployMissionRequest(BaseModel):
     detail: str | None = Field(default=None, max_length=1000)
     due_date: datetime | None = None
     steps: list[str] = Field(default_factory=list)
+    threat_level: ThreatLevel = "MAJOR"
 
 # Model DeployMissionResponse (Response after dispatching a mission)
 class DeployMissionResponse(BaseModel):
@@ -70,6 +73,7 @@ class DeployMissionResponse(BaseModel):
     attribute_code: str
     reward_xp: int
     reward_material_qty: int
+    threat_level: str = "MAJOR"
 
 # Model CheckpointUpdateItem (Request a single checkpoint entry for update operations)
 class CheckpointUpdateItem(BaseModel):
@@ -83,6 +87,7 @@ class UpdateMissionRequest(BaseModel):
     detail: str | None = None
     due_date: datetime | None = None
     checkpoints: list[CheckpointUpdateItem] | None = None
+    threat_level: ThreatLevel | None = None
 
 # Model ToggleCheckpointResponse (Data - Response after toggling a checkpoint)
 class ToggleCheckpointResponse(BaseModel):
