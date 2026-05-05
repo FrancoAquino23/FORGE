@@ -11,16 +11,19 @@ from sqlalchemy.orm import selectinload
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models.activity import ActivityLog
 from app.models.catalog import Attribute
-from app.models.mission import Mission
+from app.models.mission import Checkpoint, Mission
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
 from app.models.relic import Relic
 from app.schemas.mission import (
+    CheckpointSchema,
     DeployMissionRequest,
     DeployMissionResponse,
     MissionClaimResponse,
     MissionListResponse,
     MissionProgress,
+    ToggleCheckpointResponse,
     UpdateMissionRequest,
+    CheckpointUpdateItem,
 )
 from app.services.reward_service import RewardService
 
@@ -112,6 +115,20 @@ class MissionService:
         )
         self._db.add(mission)
         await self._db.flush()
+
+        # Create checkpoints for MAIN_QUEST / SIDE_QUEST when steps are provided
+        if request.category != "DAILY_GRIND" and request.steps:
+            for idx, step_text in enumerate(
+                s.strip() for s in request.steps if s.strip()
+            ):
+                self._db.add(
+                    Checkpoint(
+                        mission_id=mission.id,
+                        description=step_text[:500],
+                        order_index=idx,
+                    )
+                )
+
         await self._db.commit()
 
         return DeployMissionResponse(
@@ -135,6 +152,10 @@ class MissionService:
                 raise ConflictError(
                     f"Mission not yet complete: {progress}/{mission.objective_target}"
                 )
+        elif mission.checkpoints:
+            incomplete = sum(1 for cp in mission.checkpoints if not cp.is_completed)
+            if incomplete:
+                raise ConflictError(f"Complete all checkpoints first ({incomplete} remaining)")
 
         now = datetime.now(timezone.utc)
         mission.status = "COMPLETED"
@@ -207,12 +228,14 @@ class MissionService:
         await self._db.delete(mission)
         await self._db.commit()
 
-    # Helper to update editable fields (objective, detail description, due_date) of a mission
+    # Helper to update editable fields (objective, detail, due_date, checkpoints) of a mission
     async def update(
         self, player_id: uuid.UUID, mission_id: uuid.UUID, request: UpdateMissionRequest
     ) -> None:
         mission = await self._db.scalar(
-            select(Mission).where(Mission.id == mission_id)
+            select(Mission)
+            .where(Mission.id == mission_id)
+            .options(selectinload(Mission.checkpoints))
         )
         if not mission:
             raise NotFoundError("Mission")
@@ -225,7 +248,49 @@ class MissionService:
         if request.detail is not None:
             mission.description = request.detail.strip() or None
         mission.due_date = request.due_date
+
+        if request.checkpoints is not None:
+            existing_by_id = {cp.id: cp for cp in mission.checkpoints}
+            incoming_ids = {item.id for item in request.checkpoints if item.id is not None}
+            for cp_id, cp in existing_by_id.items():
+                if cp_id not in incoming_ids:
+                    await self._db.delete(cp)
+            for item in request.checkpoints:
+                desc = item.description.strip()[:500]
+                if not desc:
+                    continue
+                if item.id and item.id in existing_by_id:
+                    existing_by_id[item.id].description = desc
+                    existing_by_id[item.id].order_index = item.order_index
+                else:
+                    self._db.add(Checkpoint(
+                        mission_id=mission.id,
+                        description=desc,
+                        order_index=item.order_index,
+                    ))
+
         await self._db.commit()
+
+    # Helper to toggle is_completed on a checkpoint
+    async def toggle_checkpoint(
+        self, player_id: uuid.UUID, checkpoint_id: uuid.UUID
+    ) -> ToggleCheckpointResponse:
+        checkpoint = (
+            await self._db.execute(
+                select(Checkpoint)
+                .join(Mission, Mission.id == Checkpoint.mission_id)
+                .where(Checkpoint.id == checkpoint_id, Mission.player_id == player_id)
+                .with_for_update()
+            )
+        ).scalar_one_or_none()
+        if not checkpoint:
+            raise NotFoundError("Checkpoint")
+        checkpoint.is_completed = not checkpoint.is_completed
+        await self._db.commit()
+        return ToggleCheckpointResponse(
+            checkpoint_id=checkpoint.id,
+            is_completed=checkpoint.is_completed,
+        )
 
     # Helper for toggling the is_favorite flag on a DAILY_GRIND mission; returns the new state
     async def toggle_favorite(self, player_id: uuid.UUID, mission_id: uuid.UUID) -> bool:
@@ -251,7 +316,10 @@ class MissionService:
                     Mission.status == "ACTIVE",
                     Mission.expires_at > now,
                 )
-                .options(selectinload(Mission.target_attribute))
+                .options(
+                    selectinload(Mission.target_attribute),
+                    selectinload(Mission.checkpoints),
+                )
             )
         ).all()
 
@@ -266,7 +334,10 @@ class MissionService:
                     Mission.status == "PENDING",
                     Mission.expires_at > now,
                 )
-                .options(selectinload(Mission.target_attribute))
+                .options(
+                    selectinload(Mission.target_attribute),
+                    selectinload(Mission.checkpoints),
+                )
                 .order_by(Mission.issued_at.desc())
             )
         ).all()
@@ -299,26 +370,39 @@ class MissionService:
     async def _build_progress(
         self, mission: Mission, player_id: uuid.UUID, today: date
     ) -> MissionProgress:
+        checkpoints = [
+            CheckpointSchema(
+                id=cp.id,
+                description=cp.description,
+                is_completed=cp.is_completed,
+                order_index=cp.order_index,
+            )
+            for cp in mission.checkpoints
+        ]
+
         if mission.status == "PENDING":
+            has_steps = len(checkpoints) > 0
+            all_done = all(cp.is_completed for cp in checkpoints) if has_steps else True
             return MissionProgress(
                 mission_id=mission.id,
                 title=mission.title,
                 objective_description=mission.objective_description,
                 objective_type="MANUAL",
-                objective_target=1,
-                current_progress=1,
+                objective_target=len(checkpoints) if has_steps else 1,
+                current_progress=sum(1 for cp in checkpoints if cp.is_completed) if has_steps else 1,
                 attribute_code=mission.target_attribute.code,
                 attribute_name=mission.target_attribute.name,
                 reward_xp=mission.reward_xp,
                 reward_material_qty=mission.reward_material_qty,
                 expires_at=mission.expires_at,
-                is_completable=True,
+                is_completable=all_done,
                 ai_generated=False,
                 status="PENDING",
                 category=mission.category,
                 due_date=mission.due_date,
                 description=mission.description,
                 is_favorite=mission.is_favorite,
+                checkpoints=checkpoints,
             )
 
         progress = await self._get_progress_value(mission, player_id, today)
@@ -341,6 +425,7 @@ class MissionService:
             due_date=mission.due_date,
             description=mission.description,
             is_favorite=mission.is_favorite,
+            checkpoints=checkpoints,
         )
 
     # Helper to reset completed favorite DAILY_GRIND missions from previous days back to active
@@ -400,7 +485,10 @@ class MissionService:
         mission = await self._db.scalar(
             select(Mission)
             .where(Mission.id == mission_id)
-            .options(selectinload(Mission.target_attribute))
+            .options(
+                selectinload(Mission.target_attribute),
+                selectinload(Mission.checkpoints),
+            )
         )
         if not mission:
             raise NotFoundError("Mission")

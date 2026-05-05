@@ -9,6 +9,13 @@ from pydantic import BaseModel, Field
 
 MissionCategory = Literal["MAIN_QUEST", "SIDE_QUEST", "DAILY_GRIND"]
 
+# Model CheckpointSchema (Data - A single sub-task step within a mission)
+class CheckpointSchema(BaseModel):
+    id: uuid.UUID
+    description: str
+    is_completed: bool
+    order_index: int
+
 # Model MissionProgress (Data - Represents a mission with progress details)
 class MissionProgress(BaseModel):
     mission_id: uuid.UUID
@@ -29,6 +36,7 @@ class MissionProgress(BaseModel):
     due_date: datetime | None = None
     description: str | None = None
     is_favorite: bool = False
+    checkpoints: list[CheckpointSchema] = []
 
 # Model MissionListResponse (Data - Response for listing missions)
 class MissionListResponse(BaseModel):
@@ -52,6 +60,7 @@ class DeployMissionRequest(BaseModel):
     description: str = Field(default="", max_length=500)
     detail: str | None = Field(default=None, max_length=1000)
     due_date: datetime | None = None
+    steps: list[str] = Field(default_factory=list)
 
 # Model DeployMissionResponse (Response after dispatching a mission)
 class DeployMissionResponse(BaseModel):
@@ -62,8 +71,20 @@ class DeployMissionResponse(BaseModel):
     reward_xp: int
     reward_material_qty: int
 
+# Model CheckpointUpdateItem (Request a single checkpoint entry for update operations)
+class CheckpointUpdateItem(BaseModel):
+    id: uuid.UUID | None = None
+    description: str = Field(..., max_length=500)
+    order_index: int
+
 # Model UpdateMissionRequest (Request to edit an existing mission)
 class UpdateMissionRequest(BaseModel):
     objective_description: str | None = None
     detail: str | None = None
     due_date: datetime | None = None
+    checkpoints: list[CheckpointUpdateItem] | None = None
+
+# Model ToggleCheckpointResponse (Data - Response after toggling a checkpoint)
+class ToggleCheckpointResponse(BaseModel):
+    checkpoint_id: uuid.UUID
+    is_completed: bool

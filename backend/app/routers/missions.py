@@ -14,6 +14,7 @@ from app.schemas.mission import (
     DeployMissionResponse,
     MissionClaimResponse,
     MissionListResponse,
+    ToggleCheckpointResponse,
     UpdateMissionRequest,
 )
 from app.services.gm_service import GmService
@@ -43,6 +44,16 @@ async def deploy_mission(
 ) -> DeployMissionResponse:
     service = MissionService(session)
     return await service.deploy(player.id, body)
+
+# Endpoint (PATCH /missions/checkpoints/{checkpoint_id}/toggle) — Toggle a checkpoint's completion state
+@router.patch("/checkpoints/{checkpoint_id}/toggle", response_model=ToggleCheckpointResponse)
+async def toggle_checkpoint(
+    checkpoint_id: uuid.UUID,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> ToggleCheckpointResponse:
+    service = MissionService(session)
+    return await service.toggle_checkpoint(player.id, checkpoint_id)
 
 # Endpoint (POST /missions/{mission_id}/claim) — Claim/complete a mission and receive rewards
 @router.post("/{mission_id}/claim", response_model=MissionClaimResponse)

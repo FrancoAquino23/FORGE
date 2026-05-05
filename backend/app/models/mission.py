@@ -9,6 +9,24 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
+# Model Checkpoint (Sub-task step for Main Quest / Side Quest missions)
+class Checkpoint(Base):
+    __tablename__ = "checkpoints"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    mission_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("missions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+    is_completed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false"), default=False
+    )
+    order_index: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
+
 # Model Mission (Daily & Weekly Tasks)
 class Mission(Base):
     __tablename__ = "missions"
@@ -53,6 +71,12 @@ class Mission(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"), default=False)
     target_attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]
+    checkpoints: Mapped[list["Checkpoint"]] = relationship(
+        "Checkpoint",
+        order_by="Checkpoint.order_index",
+        cascade="all, delete-orphan",
+        lazy="raise",
+    )
 
 # Model GmContextSnapshot (Game Master Context Snapshots)
 class GmContextSnapshot(Base):
