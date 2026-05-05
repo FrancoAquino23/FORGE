@@ -192,6 +192,27 @@
             </div>
           </div>
 
+          <!-- PRIORITY (THREAT LEVEL) -->
+          <div>
+            <label class="block text-xs text-forge-muted mb-1.5 uppercase tracking-wider">Prioridad</label>
+            <div class="flex gap-2">
+              @for (tl of THREAT_LEVELS; track tl.value) {
+                <button
+                  type="button"
+                  class="flex-1 text-[11px] px-2 py-1.5 rounded-sm border font-bold tracking-wide transition-colors"
+                  [class]="
+                    logThreatLevel === tl.value
+                      ? tl.color + ' bg-forge-surface/60 border-current'
+                      : 'border-forge-border text-forge-muted hover:border-forge-primary/40 hover:text-forge-text'
+                  "
+                  (click)="logThreatLevel = tl.value"
+                >
+                  {{ tl.label }}
+                </button>
+              }
+            </div>
+          </div>
+
           <!-- DUE DATE -->
           @if (logCategory !== 'DAILY_GRIND') {
             <div>

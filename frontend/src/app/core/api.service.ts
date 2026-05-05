@@ -55,6 +55,7 @@ export interface MissionProgress {
   description: string | null;
   is_favorite: boolean;
   checkpoints: CheckpointInfo[];
+  threat_level: 'MINOR' | 'MAJOR' | 'CRITICAL';
 }
 
 // Interface (Mission List Response - Data)
@@ -82,6 +83,7 @@ export interface DeployMissionRequest {
   detail?: string;
   due_date?: string;
   steps?: string[];
+  threat_level?: 'MINOR' | 'MAJOR' | 'CRITICAL';
 }
 
 // Interface (Toggle Checkpoint Response - Data)
@@ -113,6 +115,7 @@ export interface UpdateMissionRequest {
   detail?: string;
   due_date?: string | null;
   checkpoints?: CheckpointUpdateItem[];
+  threat_level?: 'MINOR' | 'MAJOR' | 'CRITICAL';
 }
 
 // Interface (Activity Log Request - Data)

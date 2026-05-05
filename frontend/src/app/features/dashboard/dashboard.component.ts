@@ -93,6 +93,7 @@ export class DashboardComponent implements OnInit {
 
   logAttr = '';
   logCategory: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND' = 'DAILY_GRIND';
+  logThreatLevel: 'MINOR' | 'MAJOR' | 'CRITICAL' = 'MAJOR';
   logDesc = '';
   logDetail = '';
   logDueDate = '';
@@ -107,6 +108,12 @@ export class DashboardComponent implements OnInit {
     { value: 'MAIN_QUEST' as const, label: 'Main Quest' },
     { value: 'SIDE_QUEST' as const, label: 'Side Quest' },
     { value: 'DAILY_GRIND' as const, label: 'Daily Grind' },
+  ];
+
+  readonly THREAT_LEVELS: { value: 'MINOR' | 'MAJOR' | 'CRITICAL'; label: string; color: string }[] = [
+    { value: 'MINOR', label: 'Minor', color: 'text-cyan-400' },
+    { value: 'MAJOR', label: 'Major', color: 'text-amber-400' },
+    { value: 'CRITICAL', label: 'Critical', color: 'text-red-400' },
   ];
 
   // Load component
@@ -142,6 +149,7 @@ export class DashboardComponent implements OnInit {
       .deployMission({
         attribute_code: this.logAttr,
         category: this.logCategory,
+        threat_level: this.logThreatLevel,
         description: this.logDesc.trim() || undefined,
         detail: this.logDetail.trim() || undefined,
         due_date: this.logDueDate || undefined,
@@ -164,6 +172,7 @@ export class DashboardComponent implements OnInit {
           this.logDueDate = '';
           this.logSteps = '';
           this.logCategory = 'DAILY_GRIND';
+          this.logThreatLevel = 'MAJOR';
         },
         error: (err) => {
           this.toast.show({

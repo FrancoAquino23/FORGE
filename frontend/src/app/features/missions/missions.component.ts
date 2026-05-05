@@ -37,6 +37,7 @@ import { ToastService } from '../../core/toast.service';
 
 export type MissionTab = 'DAILY_GRIND' | 'MAIN_QUEST' | 'SIDE_QUEST' | 'IA_FORGE';
 
+// Attribute color maps
 const ATTR_COLORS: Record<string, string> = {
   S: 'text-red-400',
   P: 'text-blue-400',
@@ -45,46 +46,6 @@ const ATTR_COLORS: Record<string, string> = {
   I: 'text-purple-400',
   A: 'text-cyan-400',
   L: 'text-orange-400',
-};
-
-const ATTR_BORDER: Record<string, string> = {
-  S: 'border-red-500/40',
-  P: 'border-blue-500/40',
-  E: 'border-green-500/40',
-  C: 'border-yellow-500/40',
-  I: 'border-purple-500/40',
-  A: 'border-cyan-500/40',
-  L: 'border-orange-500/40',
-};
-
-const ATTR_FAV_BORDER: Record<string, string> = {
-  S: 'border-red-400/60',
-  P: 'border-blue-400/60',
-  E: 'border-green-400/60',
-  C: 'border-yellow-400/60',
-  I: 'border-purple-400/60',
-  A: 'border-cyan-400/60',
-  L: 'border-orange-400/60',
-};
-
-const ATTR_FAV_BG: Record<string, string> = {
-  S: 'bg-red-950/40',
-  P: 'bg-blue-950/40',
-  E: 'bg-green-950/40',
-  C: 'bg-yellow-950/40',
-  I: 'bg-purple-950/40',
-  A: 'bg-cyan-950/40',
-  L: 'bg-orange-950/40',
-};
-
-const ATTR_GLOW: Record<string, string> = {
-  S: 'hover:shadow-[0_0_20px_rgba(248,113,113,0.18)]',
-  P: 'hover:shadow-[0_0_20px_rgba(96,165,250,0.18)]',
-  E: 'hover:shadow-[0_0_20px_rgba(74,222,128,0.18)]',
-  C: 'hover:shadow-[0_0_20px_rgba(253,224,71,0.18)]',
-  I: 'hover:shadow-[0_0_20px_rgba(192,132,252,0.18)]',
-  A: 'hover:shadow-[0_0_20px_rgba(34,211,238,0.18)]',
-  L: 'hover:shadow-[0_0_20px_rgba(251,146,60,0.18)]',
 };
 
 const ATTR_BAR: Record<string, string> = {
@@ -123,6 +84,39 @@ const CATEGORY_LABELS: Record<string, string> = {
   DAILY_GRIND: 'Daily Grind',
 };
 
+// Threat level maps
+const THREAT_TEXT: Record<string, string> = {
+  MINOR: 'text-sky-400',
+  MAJOR: 'text-amber-400',
+  CRITICAL: 'text-rose-500',
+};
+
+// MINOR/MAJOR/CRITICAL glow
+const THREAT_GLOW: Record<string, string> = {
+  MINOR: 'hover:shadow-[0_0_18px_rgba(56,189,248,0.22)]',
+  MAJOR: 'hover:shadow-[0_0_18px_rgba(251,191,36,0.22)]',
+  CRITICAL: 'shadow-[0_0_22px_rgba(244,63,94,0.32)]',
+};
+
+const THREAT_BORDER: Record<string, string> = {
+  MINOR: 'border-sky-500/35',
+  MAJOR: 'border-amber-500/40',
+  CRITICAL: 'border-rose-500/50',
+};
+
+const THREAT_FAV_BG: Record<string, string> = {
+  MINOR: 'bg-sky-950/30',
+  MAJOR: 'bg-amber-950/30',
+  CRITICAL: 'bg-rose-950/30',
+};
+
+// Hex values for progress bar fill
+const THREAT_BAR: Record<string, string> = {
+  MINOR: '#38bdf8',
+  MAJOR: '#fbbf24',
+  CRITICAL: '#f43f5e',
+};
+
 @Component({
   selector: 'app-missions',
   imports: [LucideAngularModule, FormsModule],
@@ -138,6 +132,8 @@ export class MissionsComponent implements OnInit, OnDestroy {
   claiming = signal('');
   activeTab = signal<MissionTab>('MAIN_QUEST');
   attrFilter = signal('');
+  threatFilter = signal('');
+  sortByDate = signal(false);
 
   private expandedSet = signal(new Set<string>());
   hoverCardId = signal('');
@@ -150,12 +146,14 @@ export class MissionsComponent implements OnInit, OnDestroy {
     detail: string;
     due_date: string;
     category: string;
+    threat_level: string;
     checkpoints: Array<{ id: string | null; description: string }>;
   } = {
     objective: '',
     detail: '',
     due_date: '',
     category: '',
+    threat_level: 'MAJOR',
     checkpoints: [],
   };
 
@@ -172,6 +170,12 @@ export class MissionsComponent implements OnInit, OnDestroy {
 
   readonly ATTRS = ['S', 'P', 'E', 'C', 'I', 'A', 'L'];
 
+  readonly THREAT_LEVELS: { value: string; label: string }[] = [
+    { value: 'MINOR', label: 'Minor' },
+    { value: 'MAJOR', label: 'Major' },
+    { value: 'CRITICAL', label: 'Critical' },
+  ];
+
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Derived list of missions filtered by active tab and attribute selector
@@ -179,6 +183,8 @@ export class MissionsComponent implements OnInit, OnDestroy {
     const all = this.data()?.missions ?? [];
     const tab = this.activeTab();
     const attr = this.attrFilter();
+    const threat = this.threatFilter();
+    const sortDate = this.sortByDate();
 
     let subset: MissionProgress[];
     switch (tab) {
@@ -199,7 +205,19 @@ export class MissionsComponent implements OnInit, OnDestroy {
         );
     }
 
-    return attr ? subset.filter((m) => m.attribute_code === attr) : subset;
+    if (attr) subset = subset.filter((m) => m.attribute_code === attr);
+    if (threat) subset = subset.filter((m) => m.threat_level === threat);
+
+    if (sortDate) {
+      subset = [...subset].sort((a, b) => {
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      });
+    }
+
+    return subset;
   });
 
   // Load component
@@ -347,6 +365,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
       detail: m.description ?? '',
       due_date: m.due_date ? m.due_date.substring(0, 10) : '',
       category: m.category ?? '',
+      threat_level: m.threat_level ?? 'MAJOR',
       checkpoints: m.checkpoints.map((cp) => ({ id: cp.id, description: cp.description })),
     };
   }
@@ -379,6 +398,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
       objective_description: this.editForm.objective || undefined,
       detail: this.editForm.detail,
       due_date: this.editForm.due_date || null,
+      threat_level: this.editForm.threat_level as 'MINOR' | 'MAJOR' | 'CRITICAL',
       checkpoints: this.editForm.category !== 'DAILY_GRIND' ? checkpoints : undefined,
     };
     this.api.updateMission(this.editingId(), payload).subscribe({
@@ -453,6 +473,8 @@ export class MissionsComponent implements OnInit, OnDestroy {
   selectTab(tab: MissionTab): void {
     this.activeTab.set(tab);
     this.attrFilter.set('');
+    this.threatFilter.set('');
+    this.sortByDate.set(false);
     this.menuOpenId.set('');
     this.editingId.set('');
     this.deleteConfirmId.set('');
@@ -515,6 +537,11 @@ export class MissionsComponent implements OnInit, OnDestroy {
     return ATTR_BAR[code] ?? '#f59e0b';
   }
 
+  // Function to map a threat level to its hex color
+  threatBarColor(level: string): string {
+    return THREAT_BAR[level] ?? '#fbbf24';
+  }
+
   // Function to map an attribute code to its icon
   getIcon(code: string): LucideIconData {
     return ATTR_ICONS[code] ?? Sparkles;
@@ -522,19 +549,32 @@ export class MissionsComponent implements OnInit, OnDestroy {
 
   // Function for building the border and hover-glow CSS for a mission card
   cardClass(m: MissionProgress): string {
-    const glow = ATTR_GLOW[m.attribute_code] ?? '';
+    const level = m.threat_level ?? 'MAJOR';
+    const border = THREAT_BORDER[level] ?? 'border-forge-border';
+    const glow = THREAT_GLOW[level] ?? '';
     if (m.is_favorite) {
-      const border = ATTR_FAV_BORDER[m.attribute_code] ?? 'border-forge-border';
-      const bg = ATTR_FAV_BG[m.attribute_code] ?? '';
+      const bg = THREAT_FAV_BG[level] ?? '';
       return `${border} ${glow} ${bg}`;
     }
-    return `${ATTR_BORDER[m.attribute_code] ?? 'border-forge-border'} ${glow}`;
+    return `${border} ${glow}`;
+  }
+
+  // Function to map a threat level to its text color class
+  threatTextClass(level: string): string {
+    return THREAT_TEXT[level] ?? 'text-forge-muted';
   }
 
   // Function to build the active/inactive filter toggle button
   filterBtnClass(code: string): string {
     return this.attrFilter() === code
       ? `${this.attrColor(code)} border-current bg-forge-surface`
+      : 'text-forge-muted border-forge-border/40 hover:text-forge-text hover:border-forge-border';
+  }
+
+  // Function to build the active/inactive filter button class for threat level filters
+  threatBtnClass(level: string): string {
+    return this.threatFilter() === level
+      ? `${this.threatTextClass(level)} border-current bg-forge-surface`
       : 'text-forge-muted border-forge-border/40 hover:text-forge-text hover:border-forge-border';
   }
 
