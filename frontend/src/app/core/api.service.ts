@@ -183,6 +183,21 @@ export interface PrestigeSacrificeResponse {
   new_total_bonus: number;
 }
 
+// Interface (Prestige Up Request - Data)
+export interface PrestigeUpRequest {
+  buff_type_code: string;
+}
+
+// Interface (Prestige Up Response - Data)
+export interface PrestigeUpResponse {
+  prestige_number: number;
+  attributes_reset: string[];
+  buff_type_code: string;
+  buff_display_name: string;
+  new_stack_count: number;
+  new_total_bonus: number;
+}
+
 // Service (API Service - Data)
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -227,7 +242,8 @@ export class ApiService {
   // Method (Toggle Favorite)
   toggleFavorite(missionId: string): Observable<{ is_favorite: boolean }> {
     return this.http.post<{ is_favorite: boolean }>(
-      `${this.BASE}/missions/${missionId}/favorite`, {}
+      `${this.BASE}/missions/${missionId}/favorite`,
+      {},
     );
   }
 
@@ -239,7 +255,8 @@ export class ApiService {
   // Method (Upgrade Relic)
   upgradeRelic(attribute_code: string): Observable<RelicUpgradeResponse> {
     return this.http.post<RelicUpgradeResponse>(
-      `${this.BASE}/relics/${attribute_code}/upgrade`, {}
+      `${this.BASE}/relics/${attribute_code}/upgrade`,
+      {},
     );
   }
 
@@ -251,5 +268,10 @@ export class ApiService {
   // Method (Perform Prestige Sacrifice)
   sacrifice(payload: PrestigeSacrificeRequest): Observable<PrestigeSacrificeResponse> {
     return this.http.post<PrestigeSacrificeResponse>(`${this.BASE}/prestige/sacrifice`, payload);
+  }
+
+  // Method (Prestige Up)
+  prestigeUp(payload: PrestigeUpRequest): Observable<PrestigeUpResponse> {
+    return this.http.post<PrestigeUpResponse>(`${this.BASE}/prestige/prestige-up`, payload);
   }
 }

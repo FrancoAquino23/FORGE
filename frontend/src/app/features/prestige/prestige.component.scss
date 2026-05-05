@@ -1,2 +1,47 @@
-// Altar de Prestigio — all animations are in global styles.scss
-// Add component-specific overrides here if needed (e.g. unique layout tweaks)
+/* ==================================================================
+   PRESTIGE STYLES
+   ================================================================== */
+
+.ring-glow-low {
+  filter: drop-shadow(0 0 18px rgba(245, 158, 11, 0.25));
+}
+.ring-glow-mid {
+  filter: drop-shadow(0 0 35px rgba(245, 158, 11, 0.5));
+}
+.ring-glow-high {
+  filter: drop-shadow(0 0 60px rgba(245, 158, 11, 0.8));
+  animation: ringGlowPulse 3s ease-in-out infinite;
+}
+
+@keyframes ringGlowPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 50px rgba(245, 158, 11, 0.7));
+  }
+  50% {
+    filter: drop-shadow(0 0 80px rgba(245, 158, 11, 1));
+  }
+}
+
+.prestige-ready-glow {
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+  animation: prestigeReadyPulse 3s ease-in-out infinite;
+}
+
+@keyframes prestigeReadyPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(245, 158, 11, 0.45);
+  }
+}
+
+.prestige-disabled {
+  opacity: 0.35;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+  box-shadow: none !important;
+  animation: none !important;
+}
