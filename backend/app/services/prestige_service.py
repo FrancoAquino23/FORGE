@@ -14,6 +14,7 @@ from app.models.prestige import PlayerBuff, PrestigeHistory
 from app.schemas.prestige import (
     BuffTypeInfo, PlayerBuffInfo,
     PrestigeSacrificeResponse, PrestigeStatusResponse,
+    PrestigeUpResponse,
 )
 from app.services.reward_service import RewardService
 
@@ -193,6 +194,97 @@ class PrestigeService:
                 )
                 for bt in buff_types
             ],
+        )
+
+    # Helper to perform a full prestige-up
+    async def prestige_up(self, player: PlayerProfile, buff_type_code: str) -> PrestigeUpResponse:
+        config = await self._db.scalar(select(ForgeConfig))
+        threshold = config.prestige_threshold_level if config else _DEFAULT_THRESHOLD
+
+        # Load all catalog attributes and all player attributes (locked)
+        all_attrs = (await self._db.scalars(select(Attribute))).all()
+        all_player_attrs = (
+            await self._db.execute(
+                select(PlayerAttribute)
+                .where(PlayerAttribute.player_id == player.id)
+                .with_for_update()
+            )
+        ).scalars().all()
+        pa_by_attr_id = {pa.attribute_id: pa for pa in all_player_attrs}
+
+        # Verify every attribute is at the threshold
+        for a in all_attrs:
+            pa = pa_by_attr_id.get(a.id)
+            if not pa or pa.level < threshold:
+                raise PrestigeNotAvailableError(threshold)
+
+        buff_type = await self._db.scalar(select(BuffType).where(BuffType.code == buff_type_code))
+        if not buff_type:
+            raise NotFoundError(f"Buff type '{buff_type_code}'")
+
+        # Upsert buff (same additive stacking logic as sacrifice)
+        existing_buff = (
+            await self._db.execute(
+                select(PlayerBuff)
+                .where(PlayerBuff.player_id == player.id, PlayerBuff.buff_type_id == buff_type.id)
+                .with_for_update()
+            )
+        ).scalar_one_or_none()
+
+        if existing_buff:
+            existing_buff.stack_count += 1
+            new_total = self.compute_new_bonus(existing_buff.total_bonus, buff_type.bonus_percent)
+            existing_buff.total_bonus = new_total
+            new_stack = existing_buff.stack_count
+        else:
+            new_total = buff_type.bonus_percent
+            new_stack = 1
+            self._db.add(
+                PlayerBuff(player_id=player.id, buff_type_id=buff_type.id, stack_count=1, total_bonus=new_total)
+            )
+
+        # Sync material bonus for MATERIAL buff types
+        if buff_type.target_type == "MATERIAL" and buff_type.attribute_id:
+            mat_attr = pa_by_attr_id.get(buff_type.attribute_id)
+            if mat_attr:
+                mat_attr.material_bonus = new_total
+
+        # Reset ALL attributes to level 1
+        reset_codes: list[str] = []
+        for a in all_attrs:
+            pa = pa_by_attr_id.get(a.id)
+            if pa:
+                pa.level = 1
+                pa.xp_current = 0
+                pa.xp_to_next = RewardService.xp_for_level(1)
+                reset_codes.append(a.code)
+
+        prestige_number = player.prestige_count + 1
+        self._db.add(
+            PrestigeHistory(
+                player_id=player.id,
+                prestige_number=prestige_number,
+                artifact_level_reached=threshold,
+                buff_type_id=buff_type.id,
+            )
+        )
+
+        locked_profile = (
+            await self._db.execute(
+                select(PlayerProfile).where(PlayerProfile.id == player.id).with_for_update()
+            )
+        ).scalar_one()
+        locked_profile.prestige_count += 1
+
+        await self._db.commit()
+
+        return PrestigeUpResponse(
+            prestige_number=prestige_number,
+            attributes_reset=reset_codes,
+            buff_type_code=buff_type.code,
+            buff_display_name=buff_type.display_name,
+            new_stack_count=new_stack,
+            new_total_bonus=new_total,
         )
 
     # Helper to load an attribute by code, ensuring it exists

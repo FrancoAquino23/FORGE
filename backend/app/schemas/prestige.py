@@ -43,3 +43,16 @@ class PrestigeStatusResponse(BaseModel):
     threshold_level: int
     active_buffs: list[PlayerBuffInfo]
     available_buff_types: list[BuffTypeInfo]
+
+# Model PrestigeUpRequest (Request body for the all-in prestige up action)
+class PrestigeUpRequest(BaseModel):
+    buff_type_code: str
+
+# Model PrestigeUpResponse (Response after a full prestige up, all attributes reset)
+class PrestigeUpResponse(BaseModel):
+    prestige_number: int
+    attributes_reset: list[str]
+    buff_type_code: str
+    buff_display_name: str
+    new_stack_count: int
+    new_total_bonus: Decimal
