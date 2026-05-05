@@ -227,6 +227,22 @@
             ></textarea>
           </div>
 
+          <!-- CHECKPOINTS -->
+          @if (logCategory !== 'DAILY_GRIND') {
+            <div>
+              <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">
+                Steps to Completion
+                <span class="normal-case text-forge-muted/50 font-normal">(uno por línea)</span>
+              </label>
+              <textarea
+                class="forge-input w-full resize-none text-xs leading-relaxed"
+                rows="4"
+                placeholder="[ Paso 1...&#10;Paso 2...&#10;Paso 3... ]"
+                [(ngModel)]="logSteps"
+              ></textarea>
+            </div>
+          }
+
           <button
             class="forge-btn-primary mt-1 uppercase tracking-widest text-xs font-black"
             (click)="deployMission()"

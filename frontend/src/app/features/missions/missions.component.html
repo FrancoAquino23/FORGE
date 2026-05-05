@@ -103,6 +103,43 @@
                     <input type="date" class="forge-input w-full text-xs" [(ngModel)]="editForm.due_date" />
                   </div>
                 }
+                @if (editForm.category !== 'DAILY_GRIND') {
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <label class="block text-[10px] text-forge-muted uppercase tracking-wider">Checkpoints</label>
+                      <button
+                        type="button"
+                        class="text-[9px] text-forge-primary/70 hover:text-forge-primary tracking-wider uppercase transition-colors"
+                        (click)="addEditCheckpoint()"
+                      >
+                        + Añadir
+                      </button>
+                    </div>
+                    @if (editForm.checkpoints.length > 0) {
+                      <div class="flex flex-col gap-1.5">
+                        @for (cp of editForm.checkpoints; track $index; let i = $index) {
+                          <div class="flex items-center gap-2">
+                            <input
+                              class="forge-input flex-1 text-xs"
+                              [(ngModel)]="editForm.checkpoints[i].description"
+                              placeholder="Paso..."
+                            />
+                            <button
+                              type="button"
+                              class="text-forge-muted/40 hover:text-red-400/80 transition-colors text-base leading-none px-0.5 flex-shrink-0"
+                              (click)="removeEditCheckpoint(i)"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <p class="text-[10px] text-forge-muted/40 italic">Sin checkpoints</p>
+                    }
+                  </div>
+                }
+
                 <div class="flex gap-2 justify-end pt-1">
                   <button
                     class="forge-btn-ghost text-[10px] uppercase tracking-widest font-black py-1.5 px-3"
@@ -147,8 +184,8 @@
                     <!-- TITLE -->
                     <span
                       class="font-black text-forge-text text-base leading-snug flex-1"
-                      [class.cursor-pointer]="m.description"
-                      (click)="m.description && toggleExpand(m.mission_id)"
+                      [class.cursor-pointer]="m.description || m.checkpoints.length > 0"
+                      (click)="(m.description || m.checkpoints.length > 0) && toggleExpand(m.mission_id)"
                     >
                       {{ m.objective_description }}
                     </span>
@@ -194,20 +231,40 @@
 
                   @if (menuOpenId() === m.mission_id) {
                     <div
-                      class="absolute right-0 top-7 z-30 bg-forge-surface border border-forge-border rounded shadow-lg overflow-hidden min-w-[110px]"
+                      class="absolute right-0 top-7 z-30 bg-forge-surface border border-forge-border rounded shadow-lg overflow-hidden min-w-[120px]"
                     >
-                      <button
-                        class="w-full px-3 py-2 text-xs text-left text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
-                        (click)="startEdit(m)"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        class="w-full px-3 py-2 text-xs text-left text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-wide"
-                        (click)="deleteMission(m)"
-                      >
-                        Eliminar
-                      </button>
+                      @if (deleteConfirmId() === m.mission_id) {
+                        <div
+                          class="px-3 py-2 text-[10px] text-forge-muted border-b border-forge-border/40 whitespace-nowrap uppercase tracking-wider"
+                        >
+                          ¿Borrar misión?
+                        </div>
+                        <button
+                          class="w-full px-3 py-2 text-xs text-left text-red-400 hover:text-red-300 hover:bg-forge-card transition-colors tracking-wide font-bold"
+                          (click)="confirmDelete(m)"
+                        >
+                          ⚠ Sí, eliminar
+                        </button>
+                        <button
+                          class="w-full px-3 py-2 text-xs text-left text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
+                          (click)="deleteConfirmId.set('')"
+                        >
+                          Cancelar
+                        </button>
+                      } @else {
+                        <button
+                          class="w-full px-3 py-2 text-xs text-left text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
+                          (click)="startEdit(m)"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          class="w-full px-3 py-2 text-xs text-left text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-wide"
+                          (click)="requestDeleteConfirm(m)"
+                        >
+                          Eliminar
+                        </button>
+                      }
                     </div>
                   }
                 </div>
@@ -220,8 +277,47 @@
                 </div>
               }
 
+              <!-- CHECKPOINT LIST -->
+              @if (m.checkpoints.length > 0 && isExpanded(m.mission_id)) {
+                <div class="flex flex-col gap-1.5 pt-0.5">
+                  @for (cp of m.checkpoints; track cp.id) {
+                    <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        class="checkpoint-cb"
+                        [checked]="cp.is_completed"
+                        (change)="toggleCheckpoint(m, cp)"
+                      />
+                      <span
+                        class="text-[11px] leading-relaxed transition-colors"
+                        [class.line-through]="cp.is_completed"
+                        [class.text-forge-muted]="cp.is_completed"
+                        [class.text-forge-text]="!cp.is_completed"
+                      >
+                        {{ cp.description }}
+                      </span>
+                    </label>
+                  }
+                </div>
+              }
+
               <!-- PROGRESS BAR -->
-              @if (!isPending(m)) {
+              @if (m.checkpoints.length > 0) {
+                <div>
+                  <div class="flex justify-between text-[10px] text-forge-muted mb-1.5">
+                    <span class="uppercase tracking-wider">Progreso</span>
+                    <span class="text-forge-text font-bold">{{ checkpointSummary(m) }}</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      [style.background]="attrBarColor(m.attribute_code)"
+                      [style.width.%]="checkpointProgressPct(m)"
+                      style="transition: width 0.4s ease-out"
+                    ></div>
+                  </div>
+                </div>
+              } @else if (!isPending(m)) {
                 <div>
                   <div class="flex justify-between text-[10px] text-forge-muted mb-1.5">
                     <span class="uppercase tracking-wider">Progreso</span>
@@ -271,7 +367,7 @@
                   <button
                     class="forge-btn-primary text-[10px] uppercase tracking-widest font-black"
                     (click)="claim(m)"
-                    [disabled]="!m.is_completable || claiming() === m.mission_id"
+                    [disabled]="!canFinish(m) || claiming() === m.mission_id"
                   >
                     @if (claiming() === m.mission_id) {
                       Procesando...
@@ -303,6 +399,7 @@
         </p>
       </div>
     }
+    <!-- LOADING STATE -->
   } @else if (loadError()) {
     <div class="forge-card p-6 text-red-400 text-sm">{{ loadError() }}</div>
   } @else {

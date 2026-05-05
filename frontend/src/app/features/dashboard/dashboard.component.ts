@@ -96,6 +96,7 @@ export class DashboardComponent implements OnInit {
   logDesc = '';
   logDetail = '';
   logDueDate = '';
+  logSteps = '';
   attrDropdownOpen = false;
 
   readonly todayStr = new Date().toISOString().split('T')[0];
@@ -132,6 +133,11 @@ export class DashboardComponent implements OnInit {
     if (!this.logAttr || this.deploying()) return;
     this.deploying.set(true);
 
+    const steps = this.logSteps
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     this.api
       .deployMission({
         attribute_code: this.logAttr,
@@ -139,6 +145,7 @@ export class DashboardComponent implements OnInit {
         description: this.logDesc.trim() || undefined,
         detail: this.logDetail.trim() || undefined,
         due_date: this.logDueDate || undefined,
+        steps: steps.length > 0 ? steps : undefined,
       })
       .subscribe({
         next: (res) => {
@@ -155,6 +162,7 @@ export class DashboardComponent implements OnInit {
           this.logDesc = '';
           this.logDetail = '';
           this.logDueDate = '';
+          this.logSteps = '';
           this.logCategory = 'DAILY_GRIND';
         },
         error: (err) => {

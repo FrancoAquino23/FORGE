@@ -26,6 +26,14 @@ export interface PlayerProfile {
   attributes: AttributeProfile[];
 }
 
+// Interface (Checkpoint Info - Data)
+export interface CheckpointInfo {
+  id: string;
+  description: string;
+  is_completed: boolean;
+  order_index: number;
+}
+
 // Interfaces (Missions - Data)
 export interface MissionProgress {
   mission_id: string;
@@ -46,6 +54,7 @@ export interface MissionProgress {
   due_date: string | null;
   description: string | null;
   is_favorite: boolean;
+  checkpoints: CheckpointInfo[];
 }
 
 // Interface (Mission List Response - Data)
@@ -72,6 +81,13 @@ export interface DeployMissionRequest {
   description?: string;
   detail?: string;
   due_date?: string;
+  steps?: string[];
+}
+
+// Interface (Toggle Checkpoint Response - Data)
+export interface ToggleCheckpointResponse {
+  checkpoint_id: string;
+  is_completed: boolean;
 }
 
 // Interface (Deploy Mission Response - Data)
@@ -84,11 +100,19 @@ export interface DeployMissionResponse {
   reward_material_qty: number;
 }
 
+// Interface (Checkpoint Update Item - Data)
+export interface CheckpointUpdateItem {
+  id: string | null;
+  description: string;
+  order_index: number;
+}
+
 // Interface (Update Mission Request - Data)
 export interface UpdateMissionRequest {
   objective_description?: string;
   detail?: string;
   due_date?: string | null;
+  checkpoints?: CheckpointUpdateItem[];
 }
 
 // Interface (Activity Log Request - Data)
@@ -237,6 +261,14 @@ export class ApiService {
   // Method (Update Mission)
   updateMission(missionId: string, payload: UpdateMissionRequest): Observable<{ ok: boolean }> {
     return this.http.patch<{ ok: boolean }>(`${this.BASE}/missions/${missionId}`, payload);
+  }
+
+  // Method (Toggle Checkpoint)
+  toggleCheckpoint(checkpointId: string): Observable<ToggleCheckpointResponse> {
+    return this.http.patch<ToggleCheckpointResponse>(
+      `${this.BASE}/missions/checkpoints/${checkpointId}/toggle`,
+      {},
+    );
   }
 
   // Method (Toggle Favorite)

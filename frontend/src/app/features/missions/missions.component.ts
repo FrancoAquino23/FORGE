@@ -27,6 +27,8 @@ import {
 } from 'lucide-angular';
 import {
   ApiService,
+  CheckpointInfo,
+  CheckpointUpdateItem,
   MissionListResponse,
   MissionProgress,
   UpdateMissionRequest,
@@ -142,7 +144,20 @@ export class MissionsComponent implements OnInit, OnDestroy {
   menuOpenId = signal('');
   editingId = signal('');
   savingEdit = signal(false);
-  editForm = { objective: '', detail: '', due_date: '', category: '' };
+  deleteConfirmId = signal('');
+  editForm: {
+    objective: string;
+    detail: string;
+    due_date: string;
+    category: string;
+    checkpoints: Array<{ id: string | null; description: string }>;
+  } = {
+    objective: '',
+    detail: '',
+    due_date: '',
+    category: '',
+    checkpoints: [],
+  };
 
   // Lucide icon references for use in template
   readonly starIcon: LucideIconData = Star;
@@ -217,9 +232,62 @@ export class MissionsComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Function to compute progress percentage from checkpoints
+  checkpointProgressPct(m: MissionProgress): number {
+    if (m.checkpoints && m.checkpoints.length > 0) {
+      const done = m.checkpoints.filter((c) => c.is_completed).length;
+      return Math.round((done / m.checkpoints.length) * 100);
+    }
+    return this.progressPct(m);
+  }
+
+  // Function to return a "X/Y steps" summary string when a mission has checkpoints
+  checkpointSummary(m: MissionProgress): string {
+    if (!m.checkpoints || m.checkpoints.length === 0) return '';
+    const done = m.checkpoints.filter((c) => c.is_completed).length;
+    return `${done}/${m.checkpoints.length} steps`;
+  }
+
+  // Function that returns true when the mission can be finished/claimed
+  canFinish(m: MissionProgress): boolean {
+    if (m.checkpoints && m.checkpoints.length > 0) {
+      return m.checkpoints.every((c) => c.is_completed);
+    }
+    return m.is_completable;
+  }
+
+  // Function to optimistically toggle a checkpoint
+  toggleCheckpoint(m: MissionProgress, cp: CheckpointInfo): void {
+    const updated = m.checkpoints.map((c) =>
+      c.id === cp.id ? { ...c, is_completed: !c.is_completed } : c,
+    );
+    this.data.update((d) =>
+      d
+        ? {
+            ...d,
+            missions: d.missions.map((mission) =>
+              mission.mission_id === m.mission_id ? { ...mission, checkpoints: updated } : mission,
+            ),
+          }
+        : null,
+    );
+
+    this.api.toggleCheckpoint(cp.id).subscribe({
+      error: () => {
+        this.toast.show({
+          type: 'error',
+          icon: '❌',
+          title: 'Error',
+          message: 'No se pudo actualizar el paso',
+        });
+        this.loadMissions();
+      },
+    });
+  }
+
   // Function to claim a mission reward
   claim(mission: MissionProgress): void {
-    if (this.claiming() || !mission.is_completable) return;
+    if (this.claiming() || !this.canFinish(mission)) return;
     this.claiming.set(mission.mission_id);
 
     this.api.claimMission(mission.mission_id).subscribe({
@@ -240,8 +308,14 @@ export class MissionsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Function to delete a mission and reload the board
-  deleteMission(m: MissionProgress): void {
+  // Function to enter delete confirmation state for a mission card
+  requestDeleteConfirm(m: MissionProgress): void {
+    this.deleteConfirmId.set(m.mission_id);
+  }
+
+  // Function to confirm and execute mission deletion
+  confirmDelete(m: MissionProgress): void {
+    this.deleteConfirmId.set('');
     this.menuOpenId.set('');
     this.api.deleteMission(m.mission_id).subscribe({
       next: () => {
@@ -273,6 +347,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
       detail: m.description ?? '',
       due_date: m.due_date ? m.due_date.substring(0, 10) : '',
       category: m.category ?? '',
+      checkpoints: m.checkpoints.map((cp) => ({ id: cp.id, description: cp.description })),
     };
   }
 
@@ -281,14 +356,30 @@ export class MissionsComponent implements OnInit, OnDestroy {
     this.editingId.set('');
   }
 
+  // Function to add a blank checkpoint row to the edit form
+  addEditCheckpoint(): void {
+    this.editForm.checkpoints.push({ id: null, description: '' });
+  }
+
+  // Function to remove a checkpoint row from the edit form by index
+  removeEditCheckpoint(index: number): void {
+    this.editForm.checkpoints.splice(index, 1);
+  }
+
   // Function to save inline edit changes to the API and reload
   saveEdit(): void {
     if (this.savingEdit()) return;
     this.savingEdit.set(true);
+
+    const checkpoints: CheckpointUpdateItem[] = this.editForm.checkpoints
+      .filter((cp) => cp.description.trim())
+      .map((cp, idx) => ({ id: cp.id, description: cp.description.trim(), order_index: idx }));
+
     const payload: UpdateMissionRequest = {
       objective_description: this.editForm.objective || undefined,
       detail: this.editForm.detail,
       due_date: this.editForm.due_date || null,
+      checkpoints: this.editForm.category !== 'DAILY_GRIND' ? checkpoints : undefined,
     };
     this.api.updateMission(this.editingId(), payload).subscribe({
       next: () => {
@@ -364,6 +455,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
     this.attrFilter.set('');
     this.menuOpenId.set('');
     this.editingId.set('');
+    this.deleteConfirmId.set('');
   }
 
   // Function to return the number of missions visible in a given tab

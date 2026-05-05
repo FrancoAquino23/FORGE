@@ -11,3 +11,28 @@
     max-height: 300px;
   }
 }
+
+.checkpoint-cb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+  vertical-align: middle;
+
+  &:checked {
+    background: rgba(245, 158, 11, 0.9);
+    border-color: #f59e0b;
+  }
+
+  &:hover:not(:checked) {
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+}
