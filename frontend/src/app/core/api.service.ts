@@ -21,8 +21,6 @@ export interface AttributeProfile {
 export interface PlayerProfile {
   username: string;
   prestige_count: number;
-  streak_current: number;
-  streak_max: number;
   attributes: AttributeProfile[];
 }
 
@@ -48,7 +46,6 @@ export interface MissionProgress {
   reward_material_qty: number;
   expires_at: string;
   is_completable: boolean;
-  ai_generated: boolean;
   status: string;
   category: string | null;
   due_date: string | null;
@@ -61,7 +58,6 @@ export interface MissionProgress {
 // Interface (Mission List Response - Data)
 export interface MissionListResponse {
   missions: MissionProgress[];
-  ai_ready: boolean;
 }
 
 // Interface (Mission Claim Response - Data)
@@ -135,8 +131,6 @@ export interface ActivityLogResponse {
   new_attribute_xp: number;
   xp_to_next_level: number;
   level_up: { occurred: boolean; new_level: number };
-  streak_current: number;
-  streak_broken: boolean;
   material_balance: number;
 }
 

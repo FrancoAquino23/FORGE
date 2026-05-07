@@ -7,7 +7,7 @@
   @for (toast of svc.toasts(); track toast.id) {
     <div
       class="forge-card border p-4 flex items-start gap-3 shadow-xl pointer-events-auto"
-      [class]="borderClass(toast.type)"
+      [class]="borderClass(toast)"
       [class.animate-drop-in]="toast.type === 'loot'"
       [class.animate-slide-in]="toast.type !== 'loot'"
     >

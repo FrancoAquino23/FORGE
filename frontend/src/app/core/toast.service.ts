@@ -15,7 +15,13 @@ export interface Toast {
   icon: string;
   title: string;
   message: string;
+  attrCode?: string;
 }
+
+const ATTR_NAMES: Record<string, string> = {
+  S: 'Strength', P: 'Perception', E: 'Endurance', C: 'Charisma',
+  I: 'Intelligence', A: 'Agility', L: 'Luck',
+};
 
 // Service (ToastService - Manages Toast Notifications)
 @Injectable({ providedIn: 'root' })
@@ -41,27 +47,17 @@ export class ToastService {
       this.show({
         type: 'levelup',
         icon: '⚡',
-        title: '¡LEVEL UP!',
-        message: `${res.material_name} ahora en Nivel ${res.level_up.new_level}`,
+        title: `Level Up: ${ATTR_NAMES[res.attribute_code] ?? res.attribute_code}!`,
+        message: `Now at Level ${res.level_up.new_level}`,
+        attrCode: res.attribute_code,
       });
     } else {
       this.show({
         type: 'xp',
         icon: '🔥',
-        title: 'Actividad Registrada',
+        title: 'Activity Logged',
         message: `+${res.xp_earned} XP · +${res.material_earned} ${res.material_name}`,
       });
-    }
-    if (res.streak_broken) {
-      this.show(
-        {
-          type: 'error',
-          icon: '💔',
-          title: 'Racha Rota',
-          message: 'Tu racha se ha reiniciado a 0',
-        },
-        5000,
-      );
     }
   }
 
@@ -70,7 +66,7 @@ export class ToastService {
     this.show({
       type: 'claim',
       icon: '✅',
-      title: 'Misión Completada',
+      title: 'Mission Accomplished',
       message: `+${res.xp_earned} XP · +${res.material_earned} ${res.material_name}`,
     });
     if (res.leveled_up) {
@@ -78,8 +74,9 @@ export class ToastService {
         this.show({
           type: 'levelup',
           icon: '⚡',
-          title: '¡LEVEL UP!',
-          message: `${res.material_name} ahora en Nivel ${res.new_attribute_level}`,
+          title: `Level Up: ${ATTR_NAMES[res.attribute_code] ?? res.attribute_code}!`,
+          message: `Now at Level ${res.new_attribute_level}`,
+          attrCode: res.attribute_code,
         });
       }, 600);
     }
@@ -90,8 +87,9 @@ export class ToastService {
     this.show({
       type: 'claim',
       icon: '⚒',
-      title: 'Reliquia Mejorada',
-      message: `Nivel ${res.new_level} · +${res.new_bonus_pct}% bonus activo`,
+      title: 'Relic Upgraded',
+      message: `Level ${res.new_level} · +${res.new_bonus_pct}% active bonus`,
+      attrCode: res.attribute_code,
     });
   }
 }
