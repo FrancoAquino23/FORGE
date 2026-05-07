@@ -55,7 +55,5 @@ class PlayerService:
         return PlayerProfileResponse(
             username=user.username,
             prestige_count=player.prestige_count,
-            streak_current=player.streak_current,
-            streak_max=player.streak_max,
             attributes=attributes,
         )

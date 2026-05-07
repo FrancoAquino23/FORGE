@@ -13,7 +13,6 @@ from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
 from app.models.relic import Relic
 from app.schemas.activity import ActivityLogRequest, ActivityLogResponse, LevelUpInfo
 from app.services.reward_service import RewardService
-from app.services.streak_service import StreakService
 
 # Constants for rate limiting and overcharge logic
 _RATE_LIMIT_COUNT = 10
@@ -61,9 +60,6 @@ class ActivityService:
 
         # Update inventory with materials earned
         new_balance = await self._update_inventory(player.id, attr.id, material_earned)
-        
-        # Update streak and check for breaks/shields
-        streak_broken, _, new_streak = await self._update_streak(player, today)
 
         await self._db.commit()
 
@@ -78,8 +74,6 @@ class ActivityService:
             new_attribute_xp=new_xp,
             xp_to_next_level=new_xp_to_next,
             level_up=LevelUpInfo(occurred=leveled_up, new_level=new_level),
-            streak_current=new_streak,
-            streak_broken=streak_broken,
             material_balance=new_balance,
         )
 
@@ -155,23 +149,3 @@ class ActivityService:
         inventory = result.scalar_one()
         inventory.quantity += amount
         return inventory.quantity
-
-    # Helper (Update Streak & Handle Breaks/Shields)
-    async def _update_streak(
-        self, player: PlayerProfile, today: date
-    ) -> tuple[bool, bool, int]:
-        locked = await self._db.execute(
-            select(PlayerProfile)
-            .where(PlayerProfile.id == player.id)
-            .with_for_update()
-        )
-        profile = locked.scalar_one()
-        update = StreakService.compute(
-            profile.streak_last_date, profile.streak_current, profile.streak_max, today
-        )
-        if update.already_logged_today:
-            return False, False, profile.streak_current
-        profile.streak_current = update.new_streak
-        profile.streak_max = update.new_max
-        profile.streak_last_date = today
-        return update.was_broken, False, update.new_streak

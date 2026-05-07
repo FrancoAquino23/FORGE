@@ -2,7 +2,6 @@
 # MISSION SERVICE
 # ==================================================================
 
-import random
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import func, nullslast, select
@@ -26,13 +25,6 @@ from app.schemas.mission import (
     CheckpointUpdateItem,
 )
 from app.services.reward_service import RewardService
-
-# Configuration for auto-generated missions (type, target count, rewards)
-_MISSION_CONFIGS = [
-    {"obj_type": "LOG_COUNT", "target": 1, "reward_xp": 50,  "reward_mat": 20},
-    {"obj_type": "LOG_COUNT", "target": 3, "reward_xp": 100, "reward_mat": 40},
-    {"obj_type": "LOG_COUNT", "target": 5, "reward_xp": 200, "reward_mat": 80},
-]
 
 # Reward amounts per category for player-dispatched missions
 _CATEGORY_REWARDS: dict[str, dict] = {
@@ -58,16 +50,6 @@ class MissionService:
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
-    # Function to build mission title based on objective type and target
-    @staticmethod
-    def build_title(obj_type: str, target: int, attr_name: str) -> str:
-        return f"Registrar {target} actividad(es) de {attr_name}"
-
-    # Function to build mission description based on objective type and target
-    @staticmethod
-    def build_description(obj_type: str, target: int, attr_name: str) -> str:
-        return f"Completa {target} registro(s) de actividad de {attr_name} hoy."
-
     # Helper to get active missions with progress for a player
     async def get_active_with_progress(
         self, player_id: uuid.UUID, today: date
@@ -77,11 +59,6 @@ class MissionService:
         pending = await self._load_pending_missions(player_id)
         active = await self._load_active_missions(player_id)
 
-        if not active:
-            await self._generate_missions(player_id)
-            active = await self._load_active_missions(player_id)
-
-        ai_ready = any(m.generated_by_model is not None for m in active)
         progress_list = (
             [await self._build_progress(m, player_id, today) for m in pending]
             + [await self._build_progress(m, player_id, today) for m in active]
@@ -95,7 +72,7 @@ class MissionService:
             )
         )
 
-        return MissionListResponse(missions=progress_list, ai_ready=ai_ready)
+        return MissionListResponse(missions=progress_list)
 
     # Helper to claim a completed mission and receive rewards
     async def deploy(
@@ -110,7 +87,7 @@ class MissionService:
         rewards = _CATEGORY_REWARDS.get(request.category, _CATEGORY_REWARDS["DAILY_GRIND"])
         label = _CATEGORY_LABELS.get(request.category, request.category)
 
-        objective = request.description.strip() or f"Misión despachada por el jugador — {label} de {attr.name}."
+        objective = request.description.strip() or f"Player-dispatched mission — {label}: {attr.name}."
 
         mission = Mission(
             player_id=player_id,
@@ -361,30 +338,6 @@ class MissionService:
             )
         ).all()
 
-    # Helper to generate new missions for a player based on configuration
-    async def _generate_missions(self, player_id: uuid.UUID) -> None:
-        all_attrs = (await self._db.scalars(select(Attribute))).all()
-        selected = random.sample(all_attrs, k=min(len(_MISSION_CONFIGS), len(all_attrs)))
-        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
-
-        for cfg, attr in zip(_MISSION_CONFIGS, selected):
-            self._db.add(
-                Mission(
-                    player_id=player_id,
-                    title=self.build_title(cfg["obj_type"], cfg["target"], attr.name),
-                    objective_description=self.build_description(
-                        cfg["obj_type"], cfg["target"], attr.name
-                    ),
-                    target_attribute_id=attr.id,
-                    objective_type=cfg["obj_type"],
-                    objective_target=cfg["target"],
-                    reward_xp=cfg["reward_xp"],
-                    reward_material_qty=cfg["reward_mat"],
-                    expires_at=expires_at,
-                )
-            )
-        await self._db.commit()
-
     # Helper to build mission progress details for a mission and player
     async def _build_progress(
         self, mission: Mission, player_id: uuid.UUID, today: date
@@ -417,7 +370,6 @@ class MissionService:
                 reward_material_qty=mission.reward_material_qty,
                 expires_at=mission.expires_at,
                 is_completable=all_done,
-                ai_generated=False,
                 status="PENDING",
                 category=mission.category,
                 due_date=mission.due_date,
@@ -441,7 +393,6 @@ class MissionService:
             reward_material_qty=mission.reward_material_qty,
             expires_at=mission.expires_at,
             is_completable=(progress >= mission.objective_target),
-            ai_generated=(mission.generated_by_model is not None),
             status=mission.status,
             category=mission.category,
             due_date=mission.due_date,

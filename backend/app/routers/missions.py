@@ -4,7 +4,7 @@
 
 import uuid
 from datetime import date
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_player
 from app.database import get_db
@@ -17,7 +17,6 @@ from app.schemas.mission import (
     ToggleCheckpointResponse,
     UpdateMissionRequest,
 )
-from app.services.gm_service import GmService
 from app.services.mission_service import MissionService
 
 # APIRouter for mission-related endpoints
@@ -26,14 +25,11 @@ router = APIRouter(prefix="/missions", tags=["missions"])
 # Endpoint (GET /missions/active) — Returns PENDING + ACTIVE missions
 @router.get("/active", response_model=MissionListResponse)
 async def get_active_missions(
-    background_tasks: BackgroundTasks,
     player: PlayerProfile = Depends(get_current_player),
     session: AsyncSession = Depends(get_db),
 ) -> MissionListResponse:
     service = MissionService(session)
-    result = await service.get_active_with_progress(player.id, date.today())
-    background_tasks.add_task(GmService.run_background_mission_generation, player.id)
-    return result
+    return await service.get_active_with_progress(player.id, date.today())
 
 # Endpoint (POST /missions/deploy) — Dispatch a new player-created PENDING mission
 @router.post("/deploy", response_model=DeployMissionResponse)
@@ -97,3 +93,4 @@ async def delete_mission(
 ) -> None:
     service = MissionService(session)
     await service.delete(player.id, mission_id)
+    
