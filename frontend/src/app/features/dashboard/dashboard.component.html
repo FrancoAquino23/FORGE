@@ -10,9 +10,11 @@
         <!-- PRESTIGE GEM -->
         <div class="flex items-center gap-4">
           <div class="relative flex flex-col items-center">
-            <span class="text-[9px] font-black tracking-[0.2em] text-forge-muted mb-1 leading-none uppercase">
+            <p
+              class="text-[9px] font-black tracking-[0.2em] text-forge-muted mb-1 leading-none uppercase text-center w-full"
+            >
               Prestige
-            </span>
+            </p>
             <div [style.filter]="prestigeGemGlow(profile()!.prestige_count)">
               <div class="hex-gem-border" [style.background]="prestigeGemColor(profile()!.prestige_count)">
                 <div class="hex-gem-inner">
@@ -51,45 +53,17 @@
             }
           </div>
         </div>
-
-        <!-- STREAK -->
-        <div class="flex flex-col gap-2 min-w-[140px]">
-          <div
-            class="flex justify-between items-center px-3 py-1.5 bg-forge-surface/30 border border-forge-border/40 rounded-sm"
-          >
-            <span class="text-[9px] font-black tracking-[0.2em] text-forge-muted mb-1 leading-none uppercase">
-              Streak
-            </span>
-            <span class="text-xs font-black text-forge-text">
-              {{ profile()!.streak_current }}
-              <small class="font-normal ml-0.5 opacity-60 text-[10px]">d</small>
-            </span>
-          </div>
-
-          <!-- RECORD -->
-          <div
-            class="flex justify-between items-center px-3 py-1.5 bg-forge-surface/30 border border-forge-border/40 rounded-sm"
-          >
-            <span class="text-[9px] font-black tracking-[0.2em] text-forge-muted mb-1 leading-none uppercase">
-              Record
-            </span>
-            <span class="text-xs font-black text-forge-text">
-              {{ profile()!.streak_max }}
-              <small class="font-normal ml-0.5 opacity-60 text-[10px]">d</small>
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   } @else if (loadError()) {
     <div class="forge-card p-6 text-red-400 text-sm mb-6">{{ loadError() }}</div>
   } @else {
-    <div class="text-forge-muted text-sm animate-pulse mb-6">Cargando perfil...</div>
+    <div class="text-forge-muted text-sm animate-pulse mb-6">Loading profile...</div>
   }
 
   <!-- S.P.E.C.I.A.L. ATTRIBUTE GRID -->
   @if (profile()) {
-    <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">Atributos S.P.E.C.I.A.L.</h3>
+    <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">S.P.E.C.I.A.L. Attributes</h3>
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
       @for (attr of profile()!.attributes; track attr.code) {
         <div
@@ -118,11 +92,8 @@
               <div class="progress-fill" [style.background]="xpBarColor(attr.code)" [style.width.%]="xpPct(attr)"></div>
             </div>
           </div>
-          <div class="flex justify-between items-center">
+          <div class="flex justify-end items-center">
             <lucide-icon [img]="getIconName(attr.code)" [size]="14" [class]="attrColor(attr.code)"></lucide-icon>
-            <span class="font-bold text-sm" [class]="attrColor(attr.code)">
-              {{ attr.material_balance }}
-            </span>
           </div>
         </div>
       }
@@ -131,11 +102,11 @@
     <!-- MISSION + INVENTORY -->
     <div class="flex flex-col gap-6">
       <div class="forge-card p-5">
-        <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-4">⚔ Mission Dispatch</h3>
+        <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-4">Mission Control</h3>
         <div class="flex flex-col gap-3">
           <!-- ATTRIBUTE SELECTOR -->
           <div>
-            <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Atributo</label>
+            <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Attribute</label>
             <div class="relative">
               <button
                 type="button"
@@ -146,7 +117,7 @@
                   <lucide-icon [img]="getIconName(logAttr)" [size]="13" [class]="attrColor(logAttr)"></lucide-icon>
                   <span class="text-forge-text text-xs flex-1">{{ getAttrName(logAttr) }}</span>
                 } @else {
-                  <span class="text-forge-muted text-xs flex-1">— Seleccionar —</span>
+                  <span class="text-forge-muted text-xs flex-1">— Select —</span>
                 }
                 <span class="text-forge-muted text-[10px]">▾</span>
               </button>
@@ -173,7 +144,7 @@
 
           <!-- QUEST CATEGORY -->
           <div>
-            <label class="block text-xs text-forge-muted mb-1.5 uppercase tracking-wider">Categoría</label>
+            <label class="block text-xs text-forge-muted mb-1.5 uppercase tracking-wider">Category</label>
             <div class="flex gap-2">
               @for (cat of CATEGORIES; track cat.value) {
                 <button
@@ -194,7 +165,7 @@
 
           <!-- PRIORITY (THREAT LEVEL) -->
           <div>
-            <label class="block text-xs text-forge-muted mb-1.5 uppercase tracking-wider">Prioridad</label>
+            <label class="block text-xs text-forge-muted mb-1.5 uppercase tracking-wider">Priority</label>
             <div class="flex gap-2">
               @for (tl of THREAT_LEVELS; track tl.value) {
                 <button
@@ -217,18 +188,18 @@
           @if (logCategory !== 'DAILY_GRIND') {
             <div>
               <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Due Date</label>
-              <input type="date" class="forge-input w-full text-xs" [(ngModel)]="logDueDate" [min]="todayStr" />
+              <app-date-picker [(value)]="logDueDate" [min]="todayStr" />
             </div>
           }
 
           <!-- MISSION OBJECTIVE -->
           <div>
-            <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Objetivo</label>
+            <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Objective</label>
             <textarea
               class="forge-input w-full resize-none text-xs leading-relaxed"
               rows="2"
               maxlength="500"
-              placeholder="[ Define Mission Objective... ]"
+              placeholder="[ Define Mission Objective ]"
               [(ngModel)]="logDesc"
             ></textarea>
           </div>
@@ -236,14 +207,14 @@
           <!-- MISSION DESCRIPTION -->
           <div>
             <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">
-              Descripción
-              <span class="normal-case text-forge-muted/50 font-normal">(opcional)</span>
+              Description
+              <span class="normal-case text-forge-muted/50 font-normal">(optional)</span>
             </label>
             <textarea
               class="forge-input w-full resize-none text-xs leading-relaxed"
               rows="3"
               maxlength="1000"
-              placeholder="[ Detalles, contexto o notas de la misión... ]"
+              placeholder="[ Details or mission context ]"
               [(ngModel)]="logDetail"
             ></textarea>
           </div>
@@ -253,12 +224,12 @@
             <div>
               <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">
                 Steps to Completion
-                <span class="normal-case text-forge-muted/50 font-normal">(uno por línea)</span>
+                <span class="normal-case text-forge-muted/50 font-normal">(one per line)</span>
               </label>
               <textarea
                 class="forge-input w-full resize-none text-xs leading-relaxed"
                 rows="4"
-                placeholder="[ Paso 1...&#10;Paso 2...&#10;Paso 3... ]"
+                placeholder="Step 1...&#10;Step 2...&#10;Step 3..."
                 [(ngModel)]="logSteps"
               ></textarea>
             </div>
@@ -272,9 +243,9 @@
             "
           >
             @if (deploying()) {
-              Despachando...
+              Dispatching...
             } @else {
-              ⚔ Deploy Mission
+              Deploy Mission
             }
           </button>
         </div>

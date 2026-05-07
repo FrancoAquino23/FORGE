@@ -18,6 +18,14 @@ import {
 import { ApiService, AttributeProfile, PlayerProfile } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
 import { RelicWorkshopComponent } from '../relic-workshop/relic-workshop.component';
+import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
+
+// Category label map used for deploy-mission toast
+const _DEPLOY_CAT_LABEL: Record<string, string> = {
+  MAIN_QUEST: 'Main Quest',
+  SIDE_QUEST: 'Side Quest',
+  DAILY_GRIND: 'Daily Grind',
+};
 
 // Color mappings for attributes
 const ATTR_COLORS: Record<string, string> = {
@@ -78,7 +86,7 @@ const PRESTIGE_THRESHOLD = 10;
 // Main dashboard component that displays player profile, attributes, and inventory
 @Component({
   selector: 'app-dashboard',
-  imports: [RelicWorkshopComponent, LucideAngularModule, FormsModule],
+  imports: [RelicWorkshopComponent, LucideAngularModule, FormsModule, DatePickerComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -110,7 +118,11 @@ export class DashboardComponent implements OnInit {
     { value: 'DAILY_GRIND' as const, label: 'Daily Grind' },
   ];
 
-  readonly THREAT_LEVELS: { value: 'MINOR' | 'MAJOR' | 'CRITICAL'; label: string; color: string }[] = [
+  readonly THREAT_LEVELS: {
+    value: 'MINOR' | 'MAJOR' | 'CRITICAL';
+    label: string;
+    color: string;
+  }[] = [
     { value: 'MINOR', label: 'Minor', color: 'text-cyan-400' },
     { value: 'MAJOR', label: 'Major', color: 'text-amber-400' },
     { value: 'CRITICAL', label: 'Critical', color: 'text-red-400' },
@@ -125,7 +137,7 @@ export class DashboardComponent implements OnInit {
   private loadProfile(): void {
     this.api.getProfile().subscribe({
       next: (p) => this.profile.set(p),
-      error: () => this.loadError.set('No se pudo cargar el perfil. Verifica tu token.'),
+      error: () => this.loadError.set('Could not load profile. Check your token.'),
     });
   }
 
@@ -157,11 +169,12 @@ export class DashboardComponent implements OnInit {
       })
       .subscribe({
         next: (res) => {
+          const catLabel = _DEPLOY_CAT_LABEL[res.category] ?? res.category;
           this.toast.show({
             type: 'claim',
             icon: '⚔',
-            title: 'Misión despachada',
-            message: `${res.title} (+${res.reward_xp} XP al terminar)`,
+            title: 'Mission Forged',
+            message: `${catLabel} mission forged successfully!`,
           });
           this.deploying.set(false);
           this.xpFlash.set(this.logAttr);
@@ -179,7 +192,7 @@ export class DashboardComponent implements OnInit {
             type: 'error',
             icon: '❌',
             title: 'Error',
-            message: err.error?.detail ?? 'No se pudo despachar la misión',
+            message: err.error?.detail ?? 'Could not dispatch mission',
           });
           this.deploying.set(false);
         },
