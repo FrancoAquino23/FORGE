@@ -3,11 +3,10 @@
 # ==================================================================
 
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from sqlalchemy import (
     CheckConstraint,
-    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -57,12 +56,6 @@ class PlayerProfile(Base):
     global_xp_bonus: Mapped[Decimal] = mapped_column(
         Numeric(6, 2), nullable=False, default=Decimal("0.00")
     )
-    streak_current: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    streak_max: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    streak_last_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    ai_calls_today: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    ai_calls_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
-    ai_budget_reset_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

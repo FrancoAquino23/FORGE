@@ -35,6 +35,4 @@ class ActivityLogResponse(BaseModel):
     new_attribute_xp: int
     xp_to_next_level: int
     level_up: LevelUpInfo
-    streak_current: int
-    streak_broken: bool
     material_balance: int

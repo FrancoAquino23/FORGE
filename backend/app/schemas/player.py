@@ -18,6 +18,4 @@ class AttributeProfile(BaseModel):
 class PlayerProfileResponse(BaseModel):
     username: str
     prestige_count: int
-    streak_current: int
-    streak_max: int
     attributes: list[AttributeProfile]
