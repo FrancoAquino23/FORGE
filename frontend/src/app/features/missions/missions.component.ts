@@ -2,15 +2,7 @@
    MISSIONS COMPONENT LOGIC
    ================================================================== */
 
-import {
-  Component,
-  HostListener,
-  OnDestroy,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   LucideAngularModule,
@@ -34,8 +26,9 @@ import {
   UpdateMissionRequest,
 } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
+import { PlayerStateService } from '../../core/player-state.service';
 
-export type MissionTab = 'DAILY_GRIND' | 'MAIN_QUEST' | 'SIDE_QUEST' | 'IA_FORGE';
+export type MissionTab = 'DAILY_GRIND' | 'MAIN_QUEST' | 'SIDE_QUEST';
 
 // Attribute color maps
 const ATTR_COLORS: Record<string, string> = {
@@ -59,13 +52,13 @@ const ATTR_BAR: Record<string, string> = {
 };
 
 const RELIC_NAMES: Record<string, string> = {
-  S: 'Yunque de Poder',
-  P: 'Faro de Claridad',
-  E: 'Escudo de Eternidad',
-  C: 'Cáliz de Armonía',
-  I: 'Orbe de Lógica',
-  A: 'Elixir de Velocidad',
-  L: 'Tótem de Gracia',
+  S: 'Anvil of Power',
+  P: 'Beacon of Clarity',
+  E: 'Shield of Eternity',
+  C: 'Chalice of Harmony',
+  I: 'Orb of Logic',
+  A: 'Elixir of Speed',
+  L: 'Totem of Grace',
 };
 
 const ATTR_ICONS: Record<string, LucideIconData> = {
@@ -123,9 +116,10 @@ const THREAT_BAR: Record<string, string> = {
   templateUrl: './missions.component.html',
   styleUrl: './missions.component.scss',
 })
-export class MissionsComponent implements OnInit, OnDestroy {
+export class MissionsComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private playerState = inject(PlayerStateService);
 
   data = signal<MissionListResponse | null>(null);
   loadError = signal('');
@@ -165,7 +159,6 @@ export class MissionsComponent implements OnInit, OnDestroy {
     { value: 'MAIN_QUEST', label: 'Main Quests' },
     { value: 'SIDE_QUEST', label: 'Side Quests' },
     { value: 'DAILY_GRIND', label: 'Daily Grinds' },
-    { value: 'IA_FORGE', label: 'IA Forge' },
   ];
 
   readonly ATTRS = ['S', 'P', 'E', 'C', 'I', 'A', 'L'];
@@ -175,8 +168,6 @@ export class MissionsComponent implements OnInit, OnDestroy {
     { value: 'MAJOR', label: 'Major' },
     { value: 'CRITICAL', label: 'Critical' },
   ];
-
-  private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Derived list of missions filtered by active tab and attribute selector
   readonly filteredMissions = computed<MissionProgress[]>(() => {
@@ -194,14 +185,9 @@ export class MissionsComponent implements OnInit, OnDestroy {
       case 'SIDE_QUEST':
         subset = all.filter((m) => m.status === 'PENDING' && m.category === 'SIDE_QUEST');
         break;
-      case 'IA_FORGE':
-        subset = all.filter((m) => m.ai_generated);
-        break;
       default:
         subset = all.filter(
-          (m) =>
-            !m.ai_generated &&
-            ((m.status === 'PENDING' && m.category === 'DAILY_GRIND') || m.status === 'ACTIVE'),
+          (m) => (m.status === 'PENDING' && m.category === 'DAILY_GRIND') || m.status === 'ACTIVE',
         );
     }
 
@@ -227,7 +213,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
 
   // Destroy component
   ngOnDestroy(): void {
-    this.clearPoll();
+    this.loadMissions();
   }
 
   // Close open overflow menu when clicking anywhere outside it
@@ -236,17 +222,11 @@ export class MissionsComponent implements OnInit, OnDestroy {
     this.menuOpenId.set('');
   }
 
-  // Function to load active missions from API with polling if AI generation is not ready
+  // Function to load active missions from API
   private loadMissions(): void {
     this.api.getActiveMissions().subscribe({
-      next: (res) => {
-        this.data.set(res);
-        this.clearPoll();
-        if (!res.ai_ready) {
-          this.pollTimer = setTimeout(() => this.loadMissions(), 3000);
-        }
-      },
-      error: () => this.loadError.set('No se pudieron cargar las misiones.'),
+      next: (res) => this.data.set(res),
+      error: () => this.loadError.set('Could not load missions.'),
     });
   }
 
@@ -296,7 +276,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
           type: 'error',
           icon: '❌',
           title: 'Error',
-          message: 'No se pudo actualizar el paso',
+          message: 'Could not update checkpoint',
         });
         this.loadMissions();
       },
@@ -313,13 +293,14 @@ export class MissionsComponent implements OnInit, OnDestroy {
         this.toast.fromMissionClaim(res);
         this.claiming.set('');
         this.loadMissions();
+        this.api.getProfile().subscribe({ next: (p) => this.playerState.profile.set(p) });
       },
       error: (err) => {
         this.toast.show({
           type: 'error',
           icon: '❌',
           title: 'Error',
-          message: err.error?.detail ?? 'No se pudo completar la misión',
+          message: err.error?.detail ?? 'Could not complete mission',
         });
         this.claiming.set('');
       },
@@ -338,10 +319,10 @@ export class MissionsComponent implements OnInit, OnDestroy {
     this.api.deleteMission(m.mission_id).subscribe({
       next: () => {
         this.toast.show({
-          type: 'claim',
+          type: 'error',
           icon: '🗑',
-          title: 'Misión eliminada',
-          message: m.objective_description,
+          title: 'Mission Terminated',
+          message: 'Mission terminated successfully',
         });
         this.loadMissions();
       },
@@ -350,7 +331,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
           type: 'error',
           icon: '❌',
           title: 'Error',
-          message: err.error?.detail ?? 'No se pudo eliminar la misión',
+          message: err.error?.detail ?? 'Could not delete mission',
         });
       },
     });
@@ -412,7 +393,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
           type: 'error',
           icon: '❌',
           title: 'Error',
-          message: err.error?.detail ?? 'No se pudo guardar la misión',
+          message: err.error?.detail ?? 'Could not save mission',
         });
         this.savingEdit.set(false);
       },
@@ -440,7 +421,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
           type: 'error',
           icon: '❌',
           title: 'Error',
-          message: 'No se pudo actualizar favorito',
+          message: 'Could not update favorite',
         });
       },
     });
@@ -488,13 +469,9 @@ export class MissionsComponent implements OnInit, OnDestroy {
         return all.filter((m) => m.status === 'PENDING' && m.category === 'MAIN_QUEST').length;
       case 'SIDE_QUEST':
         return all.filter((m) => m.status === 'PENDING' && m.category === 'SIDE_QUEST').length;
-      case 'IA_FORGE':
-        return all.filter((m) => m.ai_generated).length;
       default:
         return all.filter(
-          (m) =>
-            (m.status === 'PENDING' && m.category === 'DAILY_GRIND') ||
-            (m.status === 'ACTIVE' && !m.ai_generated),
+          (m) => (m.status === 'PENDING' && m.category === 'DAILY_GRIND') || m.status === 'ACTIVE',
         ).length;
     }
   }
@@ -514,7 +491,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
   // Function to calculate the time left until a mission expires
   timeLeft(expiresAt: string): string {
     const diff = new Date(expiresAt).getTime() - Date.now();
-    if (diff <= 0) return 'expirada';
+    if (diff <= 0) return 'Expired';
     const d = Math.floor(diff / 86_400_000);
     if (d >= 1) return `${d}d`;
     const h = Math.floor(diff / 3_600_000);
@@ -595,17 +572,8 @@ export class MissionsComponent implements OnInit, OnDestroy {
     return `${h}h ${m}m`;
   }
 
-  // Function to map a mission's category code and AI flag to a human-readable tab label
-  categoryLabel(category: string | null, aiGenerated = false): string {
-    if (aiGenerated) return 'IA Forge';
+  // Function to map a mission's category code to a human-readable label
+  categoryLabel(category: string | null): string {
     return category ? (CATEGORY_LABELS[category] ?? category) : '—';
-  }
-
-  // Function to cancel the active polling timer if one is running
-  private clearPoll(): void {
-    if (this.pollTimer !== null) {
-      clearTimeout(this.pollTimer);
-      this.pollTimer = null;
-    }
   }
 }

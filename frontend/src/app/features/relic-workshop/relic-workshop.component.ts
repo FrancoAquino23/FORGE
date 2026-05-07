@@ -30,13 +30,13 @@ const ATTR_ICONS: Record<string, LucideIconData> = {
 
 // Mapping of attribute codes to their display names for relics
 const RELIC_NAMES: Record<string, string> = {
-  S: 'Yunque de Poder',
-  P: 'Faro de Claridad',
-  E: 'Escudo de Eternidad',
-  C: 'Cáliz de Armonía',
-  I: 'Orbe de Lógica',
-  A: 'Elixir de Velocidad',
-  L: 'Tótem de Gracia',
+  S: 'Anvil of Power',
+  P: 'Beacon of Clarity',
+  E: 'Shield of Eternity',
+  C: 'Chalice of Harmony',
+  I: 'Orb of Logic',
+  A: 'Elixir of Speed',
+  L: 'Totem of Grace',
 };
 
 // Color mappings for relic display based on attribute code
@@ -61,16 +61,6 @@ const BORDER_COLORS: Record<string, string> = {
   L: 'border-orange-500/30 hover:border-orange-500/60',
 };
 
-// Color mappings for the XP bars in relic cards based on attribute code
-const BAR_COLORS: Record<string, string> = {
-  S: '#f87171',
-  P: '#60a5fa',
-  E: '#4ade80',
-  C: '#fde047',
-  I: '#c084fc',
-  A: '#22d3ee',
-  L: '#fb923c',
-};
 
 @Component({
   selector: 'app-relic-workshop',
@@ -119,7 +109,7 @@ export class RelicWorkshopComponent implements OnInit {
           type: 'error',
           icon: '❌',
           title: 'Error',
-          message: err.error?.detail ?? 'No se pudo mejorar la reliquia',
+          message: err.error?.detail ?? 'Could not upgrade relic',
         });
       },
     });
@@ -140,11 +130,6 @@ export class RelicWorkshopComponent implements OnInit {
     return BORDER_COLORS[code] ?? 'border-forge-border';
   }
 
-  // Function to get the color for the XP bar in a relic card
-  barColor(code: string): string {
-    return BAR_COLORS[code] ?? '#f59e0b';
-  }
-
   // Function to get the appropriate icon for a relic
   getIcon(code: string): LucideIconData {
     return ATTR_ICONS[code] ?? Sparkles;
@@ -155,8 +140,4 @@ export class RelicWorkshopComponent implements OnInit {
     return String(n).padStart(2, '0');
   }
 
-  // Function to calculate the percentage fill for the relic level bar based on its current level
-  levelPct(relic: RelicInfo): number {
-    return Math.min(100, (relic.level / 10) * 100);
-  }
 }

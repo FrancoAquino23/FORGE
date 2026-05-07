@@ -4,12 +4,7 @@
 
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  ApiService,
-  PlayerProfile,
-  PrestigeStatusResponse,
-  PrestigeUpResponse,
-} from '../../core/api.service';
+import { ApiService, PrestigeStatusResponse, PrestigeUpResponse } from '../../core/api.service';
 import { PlayerStateService } from '../../core/player-state.service';
 import { ToastService } from '../../core/toast.service';
 
@@ -33,6 +28,17 @@ const ATTR_HEX: Record<string, string> = {
   I: '#c084fc',
   A: '#22d3ee',
   L: '#fb923c',
+};
+
+// English material names keyed by attribute code
+const MATERIAL_NAMES: Record<string, string> = {
+  S: 'Damascus Steel',
+  P: 'Quartz Lens',
+  E: 'Carbon Fiber',
+  C: 'Resonance Crystal',
+  I: 'Binary Essence',
+  A: 'Inertial Catalyst',
+  L: 'Stardust',
 };
 
 // Data shape for a single SVG ring segment
@@ -84,12 +90,18 @@ export class PrestigeComponent implements OnInit {
   private toast = inject(ToastService);
   private playerState = inject(PlayerStateService);
 
-  profile = signal<PlayerProfile | null>(null);
+  readonly profile = this.playerState.profile;
   status = signal<PrestigeStatusResponse | null>(null);
   prestiging = signal(false);
   prestigeFlash = signal(false);
 
   selectedBuff = '';
+  hoverPanel = signal(false);
+
+  // XP-only buff types
+  readonly xpBuffTypes = computed(() =>
+    (this.status()?.available_buff_types ?? []).filter((bt) => bt.target_type === 'XP'),
+  );
 
   // Load component
   ngOnInit(): void {
@@ -134,7 +146,7 @@ export class PrestigeComponent implements OnInit {
     });
   });
 
-  // Helper (True only when all 7 attributes are at threshold)
+  // Helper (True only when all 7 attributes are at threshold and a buff is selected)
   readonly canPrestigeUp = computed(
     () => this.ringSegments().every((s) => s.ready) && !!this.selectedBuff,
   );
@@ -144,6 +156,26 @@ export class PrestigeComponent implements OnInit {
 
   // Helper (Counts attributes already at threshold)
   readonly readyCount = computed(() => this.ringSegments().filter((s) => s.ready).length);
+
+  // Helper (Missing materials with English names and levels needed)
+  readonly missingMaterials = computed(() =>
+    this.missingSegments().map((s) => ({
+      code: s.code,
+      name: MATERIAL_NAMES[s.code] ?? s.code,
+      needed: s.threshold - s.level,
+    })),
+  );
+
+  // Helper (Profile attributes sorted in strict SPECIAL order)
+  readonly sortedAttributes = computed(() => {
+    const attrs = this.profile()?.attributes ?? [];
+    return SPECIAL_ORDER.map((code) => attrs.find((a) => a.code === code)).filter(
+      Boolean,
+    ) as typeof attrs;
+  });
+
+  // Helper (Next prestige number)
+  readonly nextPrestigeNumber = computed(() => (this.status()?.prestige_count ?? 0) + 1);
 
   // Function to perform the Prestige Up action
   prestigeUp(): void {
@@ -159,8 +191,8 @@ export class PrestigeComponent implements OnInit {
           {
             type: 'levelup',
             icon: '🔥',
-            title: `¡PRESTIGE #${res.prestige_number}!`,
-            message: `${res.buff_display_name} +${res.new_total_bonus}% · Todos los atributos reiniciados`,
+            title: `PRESTIGE #${res.prestige_number}!`,
+            message: `${res.buff_display_name} +${res.new_total_bonus}% · All attributes reset`,
           },
           6000,
         );
@@ -173,17 +205,23 @@ export class PrestigeComponent implements OnInit {
         this.toast.show({
           type: 'error',
           icon: '❌',
-          title: 'Prestige Fallido',
-          message: err.error?.detail ?? 'No se pudo completar el prestige',
+          title: 'Prestige Failed',
+          message: err.error?.detail ?? 'Could not complete prestige',
         });
       },
     });
   }
 
-  // Function to get the bonus percentage of the currently selected buff
-  buffPreviewBonus(): string {
+  // Function to get the current total bonus for the selected buff type
+  currentBuffBonus(): number {
+    const active = this.status()?.active_buffs.find((b) => b.buff_type_code === this.selectedBuff);
+    return active?.total_bonus ?? 0;
+  }
+
+  // Function to get the projected total bonus after performing prestige
+  nextBuffBonus(): number {
     const bt = this.status()?.available_buff_types.find((b) => b.code === this.selectedBuff);
-    return bt ? String(bt.bonus_percent) : '?';
+    return this.currentBuffBonus() + (bt?.bonus_percent ?? 0);
   }
 
   // Function to return the display name of the currently selected buff type
@@ -194,7 +232,12 @@ export class PrestigeComponent implements OnInit {
     );
   }
 
-  // Function to glow dynamicly based on prestige count
+  // Function to return material name for an attribute code
+  materialName(code: string): string {
+    return MATERIAL_NAMES[code] ?? code;
+  }
+
+  // Function to glow dynamically based on prestige count
   ringGlowClass(): string {
     const n = this.status()?.prestige_count ?? 0;
     if (n === 0) return '';
@@ -203,7 +246,7 @@ export class PrestigeComponent implements OnInit {
     return 'ring-glow-high';
   }
 
-  // Function to get the color class for a buff type based on its code
+  // Function to get the color class for an attribute code
   attrColor(code: string): string {
     return ATTR_COLORS[code] ?? 'text-forge-primary';
   }

@@ -12,17 +12,17 @@
 
     <!-- REGISTER FORM -->
     <div class="forge-card p-6 shadow-forge">
-      <h2 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-5">Crear cuenta</h2>
+      <h2 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-5">Create Account</h2>
 
       <form (ngSubmit)="submit()" class="flex flex-col gap-4">
         <div>
-          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Nombre de usuario</label>
+          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Username</label>
           <input
             class="forge-input"
             type="text"
             [(ngModel)]="username"
             name="username"
-            placeholder="guerrero_forge"
+            placeholder="warrior_forge"
             required
             minlength="3"
             maxlength="50"
@@ -37,20 +37,20 @@
             type="email"
             [(ngModel)]="email"
             name="email"
-            placeholder="guerrero@forge.io"
+            placeholder="warrior@forge.io"
             required
             autocomplete="email"
           />
         </div>
 
         <div>
-          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Contraseña</label>
+          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Password</label>
           <input
             class="forge-input"
             type="password"
             [(ngModel)]="password"
             name="password"
-            placeholder="•••••••• (mín. 8 caracteres)"
+            placeholder="•••••••• (min. 8 characters)"
             required
             minlength="8"
             autocomplete="new-password"
@@ -65,17 +65,17 @@
         <!-- SUBMIT BUTTON -->
         <button class="forge-btn-primary btn-shimmer w-full mt-1" type="submit" [disabled]="loading()">
           @if (loading()) {
-            Forjando tu leyenda...
+            Forging your legend...
           } @else {
-            Forjar mi cuenta
+            Create Account
           }
         </button>
       </form>
     </div>
     <!-- LOGIN INSTRUCTION -->
     <p class="text-center text-forge-muted text-xs mt-4">
-      ¿Ya tienes cuenta?
-      <a routerLink="/login" class="text-forge-primary hover:text-amber-400 transition-colors">Iniciar sesión</a>
+      Already have an account?
+      <a routerLink="/login" class="text-forge-primary hover:text-amber-400 transition-colors">Sign in</a>
     </p>
   </div>
 </div>

@@ -33,7 +33,7 @@ export class RegisterComponent {
     this.auth.register(this.username, this.email, this.password).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: (err) => {
-        this.error.set(err.error?.detail ?? 'No se pudo crear la cuenta');
+        this.error.set(err.error?.detail ?? 'Could not create account');
         this.loading.set(false);
       },
     });

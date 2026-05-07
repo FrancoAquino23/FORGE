@@ -6,15 +6,16 @@
   <!-- HEADER -->
   <div class="text-center mb-10">
     <p class="text-forge-muted text-xs uppercase tracking-[0.4em] mb-1">S.P.E.C.I.A.L.</p>
-    <h1 class="text-3xl font-black tracking-[0.15em] text-forge-primary uppercase">Altar de Prestigio</h1>
+    <h1 class="text-3xl font-black tracking-[0.15em] text-forge-primary uppercase">Artifact of Prestige</h1>
     <p class="text-forge-muted text-xs mt-2 max-w-sm mx-auto leading-relaxed">
-      Alcanza el umbral en los 7 atributos y sacrifícalos para grabar un buff permanente en el Artefacto.
+      Reach the threshold on all 7 attributes and sacrifice them to engrave a permanent buff into the Artifact.
     </p>
   </div>
 
   @if (profile() && status()) {
     <!-- RING + CONTROLS -->
     <div class="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-10 mb-10">
+      <!-- RING -->
       <div
         class="relative flex-shrink-0 transition-all duration-1000"
         [class]="ringGlowClass()"
@@ -33,7 +34,6 @@
             ⚙
           </text>
 
-          <!-- RING SEGMENTS -->
           @for (seg of ringSegments(); track seg.code) {
             <path
               [attr.d]="seg.bgPath"
@@ -77,87 +77,96 @@
           >
             {{ status()!.prestige_count }}
           </span>
-          <span class="text-[9px] text-forge-muted mt-1 tracking-wider">{{ readyCount() }}/7 listo</span>
+          <span class="text-[9px] text-forge-muted mt-1 tracking-wider">{{ readyCount() }}/7 ready</span>
         </div>
       </div>
 
       <!-- CONTROLS PANEL -->
-      <div class="w-full max-w-xs flex flex-col gap-5">
+      <div class="w-full max-w-xs flex flex-col gap-4">
         <p class="text-[10px] text-forge-muted/70 leading-relaxed text-center">
-          Se requiere alcanzar el nivel 10 en todos los atributos S.P.E.C.I.A.L. y contar con los materiales necesarios
-          para grabar una mejora permanente.
+          Reach level {{ status()!.threshold_level }} on all S.P.E.C.I.A.L. attributes to engrave a permanent upgrade.
         </p>
 
-        @if (missingSegments().length === 0) {
-          <div>
-            <label class="block text-[10px] text-forge-muted mb-1.5 uppercase tracking-wider">Buff a Grabar</label>
-            <select class="forge-input text-xs" [(ngModel)]="selectedBuff">
-              <option value="">— Seleccionar buff —</option>
-              @for (bt of status()!.available_buff_types; track bt.code) {
-                <option [value]="bt.code">{{ bt.display_name }} (+{{ bt.bonus_percent }}%)</option>
-              }
-            </select>
-          </div>
-        }
-
-        <!-- PROJECTED BUFF INFO -->
-        <div class="text-center">
-          @if (selectedBuff && missingSegments().length === 0) {
-            <p class="text-[10px] text-forge-muted/80 leading-relaxed">
-              Próxima Mejora:
-              <span class="text-forge-primary font-bold">+{{ buffPreviewBonus() }}% {{ buffPreviewName() }}</span>
-            </p>
-          } @else if (missingSegments().length === 0) {
-            <p class="text-[10px] text-forge-muted/40 leading-relaxed">
-              Selecciona un buff para ver la mejora proyectada.
-            </p>
+        <!-- NEXT BONUS -->
+        <div class="next-bonus-panel text-center p-4 rounded-sm">
+          <p class="text-[8px] uppercase tracking-[0.25em] text-forge-muted/40 mb-3">Next Bonus</p>
+          @if (selectedBuff) {
+            <p class="text-[9px] text-forge-primary/60 tracking-wider mb-3">{{ buffPreviewName() }}</p>
+            <div class="flex items-center justify-center gap-5">
+              <div class="text-center">
+                <p class="text-[8px] text-forge-muted/35 uppercase tracking-wider mb-1">Current</p>
+                <p class="text-2xl font-black text-forge-muted/40 tabular-nums">{{ currentBuffBonus() }}%</p>
+              </div>
+              <span class="text-forge-muted/25 text-xl font-thin">→</span>
+              <div class="text-center">
+                <p class="text-[8px] text-forge-muted/35 uppercase tracking-wider mb-1">Next</p>
+                <p class="text-4xl font-black next-bonus-value tabular-nums">{{ nextBuffBonus() }}%</p>
+              </div>
+            </div>
           } @else {
-            <p class="text-[10px] text-forge-muted/30 leading-relaxed">Próxima Mejora: pendiente de requisitos</p>
+            <p class="text-[11px] text-forge-muted/35 leading-relaxed tracking-wide italic">
+              Select a buff to reveal
+              <br />
+              your next reward
+            </p>
           }
         </div>
 
-        <!-- PRESTIGE UP BUTTON -->
-        <div class="group relative">
+        <!-- BUFF SELECTOR -->
+        <div>
+          <label class="block text-[10px] text-forge-muted mb-1.5 uppercase tracking-wider">Buff to Engrave</label>
+          <select class="forge-input text-xs" [(ngModel)]="selectedBuff">
+            <option value="">— Select buff —</option>
+            @for (bt of xpBuffTypes(); track bt.code) {
+              <option [value]="bt.code">{{ bt.display_name }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- PRESTIGE UP BUTTON + HOVER REQUIREMENTS PANEL -->
+        <div class="prestige-btn-wrapper" (mouseenter)="hoverPanel.set(true)" (mouseleave)="hoverPanel.set(false)">
           <button
-            class="forge-btn-primary w-full py-3 text-sm tracking-[0.15em] font-black uppercase"
+            class="forge-btn-primary w-full py-3 text-sm tracking-[0.2em] font-black uppercase"
             [class.prestige-ready-glow]="canPrestigeUp()"
             [class.prestige-disabled]="!canPrestigeUp() && !prestiging()"
             [disabled]="!canPrestigeUp() || prestiging()"
             (click)="prestigeUp()"
           >
             @if (prestiging()) {
-              <span class="animate-pulse">⚙ Sacrificando...</span>
+              <span class="animate-pulse">⚙ Ascending...</span>
+            } @else if (canPrestigeUp()) {
+              🔥 ASCEND NOW
             } @else {
-              🔥 Prestige Up
+              ⚔ Ascend to Prestige {{ nextPrestigeNumber() }}
             }
           </button>
-          @if (!canPrestigeUp() && !prestiging()) {
-            <div
-              class="absolute top-full left-0 right-0 mt-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-            >
-              <div class="forge-card border border-forge-border/40 p-3 shadow-lg">
-                @if (missingSegments().length) {
-                  <p class="text-[9px] text-forge-muted/60 uppercase tracking-wider mb-2">Requisitos Faltantes</p>
-                  @for (s of missingSegments(); track s.code) {
-                    <div class="flex items-center justify-between text-[11px] py-0.5">
-                      <span class="font-black" [style.color]="s.color">{{ s.code }}</span>
-                      <span class="text-forge-muted/70">{{ s.threshold - s.level }} nivel(es) restantes</span>
-                    </div>
+          @if (!canPrestigeUp() && !prestiging() && hoverPanel()) {
+            <div class="requirements-hover-panel">
+              @if (missingMaterials().length > 0) {
+                <div class="req-grid">
+                  @for (m of missingMaterials(); track m.code) {
+                    <span class="req-name">{{ m.name }}</span>
+                    <span class="req-amount">
+                      <b>{{ m.needed }}</b>
+                      units
+                    </span>
                   }
-                } @else {
-                  <p class="text-[11px] text-forge-muted/70">Selecciona un buff para continuar</p>
-                }
-              </div>
+                </div>
+              } @else {
+                <p class="text-[10px] text-forge-muted/50 text-center tracking-wide py-0.5">
+                  ⚡ All attributes ready — select a buff
+                </p>
+              }
             </div>
           }
         </div>
       </div>
     </div>
 
-    <!-- ACTIVE BUFFS -->
+    <!-- ENGRAVED BUFFS -->
     @if (status()!.active_buffs.length) {
       <div class="mb-8">
-        <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">⚡ Buffs Grabados</h3>
+        <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">⚡ Engraved Buffs</h3>
         <div class="flex flex-wrap gap-2">
           @for (buff of status()!.active_buffs; track buff.buff_type_code) {
             <div class="forge-card border border-forge-primary/20 px-4 py-2.5 flex items-center gap-4">
@@ -175,19 +184,17 @@
       </div>
     }
 
-    <!-- MATERIAL INVENTORY -->
+    <!-- MATERIAL RESERVES -->
     <div>
-      <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">⚗ Reservas de Materiales</h3>
+      <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">Material Reserves</h3>
       <div class="forge-card p-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
-          @for (attr of profile()!.attributes; track attr.code) {
-            <div
-              class="flex items-center gap-3 py-2 border-b border-forge-border/20 last:border-0 sm:[&:nth-last-child(2)]:border-0"
-            >
+        <div class="grid grid-cols-2 grid-rows-4 grid-flow-col gap-x-8">
+          @for (attr of sortedAttributes(); track attr.code) {
+            <div class="flex items-center gap-3 py-2 border-b border-forge-border/20 last:border-0">
               <span class="text-[11px] font-black w-4 flex-shrink-0" [style.color]="attrHex(attr.code)">
                 {{ attr.code }}
               </span>
-              <span class="text-[10px] text-forge-muted flex-1 truncate">{{ attr.material_name }}</span>
+              <span class="text-[10px] text-forge-muted flex-1 truncate">{{ materialName(attr.code) }}</span>
               <div class="text-right flex-shrink-0">
                 <span class="text-sm font-black tabular-nums" [style.color]="attrHex(attr.code)">
                   {{ attr.material_balance }}
@@ -200,7 +207,6 @@
       </div>
     </div>
   } @else {
-    <!-- LOADING STATE -->
-    <div class="text-forge-muted text-sm animate-pulse text-center py-20">Cargando el Altar...</div>
+    <div class="text-forge-muted text-sm animate-pulse text-center py-20">Loading Altar...</div>
   }
 </div>

@@ -5,8 +5,8 @@
 <div class="max-w-4xl mx-auto px-4 py-8">
   <!-- HEADER -->
   <div class="mb-6">
-    <h2 class="text-xl font-black text-forge-primary tracking-widest">Mission Board</h2>
-    <p class="text-forge-muted text-xs mt-0.5 tracking-wide uppercase">Tablero de Operaciones S.P.E.C.I.A.L.</p>
+    <h2 class="text-xl font-black text-forge-primary tracking-widest">MISSION BOARD</h2>
+    <p class="text-forge-muted text-xs mt-0.5 tracking-wide uppercase">S.P.E.C.I.A.L. Operations</p>
   </div>
 
   @if (data()) {
@@ -106,31 +106,31 @@
             @if (editingId() === m.mission_id) {
               <!-- INLINE EDIT FORM -->
               <div class="flex flex-col gap-3">
-                <p class="text-[10px] text-forge-muted uppercase tracking-widest">Editando misión</p>
+                <p class="text-[10px] text-forge-muted uppercase tracking-widest">Editing mission</p>
                 <div>
-                  <label class="block text-[10px] text-forge-muted uppercase tracking-wider mb-1">Objetivo</label>
+                  <label class="block text-[10px] text-forge-muted uppercase tracking-wider mb-1">Objective</label>
                   <input
                     class="forge-input w-full text-xs"
                     [(ngModel)]="editForm.objective"
-                    placeholder="Acción principal..."
+                    placeholder="Main action..."
                   />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-forge-muted uppercase tracking-wider mb-1">Descripción</label>
+                  <label class="block text-[10px] text-forge-muted uppercase tracking-wider mb-1">Description</label>
                   <textarea
                     class="forge-input w-full resize-none text-xs leading-relaxed"
                     rows="3"
                     [(ngModel)]="editForm.detail"
-                    placeholder="Detalles opcionales..."
+                    placeholder="Optional details..."
                   ></textarea>
                 </div>
                 <!-- PRIORITY (THREAT LEVEL) -->
                 <div>
-                  <label class="block text-[10px] text-forge-muted uppercase tracking-wider mb-1">Prioridad</label>
+                  <label class="block text-[10px] text-forge-muted uppercase tracking-wider mb-1">Priority</label>
                   <select class="forge-input w-full text-xs" [(ngModel)]="editForm.threat_level">
-                    <option value="MINOR">Minor — Rutinaria</option>
-                    <option value="MAJOR">Major — Importante</option>
-                    <option value="CRITICAL">Critical — Urgente</option>
+                    <option value="MINOR">Minor — Routine</option>
+                    <option value="MAJOR">Major — Important</option>
+                    <option value="CRITICAL">Critical — Urgent</option>
                   </select>
                 </div>
                 @if (editForm.category !== 'DAILY_GRIND') {
@@ -148,7 +148,7 @@
                         class="text-[9px] text-forge-primary/70 hover:text-forge-primary tracking-wider uppercase transition-colors"
                         (click)="addEditCheckpoint()"
                       >
-                        + Añadir
+                        + Add
                       </button>
                     </div>
                     @if (editForm.checkpoints.length > 0) {
@@ -158,7 +158,7 @@
                             <input
                               class="forge-input flex-1 text-xs"
                               [(ngModel)]="editForm.checkpoints[i].description"
-                              placeholder="Paso..."
+                              placeholder="Step..."
                             />
                             <button
                               type="button"
@@ -171,7 +171,7 @@
                         }
                       </div>
                     } @else {
-                      <p class="text-[10px] text-forge-muted/40 italic">Sin checkpoints</p>
+                      <p class="text-[10px] text-forge-muted/40 italic">No checkpoints</p>
                     }
                   </div>
                 }
@@ -181,7 +181,7 @@
                     class="forge-btn-ghost text-[10px] uppercase tracking-widest font-black py-1.5 px-3"
                     (click)="cancelEdit()"
                   >
-                    Cancelar
+                    Cancel
                   </button>
                   <button
                     class="forge-btn-primary text-[10px] uppercase tracking-widest font-black py-1.5 px-3"
@@ -189,9 +189,9 @@
                     [disabled]="savingEdit()"
                   >
                     @if (savingEdit()) {
-                      Guardando...
+                      Saving...
                     } @else {
-                      Guardar
+                      Save
                     }
                   </button>
                 </div>
@@ -235,7 +235,7 @@
                       [class]="attrColor(m.attribute_code)"
                     ></lucide-icon>
                     <span class="text-[10px] text-forge-muted/70 uppercase tracking-wider font-medium">
-                      {{ categoryLabel(m.category, m.ai_generated) }}
+                      {{ categoryLabel(m.category) }}
                     </span>
                     <span class="text-[10px] text-forge-border">·</span>
                     <span [class]="attrColor(m.attribute_code) + ' text-[10px] tracking-wider font-medium'">
@@ -249,15 +249,11 @@
                     </span>
                     @if (m.is_favorite) {
                       <span class="text-[10px] text-forge-border">·</span>
-                      <span class="text-[10px] text-yellow-400/70 font-bold">↺ Recurrente</span>
-                    }
-                    @if (m.ai_generated) {
-                      <span class="text-[10px] text-forge-border">·</span>
-                      <span class="text-[10px] text-purple-300 font-bold">✦ IA</span>
+                      <span class="text-[10px] text-yellow-400/70 font-bold">↺ Recurring</span>
                     }
                     @if (m.is_completable && !isPending(m)) {
                       <span class="text-[10px] text-forge-border">·</span>
-                      <span class="text-[10px] text-green-400 font-bold">✓ Lista</span>
+                      <span class="text-[10px] text-green-400 font-bold">✓ Ready</span>
                     }
                   </div>
                 </div>
@@ -281,32 +277,34 @@
                         <div
                           class="px-3 py-2 text-[10px] text-forge-muted border-b border-forge-border/40 whitespace-nowrap uppercase tracking-wider"
                         >
-                          ¿Borrar misión?
+                          Delete Mission?
                         </div>
-                        <button
-                          class="w-full px-3 py-2 text-xs text-left text-red-400 hover:text-red-300 hover:bg-forge-card transition-colors tracking-wide font-bold"
-                          (click)="confirmDelete(m)"
-                        >
-                          ⚠ Sí, eliminar
-                        </button>
-                        <button
-                          class="w-full px-3 py-2 text-xs text-left text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
-                          (click)="deleteConfirmId.set('')"
-                        >
-                          Cancelar
-                        </button>
+                        <div class="flex">
+                          <button
+                            class="flex-1 px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-forge-card transition-colors tracking-wide font-bold border-r border-forge-border/40"
+                            (click)="confirmDelete(m)"
+                          >
+                            Delete
+                          </button>
+                          <button
+                            class="flex-1 px-3 py-2 text-xs text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
+                            (click)="deleteConfirmId.set('')"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       } @else {
                         <button
                           class="w-full px-3 py-2 text-xs text-left text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
                           (click)="startEdit(m)"
                         >
-                          Editar
+                          Edit
                         </button>
                         <button
                           class="w-full px-3 py-2 text-xs text-left text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-wide"
                           (click)="requestDeleteConfirm(m)"
                         >
-                          Eliminar
+                          Delete
                         </button>
                       }
                     </div>
@@ -349,7 +347,7 @@
               @if (m.checkpoints.length > 0) {
                 <div>
                   <div class="flex justify-between text-[10px] text-forge-muted mb-1.5">
-                    <span class="uppercase tracking-wider">Progreso</span>
+                    <span class="uppercase tracking-wider">Progress</span>
                     <span class="text-forge-text font-bold">{{ checkpointSummary(m) }}</span>
                   </div>
                   <div class="progress-bar">
@@ -364,7 +362,7 @@
               } @else if (!isPending(m)) {
                 <div>
                   <div class="flex justify-between text-[10px] text-forge-muted mb-1.5">
-                    <span class="uppercase tracking-wider">Progreso</span>
+                    <span class="uppercase tracking-wider">Progress</span>
                     <span class="text-forge-text font-bold">{{ m.current_progress }} / {{ m.objective_target }}</span>
                   </div>
                   <div class="progress-bar">
@@ -403,8 +401,8 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-2.5">
-                  @if (m.category === 'DAILY_GRIND' || (m.status === 'ACTIVE' && !m.ai_generated)) {
-                    <span class="text-[10px] text-forge-muted/50">Expira en: {{ dailyTimeLeft() }}</span>
+                  @if (m.category === 'DAILY_GRIND' || m.status === 'ACTIVE') {
+                    <span class="text-[10px] text-forge-muted/50">Expires in: {{ dailyTimeLeft() }}</span>
                   } @else if (m.due_date) {
                     <span class="text-[10px] text-forge-muted/50">Due: {{ formatDueDate(m.due_date) }}</span>
                   }
@@ -414,13 +412,13 @@
                     [disabled]="!canFinish(m) || claiming() === m.mission_id"
                   >
                     @if (claiming() === m.mission_id) {
-                      Procesando...
+                      Processing...
                     } @else if (isPending(m)) {
-                      ✓ Terminar
+                      ✓ Finish
                     } @else if (m.is_completable) {
-                      Reclamar
+                      Claim
                     } @else {
-                      Incompleta
+                      Incomplete
                     }
                   </button>
                 </div>
@@ -434,15 +432,15 @@
       <div class="forge-card p-10 text-center">
         <p class="text-forge-muted text-sm">
           @if (threatFilter()) {
-            Sin misiones
+            No
             <span [class]="threatTextClass(threatFilter())" class="font-bold">{{ threatFilter() }}</span>
-            en esta categoría.
+            missions in this category.
           } @else if (attrFilter()) {
-            Sin misiones de
+            No
             <span [class]="attrColor(attrFilter())" class="font-bold">{{ attrFilter() }}</span>
-            en esta categoría.
+            missions in this category.
           } @else {
-            No hay misiones en esta categoría.
+            No missions in this category.
           }
         </p>
       </div>
@@ -451,6 +449,6 @@
   } @else if (loadError()) {
     <div class="forge-card p-6 text-red-400 text-sm">{{ loadError() }}</div>
   } @else {
-    <div class="text-forge-muted text-sm animate-pulse">Cargando misiones...</div>
+    <div class="text-forge-muted text-sm animate-pulse">Loading missions...</div>
   }
 </div>
