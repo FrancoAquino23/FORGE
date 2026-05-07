@@ -1,5 +1,5 @@
 # ==================================================================
-# FORGE - RELIC WORKSHOP (replaces consumable system)
+# FORGE - RELIC WORKSHOP
 # ==================================================================
 
 from alembic import op

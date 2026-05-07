@@ -1,5 +1,5 @@
 # ==================================================================
-# FORGE - Add threat_level priority field to missions table
+# FORGE - ADD THREAT LEVEL (PRIORITY) FIELD TO MISSIONS TABLE
 # ==================================================================
 
 from alembic import op

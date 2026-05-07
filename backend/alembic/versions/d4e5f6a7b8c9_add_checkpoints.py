@@ -1,5 +1,5 @@
 # ==================================================================
-# FORGE - Add checkpoints table for mission sub-tasks
+# FORGE - ADD CHECKPOINTS TABLE FOR MISSION SUB-TASKS
 # ==================================================================
 
 from alembic import op

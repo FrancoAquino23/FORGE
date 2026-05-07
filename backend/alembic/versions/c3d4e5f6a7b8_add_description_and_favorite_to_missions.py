@@ -1,5 +1,5 @@
 # ==================================================================
-# FORGE - Add description and is_favorite to missions table
+# FORGE - ADD DESCRIPTION AND FAVORITE TO MISSIONS TABLE
 # ==================================================================
 
 from alembic import op

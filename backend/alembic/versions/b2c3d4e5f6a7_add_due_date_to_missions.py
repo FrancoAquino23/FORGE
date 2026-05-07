@@ -1,5 +1,5 @@
 # ==================================================================
-# FORGE - Add due_date to missions table
+# FORGE - ADD DUE_DATE TO MISSIONS TABLE
 # ==================================================================
 
 from alembic import op
