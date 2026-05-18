@@ -8,7 +8,7 @@ from app.core.deps import get_current_player
 from app.database import get_db
 from app.models.player import PlayerProfile
 from app.schemas.prestige import (
-    PrestigeSacrificeRequest, PrestigeSacrificeResponse, PrestigeStatusResponse,
+    PrestigeStatusResponse,
     PrestigeUpRequest, PrestigeUpResponse,
 )
 from app.services.prestige_service import PrestigeService
@@ -34,13 +34,3 @@ async def prestige_up(
 ) -> PrestigeUpResponse:
     service = PrestigeService(session)
     return await service.prestige_up(player, body.buff_type_code)
-
-# Endpoint (POST /prestige/sacrifice) - Sacrifice an attribute for a prestige buff (legacy)
-@router.post("/sacrifice", response_model=PrestigeSacrificeResponse)
-async def sacrifice(
-    body: PrestigeSacrificeRequest,
-    player: PlayerProfile = Depends(get_current_player),
-    session: AsyncSession = Depends(get_db),
-) -> PrestigeSacrificeResponse:
-    service = PrestigeService(session)
-    return await service.sacrifice(player, body.attribute_code, body.buff_type_code)

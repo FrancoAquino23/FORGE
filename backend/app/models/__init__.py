@@ -6,7 +6,6 @@ from app.models.base import Base
 from app.models.catalog import (
     Attribute,
     BuffType,
-    ConsumableType,
     ForgeConfig,
     ForgeTierRecipe,
     VisualTier,
@@ -23,7 +22,6 @@ __all__ = [
     "Base",
     "Attribute",
     "BuffType",
-    "ConsumableType",
     "ForgeConfig",
     "ForgeTierRecipe",
     "VisualTier",

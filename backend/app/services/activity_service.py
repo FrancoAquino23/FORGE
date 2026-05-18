@@ -14,7 +14,7 @@ from app.models.relic import Relic
 from app.schemas.activity import ActivityLogRequest, ActivityLogResponse, LevelUpInfo
 from app.services.reward_service import RewardService
 
-# Constants for rate limiting and overcharge logic
+# Constants for rate limiting
 _RATE_LIMIT_COUNT = 10
 _RATE_LIMIT_WINDOW = timedelta(hours=1)
 
@@ -23,7 +23,7 @@ class ActivityService:
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
-    # Helper method to log an activity and handle all related updates (XP, materials, streaks)
+    # Helper method to log an activity & handle all related updates (XP, materials)
     async def log_activity(
         self,
         player: PlayerProfile,
@@ -47,7 +47,6 @@ class ActivityService:
             description=request.description,
             xp_earned=xp_earned,
             material_earned=material_earned,
-            overcharge_active=False,
             activity_date=today,
         )
         self._db.add(log_entry)

@@ -13,7 +13,7 @@ from app.services.player_service import PlayerService
 # Create the router for player-related endpoints
 router = APIRouter(prefix="/player", tags=["player"])
 
-# Endpoint (GET /player/profile) to retrieve the player's profile, streak, and inventory
+# Endpoint (GET /player/profile) to retrieve the player's profile & inventory
 @router.get("/profile", response_model=PlayerProfileResponse)
 async def get_profile(
     player: PlayerProfile = Depends(get_current_player),

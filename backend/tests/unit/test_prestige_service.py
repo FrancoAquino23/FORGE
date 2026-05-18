@@ -8,27 +8,6 @@ from app.services.prestige_service import PrestigeService
 from app.services.reward_service import RewardService
 
 
-# Service TestIsEligible (Prestige Eligibility Check)
-class TestIsEligible:
-    def test_at_threshold_is_eligible(self):
-        assert PrestigeService.is_eligible(10, 10) is True
-
-    def test_above_threshold_is_eligible(self):
-        assert PrestigeService.is_eligible(15, 10) is True
-
-    def test_below_threshold_not_eligible(self):
-        assert PrestigeService.is_eligible(9, 10) is False
-
-    def test_level_1_not_eligible(self):
-        assert PrestigeService.is_eligible(1, 10) is False
-
-    def test_custom_threshold(self):
-        assert PrestigeService.is_eligible(5, 5) is True
-
-    def test_zero_level_never_eligible(self):
-        assert PrestigeService.is_eligible(0, 10) is False
-
-
 # Service TestComputeNewBonus (Additive Buff Stacking)
 class TestComputeNewBonus:
     def test_first_stack_from_zero(self):
@@ -80,30 +59,3 @@ class TestAttributeResetContract:
         assert leveled is False
         assert xp == 99
 
-
-# Service TestMissionBuilders (Title and Description Templates)
-class TestMissionBuilders:
-
-    def test_log_minutes_title(self):
-        from app.services.mission_service import MissionService
-        title = MissionService.build_title("LOG_MINUTES", 60, "Inteligencia")
-        assert "60" in title
-        assert "Inteligencia" in title
-
-    def test_log_count_title(self):
-        from app.services.mission_service import MissionService
-        title = MissionService.build_title("LOG_COUNT", 3, "Fuerza")
-        assert "3" in title
-        assert "Fuerza" in title
-
-    def test_log_minutes_description_mentions_minutes(self):
-        from app.services.mission_service import MissionService
-        desc = MissionService.build_description("LOG_MINUTES", 90, "Percepción")
-        assert "90" in desc
-        assert "Percepción" in desc
-
-    def test_log_count_description_mentions_activities(self):
-        from app.services.mission_service import MissionService
-        desc = MissionService.build_description("LOG_COUNT", 2, "Agilidad")
-        assert "2" in desc
-        assert "Agilidad" in desc

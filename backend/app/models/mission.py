@@ -64,7 +64,7 @@ class Mission(Base):
     )
     # Player-assigned category
     category: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    objective_type: Mapped[str] = mapped_column(String(30), nullable=False, default="LOG_COUNT")
+    objective_type: Mapped[str] = mapped_column(String(30), nullable=False, default="MANUAL")
     objective_target: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

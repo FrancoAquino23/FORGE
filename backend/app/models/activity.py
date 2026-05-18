@@ -5,7 +5,6 @@
 import uuid
 from datetime import date, datetime
 from sqlalchemy import (
-    Boolean,
     Date,
     DateTime,
     ForeignKey,
@@ -39,7 +38,6 @@ class ActivityLog(Base):
     description: Mapped[str | None] = mapped_column(String(500))
     xp_earned: Mapped[int] = mapped_column(Integer, nullable=False)
     material_earned: Mapped[int] = mapped_column(Integer, nullable=False)
-    overcharge_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     activity_date: Mapped[date] = mapped_column(Date, nullable=False)
     logged_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]

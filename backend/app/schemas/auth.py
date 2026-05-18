@@ -2,7 +2,6 @@
 # AUTHENTICATION SCHEMAS 
 # ==================================================================
 
-import uuid
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 # Model RegisterRequest (User Registration)
@@ -20,11 +19,3 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-
-# Model PlayerSummaryResponse (Player Summary for Leaderboard)
-class PlayerSummaryResponse(BaseModel):
-    player_id: uuid.UUID
-    username: str
-    prestige_count: int
-    streak_current: int
-    model_config = {"from_attributes": True}

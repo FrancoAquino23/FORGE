@@ -50,13 +50,13 @@ FORGE_CONFIG = {
 
 # Visual Tiers 
 VISUAL_TIERS = [
-    {"id": 1, "name": "Hierro Oxidado",    "unlock_level": 0,  "asset_key": "tier_iron"},
-    {"id": 2, "name": "Acero Vivo",        "unlock_level": 3,  "asset_key": "tier_steel"},
-    {"id": 3, "name": "Obsidiana Forjada", "unlock_level": 6,  "asset_key": "tier_obsidian"},
-    {"id": 4, "name": "Cristal Arcano",    "unlock_level": 10, "asset_key": "tier_arcane"},
-    {"id": 5, "name": "Llama Eterna",      "unlock_level": 20, "asset_key": "tier_eternal"},
-    {"id": 6, "name": "Vacío Absoluto",    "unlock_level": 35, "asset_key": "tier_void"},
-    {"id": 7, "name": "Singularidad",      "unlock_level": 50, "asset_key": "tier_singularity"},
+    {"id": 1, "name": "Scrap Metal",      "unlock_level": 0,  "asset_key": "tier_scrap"},
+    {"id": 2, "name": "Smelted Ore",     "unlock_level": 3,  "asset_key": "tier_ore"},
+    {"id": 3, "name": "Forged Obsidian",  "unlock_level": 6,  "asset_key": "tier_obsidian"},
+    {"id": 4, "name": "Arcane Crystal",   "unlock_level": 10, "asset_key": "tier_arcane"},
+    {"id": 5, "name": "Eternal Flame",    "unlock_level": 20, "asset_key": "tier_flame"},
+    {"id": 6, "name": "Absolute Void",    "unlock_level": 35, "asset_key": "tier_void"},
+    {"id": 7, "name": "Singularity",      "unlock_level": 50, "asset_key": "tier_singularity"},
 ]
 
 # Forge Tier Recipes
@@ -79,28 +79,6 @@ FORGE_TIER_RECIPES = [
     {"tier_start": 11, "tier_end": None, "attribute_id": 5, "proportion": Decimal("0.1500")},
     {"tier_start": 11, "tier_end": None, "attribute_id": 6, "proportion": Decimal("0.1500")},
     {"tier_start": 11, "tier_end": None, "attribute_id": 7, "proportion": Decimal("0.0500")},
-]
-
-# Consumable Types
-CONSUMABLE_TYPES = [
-    {
-        "id": 1,
-        "code": "STABILITY_POTION",
-        "name": "Pocion de Estabilidad",
-        "description": "Protege tu racha diaria si fallas una mision. Uso instantaneo.",
-        "effect_type": "STREAK_SHIELD",
-        "effect_value": None,
-        "effect_duration_hours": None,
-    },
-    {
-        "id": 2,
-        "code": "OVERCHARGE_CHIP",
-        "name": "Chip de Sobrecarga",
-        "description": "Duplica la ganancia de XP durante 2 horas.",
-        "effect_type": "XP_MULTIPLIER",
-        "effect_value": Decimal("2.00"),
-        "effect_duration_hours": 2,
-    },
 ]
 
 
@@ -156,17 +134,6 @@ async def seed(session: AsyncSession) -> None:
                 "INSERT INTO forge_tier_recipes (tier_start, tier_end, attribute_id, proportion) "
                 "VALUES (:tier_start, :tier_end, :attribute_id, :proportion) "
                 "ON CONFLICT ON CONSTRAINT uq_recipe_tier_attr DO NOTHING"
-            ),
-            row,
-        )
-    # Consumable Types
-    print("Seeding consumable_types...")
-    for row in CONSUMABLE_TYPES:
-        await session.execute(
-            text(
-                "INSERT INTO consumable_types (id, code, name, description, effect_type, effect_value, effect_duration_hours) "
-                "VALUES (:id, :code, :name, :description, :effect_type, :effect_value, :effect_duration_hours) "
-                "ON CONFLICT (id) DO NOTHING"
             ),
             row,
         )

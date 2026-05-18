@@ -12,7 +12,6 @@ from sqlalchemy import (
     Numeric,
     SmallInteger,
     String,
-    Text,
     UniqueConstraint,
     func,
 )
@@ -87,15 +86,3 @@ class ForgeTierRecipe(Base):
     )
     proportion: Mapped[Decimal] = mapped_column(Numeric(5, 4), nullable=False)
     attribute: Mapped["Attribute"] = relationship()
-
-# Model ConsumableType (Consumables & Power-ups)
-class ConsumableType(Base):
-    __tablename__ = "consumable_types"
-
-    id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
-    code: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(60), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text)
-    effect_type: Mapped[str] = mapped_column(String(30), nullable=False)
-    effect_value: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
-    effect_duration_hours: Mapped[int | None] = mapped_column(SmallInteger)

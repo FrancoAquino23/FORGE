@@ -13,7 +13,7 @@ class PlayerService:
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
-    # Function (get_profile) to retrieve the player's profile, streak, and inventory
+    # Function (get_profile) to retrieve the player's profile & inventory
     async def get_profile(self, player: PlayerProfile) -> PlayerProfileResponse:
         user = await self._db.scalar(select(User).where(User.id == player.user_id))
 
