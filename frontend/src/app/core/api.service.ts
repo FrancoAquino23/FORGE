@@ -187,23 +187,6 @@ export interface PrestigeStatusResponse {
   available_buff_types: BuffTypeInfo[];
 }
 
-// Interface (Prestige Sacrifice Request - Data)
-export interface PrestigeSacrificeRequest {
-  attribute_code: string;
-  buff_type_code: string;
-}
-
-// Interface (Prestige Sacrifice Response - Data)
-export interface PrestigeSacrificeResponse {
-  prestige_number: number;
-  attribute_reset_code: string;
-  level_before: number;
-  buff_type_code: string;
-  buff_display_name: string;
-  new_stack_count: number;
-  new_total_bonus: number;
-}
-
 // Interface (Prestige Up Request - Data)
 export interface PrestigeUpRequest {
   buff_type_code: string;
@@ -292,11 +275,6 @@ export class ApiService {
   // Method (Get Prestige Status)
   getPrestigeStatus(): Observable<PrestigeStatusResponse> {
     return this.http.get<PrestigeStatusResponse>(`${this.BASE}/prestige/status`);
-  }
-
-  // Method (Perform Prestige Sacrifice)
-  sacrifice(payload: PrestigeSacrificeRequest): Observable<PrestigeSacrificeResponse> {
-    return this.http.post<PrestigeSacrificeResponse>(`${this.BASE}/prestige/sacrifice`, payload);
   }
 
   // Method (Prestige Up)

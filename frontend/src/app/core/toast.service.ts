@@ -19,8 +19,13 @@ export interface Toast {
 }
 
 const ATTR_NAMES: Record<string, string> = {
-  S: 'Strength', P: 'Perception', E: 'Endurance', C: 'Charisma',
-  I: 'Intelligence', A: 'Agility', L: 'Luck',
+  S: 'Strength',
+  P: 'Perception',
+  E: 'Endurance',
+  C: 'Charisma',
+  I: 'Intelligence',
+  A: 'Agility',
+  L: 'Luck',
 };
 
 // Service (ToastService - Manages Toast Notifications)
@@ -41,7 +46,7 @@ export class ToastService {
     this.toasts.update((list) => list.filter((t) => t.id !== id));
   }
 
-  // Method (From Activity Log Response - Show XP Gain, Level Up, Loot Drop, and Streak Notifications)
+  // Method (From Activity Log Response - Show XP Gain, Level Up, & Loot Drop Notifications)
   fromActivityLog(res: ActivityLogResponse): void {
     if (res.level_up.occurred) {
       this.show({
