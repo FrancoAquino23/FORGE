@@ -37,7 +37,10 @@ export class ToastService {
   // Method (Show Toast - Add Toast to List with Auto-Dismiss After Duration)
   show(toast: Omit<Toast, 'id'>, durationMs = 4500): void {
     const id = ++this.counter;
-    this.toasts.update((list) => [...list, { ...toast, id }]);
+    this.toasts.update((list) => {
+      const capped = list.length >= 2 ? list.slice(1) : list;
+      return [...capped, { ...toast, id }];
+    });
     setTimeout(() => this.dismiss(id), durationMs);
   }
 

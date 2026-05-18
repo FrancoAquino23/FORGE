@@ -174,7 +174,7 @@ export class DashboardComponent implements OnInit {
             type: 'claim',
             icon: '⚔',
             title: 'Mission Forged',
-            message: `${catLabel} mission forged successfully!`,
+            message: `${catLabel} mission forged!`,
           });
           this.deploying.set(false);
           this.xpFlash.set(this.logAttr);

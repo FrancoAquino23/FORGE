@@ -322,7 +322,7 @@ export class MissionsComponent implements OnInit {
           type: 'error',
           icon: '🗑',
           title: 'Mission Terminated',
-          message: 'Mission terminated successfully',
+          message: 'Mission terminated!',
         });
         this.loadMissions();
       },
