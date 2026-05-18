@@ -207,7 +207,7 @@
                       <button
                         class="flex-shrink-0 p-0.5 transition-transform hover:scale-110"
                         (click)="$event.stopPropagation(); toggleFavorite(m)"
-                        title="Marcar como recurrente"
+                        title="Mark as recurring"
                       >
                         <lucide-icon
                           [img]="starIcon"
@@ -264,7 +264,7 @@
                     class="p-1 rounded transition-opacity text-forge-muted/50 hover:text-forge-muted"
                     [class.invisible]="hoverCardId() !== m.mission_id && menuOpenId() !== m.mission_id"
                     (click)="toggleMenu(m.mission_id, $event)"
-                    title="Opciones"
+                    title="Options"
                   >
                     <lucide-icon [img]="moreVerticalIcon" [size]="14"></lucide-icon>
                   </button>

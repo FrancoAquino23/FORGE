@@ -32,13 +32,13 @@ class RewardService:
     @staticmethod
     def calculate_xp(relic_attr_level: int, prestige_count: int) -> int:
         mult = RewardService._bonus_multiplier(relic_attr_level, prestige_count)
-        return max(1, int(RewardService.BASE_XP * mult))
+        return max(1, round(RewardService.BASE_XP * mult))
 
     # Calculate final material reward for an activity, applying relic and luck bonuses
     @staticmethod
     def calculate_materials(relic_attr_level: int, prestige_count: int) -> int:
         mult = RewardService._bonus_multiplier(relic_attr_level, prestige_count)
-        return max(1, int(RewardService.BASE_MATERIALS * mult))
+        return max(1, round(RewardService.BASE_MATERIALS * mult))
 
     # Apply relic and luck bonuses to stored mission rewards at claim time
     @staticmethod
@@ -46,7 +46,7 @@ class RewardService:
         base_xp: int, base_mat: int, relic_attr_level: int, prestige_count: int
     ) -> tuple[int, int]:
         mult = RewardService._bonus_multiplier(relic_attr_level, prestige_count)
-        return max(1, int(base_xp * mult)), max(1, int(base_mat * mult))
+        return max(1, round(base_xp * mult)), max(1, round(base_mat * mult))
 
     # Apply earned XP to an attribute, calculating new XP, level, XP to next level, and whether a level-up occurred
     @staticmethod

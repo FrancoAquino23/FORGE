@@ -59,9 +59,18 @@ class MissionService:
         pending = await self._load_pending_missions(player_id)
         active = await self._load_active_missions(player_id)
 
+        player_profile = await self._db.scalar(
+            select(PlayerProfile).where(PlayerProfile.id == player_id)
+        )
+        prestige_count = player_profile.prestige_count if player_profile else 0
+        relic_rows = (
+            await self._db.scalars(select(Relic).where(Relic.player_id == player_id))
+        ).all()
+        relic_levels: dict[str, int] = {r.attribute_code: r.level for r in relic_rows}
+
         progress_list = (
-            [await self._build_progress(m, player_id, today) for m in pending]
-            + [await self._build_progress(m, player_id, today) for m in active]
+            [await self._build_progress(m, player_id, today, relic_levels, prestige_count) for m in pending]
+            + [await self._build_progress(m, player_id, today, relic_levels, prestige_count) for m in active]
         )
 
         far_future = datetime(9999, 12, 31, tzinfo=timezone.utc)
@@ -84,10 +93,10 @@ class MissionService:
         if not attr:
             raise NotFoundError(f"Attribute '{request.attribute_code}'")
 
-        rewards = _CATEGORY_REWARDS.get(request.category, _CATEGORY_REWARDS["DAILY_GRIND"])
+        base = _CATEGORY_REWARDS.get(request.category, _CATEGORY_REWARDS["DAILY_GRIND"])
         label = _CATEGORY_LABELS.get(request.category, request.category)
 
-        objective = request.description.strip() or f"Player-dispatched mission — {label}: {attr.name}."
+        objective = request.description.strip() or f"{label}: {attr.name}"
 
         mission = Mission(
             player_id=player_id,
@@ -97,8 +106,8 @@ class MissionService:
             target_attribute_id=attr.id,
             objective_type="MANUAL",
             objective_target=0,
-            reward_xp=rewards["reward_xp"],
-            reward_material_qty=rewards["reward_mat"],
+            reward_xp=base["reward_xp"],
+            reward_material_qty=base["reward_mat"],
             status="PENDING",
             category=request.category,
             expires_at=datetime.now(timezone.utc) + timedelta(days=30),
@@ -123,13 +132,22 @@ class MissionService:
 
         await self._db.commit()
 
+        relic_level = await self._get_relic_level(player_id, attr.code)
+        player_profile = await self._db.scalar(
+            select(PlayerProfile).where(PlayerProfile.id == player_id)
+        )
+        prestige_count = player_profile.prestige_count if player_profile else 0
+        display_xp, display_mat = RewardService.apply_mission_bonuses(
+            base["reward_xp"], base["reward_mat"], relic_level, prestige_count
+        )
+
         return DeployMissionResponse(
             mission_id=mission.id,
             title=mission.title,
             category=request.category,
             attribute_code=attr.code,
-            reward_xp=mission.reward_xp,
-            reward_material_qty=mission.reward_material_qty,
+            reward_xp=display_xp,
+            reward_material_qty=display_mat,
             threat_level=_THREAT_LABEL.get(mission.threat_level, "MAJOR"),
         )
 
@@ -154,7 +172,7 @@ class MissionService:
         mission.status = "COMPLETED"
         mission.completed_at = now
 
-        # Apply relic bonuses to base rewards at claim time
+        # Apply rewards at claim time using current relic & prestige state
         attr_code = mission.target_attribute.code
         relic_level = await self._get_relic_level(player_id, attr_code)
         player_profile = await self._db.scalar(
@@ -340,8 +358,15 @@ class MissionService:
 
     # Helper to build mission progress details for a mission and player
     async def _build_progress(
-        self, mission: Mission, player_id: uuid.UUID, today: date
+        self, mission: Mission, player_id: uuid.UUID, today: date,
+        relic_levels: dict[str, int], prestige_count: int,
     ) -> MissionProgress:
+        attr_code = mission.target_attribute.code
+        relic_level = prestige_count if attr_code == "L" else relic_levels.get(attr_code, 0)
+        reward_xp, reward_mat = RewardService.apply_mission_bonuses(
+            mission.reward_xp, mission.reward_material_qty, relic_level, prestige_count
+        )
+
         checkpoints = [
             CheckpointSchema(
                 id=cp.id,
@@ -366,8 +391,8 @@ class MissionService:
                 current_progress=sum(1 for cp in checkpoints if cp.is_completed) if has_steps else 1,
                 attribute_code=mission.target_attribute.code,
                 attribute_name=mission.target_attribute.name,
-                reward_xp=mission.reward_xp,
-                reward_material_qty=mission.reward_material_qty,
+                reward_xp=reward_xp,
+                reward_material_qty=reward_mat,
                 expires_at=mission.expires_at,
                 is_completable=all_done,
                 status="PENDING",
@@ -389,8 +414,8 @@ class MissionService:
             current_progress=progress,
             attribute_code=mission.target_attribute.code,
             attribute_name=mission.target_attribute.name,
-            reward_xp=mission.reward_xp,
-            reward_material_qty=mission.reward_material_qty,
+            reward_xp=reward_xp,
+            reward_material_qty=reward_mat,
             expires_at=mission.expires_at,
             is_completable=(progress >= mission.objective_target),
             status=mission.status,

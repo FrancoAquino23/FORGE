@@ -11,6 +11,7 @@ from app.core.exceptions import NotFoundError, PrestigeNotAvailableError
 from app.models.catalog import Attribute, BuffType, ForgeConfig
 from app.models.player import PlayerAttribute, PlayerProfile
 from app.models.prestige import PlayerBuff, PrestigeHistory
+from app.models.relic import Relic
 from app.schemas.prestige import (
     BuffTypeInfo, PlayerBuffInfo,
     PrestigeStatusResponse,
@@ -136,6 +137,15 @@ class PrestigeService:
                 pa.xp_current = 0
                 pa.xp_to_next = RewardService.xp_for_level(1)
                 reset_codes.append(a.code)
+
+        # Reset ALL relics to level 0
+        all_relics = (
+            await self._db.execute(
+                select(Relic).where(Relic.player_id == player.id).with_for_update()
+            )
+        ).scalars().all()
+        for relic in all_relics:
+            await self._db.delete(relic)
 
         prestige_number = player.prestige_count + 1
         self._db.add(
