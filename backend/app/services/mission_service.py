@@ -3,15 +3,14 @@
 # ==================================================================
 
 import uuid
-from datetime import date, datetime, timedelta, timezone
-from sqlalchemy import func, nullslast, select
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import nullslast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
-from app.models.activity import ActivityLog
 from app.models.catalog import Attribute
 from app.models.mission import Checkpoint, Mission
-from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
+from app.models.player import PlayerAttribute, PlayerInventory
 from app.models.relic import Relic
 from app.schemas.mission import (
     CheckpointSchema,
@@ -24,13 +23,15 @@ from app.schemas.mission import (
     UpdateMissionRequest,
     CheckpointUpdateItem,
 )
+from app.services.luck_sync import sync_luck_level
 from app.services.reward_service import RewardService
+from app.services.skill_tree_service import get_node_level, node_bonus
 
 # Reward amounts per category for player-dispatched missions
 _CATEGORY_REWARDS: dict[str, dict] = {
-    "MAIN_QUEST":  {"reward_xp": 80,  "reward_mat": 35},
-    "SIDE_QUEST":  {"reward_xp": 50,  "reward_mat": 20},
-    "DAILY_GRIND": {"reward_xp": 30,  "reward_mat": 12},
+    "MAIN_QUEST":  {"reward_xp": 100, "reward_mat": 50},
+    "SIDE_QUEST":  {"reward_xp": 50,  "reward_mat": 25},
+    "DAILY_GRIND": {"reward_xp": 30,  "reward_mat": 15},
 }
 
 # User-friendly labels for mission categories
@@ -52,25 +53,21 @@ class MissionService:
 
     # Helper to get active missions with progress for a player
     async def get_active_with_progress(
-        self, player_id: uuid.UUID, today: date
+        self, player_id: uuid.UUID
     ) -> MissionListResponse:
         await self._reset_completed_favorite_dailies(player_id)
 
         pending = await self._load_pending_missions(player_id)
         active = await self._load_active_missions(player_id)
 
-        player_profile = await self._db.scalar(
-            select(PlayerProfile).where(PlayerProfile.id == player_id)
-        )
-        prestige_count = player_profile.prestige_count if player_profile else 0
         relic_rows = (
             await self._db.scalars(select(Relic).where(Relic.player_id == player_id))
         ).all()
         relic_levels: dict[str, int] = {r.attribute_code: r.level for r in relic_rows}
 
         progress_list = (
-            [await self._build_progress(m, player_id, today, relic_levels, prestige_count) for m in pending]
-            + [await self._build_progress(m, player_id, today, relic_levels, prestige_count) for m in active]
+            [await self._build_progress(m, player_id, relic_levels) for m in pending]
+            + [await self._build_progress(m, player_id, relic_levels) for m in active]
         )
 
         far_future = datetime(9999, 12, 31, tzinfo=timezone.utc)
@@ -92,6 +89,8 @@ class MissionService:
         )
         if not attr:
             raise NotFoundError(f"Attribute '{request.attribute_code}'")
+        if attr.code == "L":
+            raise ConflictError("Luck cannot be assigned as a mission attribute")
 
         base = _CATEGORY_REWARDS.get(request.category, _CATEGORY_REWARDS["DAILY_GRIND"])
         label = _CATEGORY_LABELS.get(request.category, request.category)
@@ -133,12 +132,9 @@ class MissionService:
         await self._db.commit()
 
         relic_level = await self._get_relic_level(player_id, attr.code)
-        player_profile = await self._db.scalar(
-            select(PlayerProfile).where(PlayerProfile.id == player_id)
-        )
-        prestige_count = player_profile.prestige_count if player_profile else 0
+        luck_relic_level = await self._get_relic_level(player_id, "L")
         display_xp, display_mat = RewardService.apply_mission_bonuses(
-            base["reward_xp"], base["reward_mat"], relic_level, prestige_count
+            base["reward_xp"], base["reward_mat"], relic_level, luck_relic_level
         )
 
         return DeployMissionResponse(
@@ -156,14 +152,7 @@ class MissionService:
         self, player_id: uuid.UUID, mission_id: uuid.UUID
     ) -> MissionClaimResponse:
         mission = await self._load_mission_for_claim(player_id, mission_id)
-        if mission.status != "PENDING":
-            today = date.today()
-            progress = await self._get_progress_value(mission, player_id, today)
-            if progress < mission.objective_target:
-                raise ConflictError(
-                    f"Mission not yet complete: {progress}/{mission.objective_target}"
-                )
-        elif mission.checkpoints:
+        if mission.checkpoints:
             incomplete = sum(1 for cp in mission.checkpoints if not cp.is_completed)
             if incomplete:
                 raise ConflictError(f"Complete all checkpoints first ({incomplete} remaining)")
@@ -175,13 +164,21 @@ class MissionService:
         # Apply rewards at claim time using current relic & prestige state
         attr_code = mission.target_attribute.code
         relic_level = await self._get_relic_level(player_id, attr_code)
-        player_profile = await self._db.scalar(
-            select(PlayerProfile).where(PlayerProfile.id == player_id)
-        )
-        prestige_count = player_profile.prestige_count if player_profile else 0
+        luck_relic_level = await self._get_relic_level(player_id, "L")
         xp_earned, mat_earned = RewardService.apply_mission_bonuses(
-            mission.reward_xp, mission.reward_material_qty, relic_level, prestige_count
+            mission.reward_xp, mission.reward_material_qty, relic_level, luck_relic_level
         )
+
+        # Apply global_xp_buff skill node
+        xp_buff_level = await get_node_level(self._db, player_id, "global_xp_buff")
+        if xp_buff_level > 0:
+            xp_earned = max(1, round(xp_earned * (1.0 + node_bonus(xp_buff_level))))
+
+        # Apply mission_material_multiplier skill node (Side Quests and Daily Grinds only)
+        if mission.category in ("SIDE_QUEST", "DAILY_GRIND"):
+            mat_buff_level = await get_node_level(self._db, player_id, "mission_material_multiplier")
+            if mat_buff_level > 0:
+                mat_earned = max(1, round(mat_earned * (1.0 + node_bonus(mat_buff_level))))
 
         player_attr = (
             await self._db.execute(
@@ -200,6 +197,8 @@ class MissionService:
         player_attr.xp_current = new_xp
         player_attr.level = new_level
         player_attr.xp_to_next = new_xp_to_next
+        if leveled_up:
+            await sync_luck_level(self._db, player_id)
 
         inventory = (
             await self._db.execute(
@@ -358,13 +357,14 @@ class MissionService:
 
     # Helper to build mission progress details for a mission and player
     async def _build_progress(
-        self, mission: Mission, player_id: uuid.UUID, today: date,
-        relic_levels: dict[str, int], prestige_count: int,
+        self, mission: Mission, player_id: uuid.UUID,
+        relic_levels: dict[str, int],
     ) -> MissionProgress:
         attr_code = mission.target_attribute.code
-        relic_level = prestige_count if attr_code == "L" else relic_levels.get(attr_code, 0)
+        relic_level = relic_levels.get(attr_code, 0)
+        luck_relic_level = relic_levels.get("L", 0)
         reward_xp, reward_mat = RewardService.apply_mission_bonuses(
-            mission.reward_xp, mission.reward_material_qty, relic_level, prestige_count
+            mission.reward_xp, mission.reward_material_qty, relic_level, luck_relic_level
         )
 
         checkpoints = [
@@ -404,20 +404,19 @@ class MissionService:
                 threat_level=threat,
             )
 
-        progress = await self._get_progress_value(mission, player_id, today)
         return MissionProgress(
             mission_id=mission.id,
             title=mission.title,
             objective_description=mission.objective_description,
             objective_type=mission.objective_type,
             objective_target=mission.objective_target,
-            current_progress=progress,
+            current_progress=mission.objective_target,
             attribute_code=mission.target_attribute.code,
             attribute_name=mission.target_attribute.name,
             reward_xp=reward_xp,
             reward_material_qty=reward_mat,
             expires_at=mission.expires_at,
-            is_completable=(progress >= mission.objective_target),
+            is_completable=True,
             status=mission.status,
             category=mission.category,
             due_date=mission.due_date,
@@ -449,26 +448,8 @@ class MissionService:
         if missions:
             await self._db.commit()
 
-    # Helper to calculate current progress value for a mission based on its objective type
-    async def _get_progress_value(
-        self, mission: Mission, player_id: uuid.UUID, today: date
-    ) -> int:
-        result = await self._db.scalar(
-            select(func.count(ActivityLog.id)).where(
-                ActivityLog.player_id == player_id,
-                ActivityLog.attribute_id == mission.target_attribute_id,
-                ActivityLog.activity_date == today,
-            )
-        )
-        return result or 0
-
     # Helper to get the level of a relic for a given attribute and player
     async def _get_relic_level(self, player_id: uuid.UUID, attr_code: str) -> int:
-        if attr_code == "L":
-            p = await self._db.scalar(
-                select(PlayerProfile).where(PlayerProfile.id == player_id)
-            )
-            return p.prestige_count if p else 0
         result = await self._db.scalar(
             select(Relic.level).where(
                 Relic.player_id == player_id,

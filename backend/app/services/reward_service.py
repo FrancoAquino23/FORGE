@@ -1,69 +1,90 @@
 # ==================================================================
-# REWARD SERVICE 
+# REWARD SERVICE
 # ==================================================================
 
-import math
+# Max level for attributes & relics
+_MAX_LEVEL = 10
+
+# Table of XP required to upgrade a level (Data)
+_XP_TABLE: dict[int, int] = {
+    1:  500,
+    2:  1_500,
+    3:  2_500,
+    4:  3_500,
+    5:  4_500,
+    6:  5_500,
+    7:  6_500,
+    8:  7_500,
+    9:  10_000,
+    10: 0,
+}
+
+# Table of material to upgrade a relic level (Data)
+_RELIC_UPGRADE_TABLE: dict[int, int] = {
+    1:  500,
+    2:  1_500,
+    3:  2_500,
+    4:  3_500,
+    5:  4_500,
+    6:  5_500,
+    7:  6_500,
+    8:  7_500,
+    9:  10_000,
+    10: 0,
+}
 
 
 # Model RewardService (Data)
 class RewardService:
-    BASE_XP: int = 25
-    BASE_MATERIALS: int = 20
-    RELIC_BONUS_PER_LEVEL: float = 0.05  # 5% per level
-    RELIC_BASE_COST: int = 25
+    RELIC_BONUS_PER_LEVEL: float = 0.05 
 
-    # XP required to advance from a given level to the next (Following a 1.5 power curve)
+    # Helper method to get XP required
     @staticmethod
     def xp_for_level(level: int) -> int:
-        return math.floor(100 * (level ** 1.5))
+        return _XP_TABLE.get(level, 0)
 
-    # Cost to upgrade a relic from its current level to the next
+    # Helper method to get material required
     @staticmethod
     def upgrade_cost(current_level: int) -> int:
-        return max(1, int(RewardService.RELIC_BASE_COST * (current_level ** 1.5)))
+        return _RELIC_UPGRADE_TABLE.get(current_level, 0)
 
-    # Bonus multiplier based on relic attribute level and prestige count (Luck)
+    # Helper method to calculate bonus multiplier (relics)
     @staticmethod
-    def _bonus_multiplier(relic_attr_level: int, prestige_count: int) -> float:
-        bonus = (relic_attr_level + prestige_count) * RewardService.RELIC_BONUS_PER_LEVEL
+    def _bonus_multiplier(relic_attr_level: int, luck_relic_level: int = 0) -> float:
+        bonus = (relic_attr_level + luck_relic_level) * RewardService.RELIC_BONUS_PER_LEVEL
         return 1.0 + bonus
 
-    # Calculate final XP reward for an activity, applying relic and luck bonuses
-    @staticmethod
-    def calculate_xp(relic_attr_level: int, prestige_count: int) -> int:
-        mult = RewardService._bonus_multiplier(relic_attr_level, prestige_count)
-        return max(1, round(RewardService.BASE_XP * mult))
-
-    # Calculate final material reward for an activity, applying relic and luck bonuses
-    @staticmethod
-    def calculate_materials(relic_attr_level: int, prestige_count: int) -> int:
-        mult = RewardService._bonus_multiplier(relic_attr_level, prestige_count)
-        return max(1, round(RewardService.BASE_MATERIALS * mult))
-
-    # Apply relic and luck bonuses to stored mission rewards at claim time
+    # Helper method to apply bonuses to mission rewards
     @staticmethod
     def apply_mission_bonuses(
-        base_xp: int, base_mat: int, relic_attr_level: int, prestige_count: int
+        base_xp: int, base_mat: int, relic_attr_level: int, luck_relic_level: int = 0
     ) -> tuple[int, int]:
-        mult = RewardService._bonus_multiplier(relic_attr_level, prestige_count)
+        mult = RewardService._bonus_multiplier(relic_attr_level, luck_relic_level)
         return max(1, round(base_xp * mult)), max(1, round(base_mat * mult))
 
-    # Apply earned XP to an attribute, calculating new XP, level, XP to next level, and whether a level-up occurred
+    # Helper method to apply XP to an attribute
     @staticmethod
     def apply_xp_to_attribute(
         current_xp: int,
         current_level: int,
         xp_earned: int,
     ) -> tuple[int, int, int, bool]:
+        if current_level >= _MAX_LEVEL:
+            return 0, _MAX_LEVEL, 0, False
+
         xp = current_xp + xp_earned
         level = current_level
         leveled_up = False
 
-        xp_to_next = RewardService.xp_for_level(level)
-        while xp >= xp_to_next:
-            xp -= xp_to_next
+        while level < _MAX_LEVEL:
+            needed = _XP_TABLE.get(level, 0)
+            if xp < needed:
+                break
+            xp -= needed
             level += 1
-            xp_to_next = RewardService.xp_for_level(level)
             leveled_up = True
 
-        return xp, level, xp_to_next, leveled_up
+        if level >= _MAX_LEVEL:
+            return 0, _MAX_LEVEL, 0, leveled_up
+
+        return xp, level, _XP_TABLE.get(level, 0), leveled_up

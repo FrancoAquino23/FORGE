@@ -34,13 +34,13 @@ class TestAttributeUpgradeCost:
 
 # Service TestForgeXpReset (XP Reset After Forge Upgrade)
 class TestForgeXpReset:
-    """Verifies xp_to_next after a forge level-up uses the correct RewardService formula."""
+    """Verifies xp_to_next after a forge level-up uses the static XP table."""
 
     def test_xp_to_next_after_forge_to_level_2(self):
-        assert RewardService.xp_for_level(2) == 282
+        assert RewardService.xp_for_level(2) == 1_500
 
     def test_xp_to_next_after_forge_to_level_5(self):
-        assert RewardService.xp_for_level(5) == 1118
+        assert RewardService.xp_for_level(5) == 4_500
 
-    def test_xp_to_next_after_forge_to_level_10(self):
-        assert RewardService.xp_for_level(10) == 3162
+    def test_xp_to_next_after_forge_to_level_10_is_zero(self):
+        assert RewardService.xp_for_level(10) == 0

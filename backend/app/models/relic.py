@@ -14,7 +14,7 @@ class Relic(Base):
     __table_args__ = (
         UniqueConstraint("player_id", "attribute_code", name="uq_player_relic"),
         CheckConstraint("level BETWEEN 1 AND 10", name="relic_level_range"),
-        CheckConstraint("attribute_code IN ('S','P','E','C','I','A')", name="valid_relic_attr"),
+        CheckConstraint("attribute_code IN ('S','P','E','C','I','A','L')", name="valid_relic_attr"),
     )
 
     # Primary key and foreign key to the player profile

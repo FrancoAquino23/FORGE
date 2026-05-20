@@ -32,14 +32,6 @@ class ForbiddenError(ForgeException):
     def __init__(self, detail: str) -> None:
         super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
-# Exception (RateLimitError) for 429 too many requests
-class RateLimitError(ForgeException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Rate limit: maximum 10 activities per hour",
-        )
-
 # Exception (InsufficientMaterialsError) for 422 when forging without enough materials
 class InsufficientMaterialsError(ForgeException):
     def __init__(self, detail: str = "Insufficient materials to forge") -> None:

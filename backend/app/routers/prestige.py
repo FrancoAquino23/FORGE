@@ -11,7 +11,14 @@ from app.schemas.prestige import (
     PrestigeStatusResponse,
     PrestigeUpRequest, PrestigeUpResponse,
 )
+from app.schemas.skill_tree import (
+    ResetTreeResponse,
+    SkillTreeResponse,
+    UpgradeNodeRequest,
+    UpgradeNodeResponse,
+)
 from app.services.prestige_service import PrestigeService
+from app.services.skill_tree_service import SkillTreeService
 
 # APIRouter for prestige-related endpoints
 router = APIRouter(prefix="/prestige", tags=["prestige"])
@@ -34,3 +41,31 @@ async def prestige_up(
 ) -> PrestigeUpResponse:
     service = PrestigeService(session)
     return await service.prestige_up(player, body.buff_type_code)
+
+# Endpoint (GET /prestige/tree) - Returns full skill tree
+@router.get("/tree", response_model=SkillTreeResponse)
+async def get_skill_tree(
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> SkillTreeResponse:
+    service = SkillTreeService(session)
+    return await service.get_tree(player)
+
+# Endpoint (POST /prestige/tree/upgrade) - Spend points per prestige to upgrade a skill node
+@router.post("/tree/upgrade", response_model=UpgradeNodeResponse)
+async def upgrade_node(
+    body: UpgradeNodeRequest,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> UpgradeNodeResponse:
+    service = SkillTreeService(session)
+    return await service.upgrade_node(player, body.node_id)
+
+# Endpoint (POST /prestige/tree/reset) - Refund all points per prestige invested in the skill tree
+@router.post("/tree/reset", response_model=ResetTreeResponse)
+async def reset_skill_tree(
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> ResetTreeResponse:
+    service = SkillTreeService(session)
+    return await service.reset_tree(player)

@@ -11,9 +11,10 @@ from app.models.player import PlayerInventory
 from app.models.relic import Relic
 from app.schemas.relic import RelicInfo, RelicListResponse, RelicUpgradeResponse
 from app.services.reward_service import RewardService
+from app.services.skill_tree_service import get_node_level, node_bonus
 
 # Constants for relic management
-_UPGRADEABLE_CODES = ["S", "P", "E", "C", "I", "A"]
+_UPGRADEABLE_CODES = ["S", "P", "E", "C", "I", "A", "L"]
 _MAX_LEVEL = 10
 
 # Model RelicService (Handles relic-related operations)
@@ -21,7 +22,7 @@ class RelicService:
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
-    async def get_all(self, player_id: uuid.UUID, prestige_count: int) -> RelicListResponse:
+    async def get_all(self, player_id: uuid.UUID) -> RelicListResponse:
         relics = await self._ensure_relics(player_id)
 
         all_attrs = (await self._db.scalars(select(Attribute))).all()
@@ -37,12 +38,16 @@ class RelicService:
             attr_by_id[inv.attribute_id].code: inv.quantity for inv in inv_rows
         }
 
+        discount_level = await get_node_level(self._db, player_id, "relic_cost_discount")
+
         result: list[RelicInfo] = []
 
         for relic in relics:
             code = relic.attribute_code
             balance = inventory_by_code.get(code, 0)
             cost = RewardService.upgrade_cost(relic.level) if relic.level < _MAX_LEVEL else None
+            if cost is not None and discount_level > 0:
+                cost = max(1, round(cost * (1.0 - node_bonus(discount_level))))
             can_upgrade = cost is not None and balance >= cost
 
             result.append(
@@ -55,24 +60,9 @@ class RelicService:
                     upgrade_cost=cost,
                     can_upgrade=can_upgrade,
                     material_balance=balance,
-                    is_luck=False,
+                    is_luck=(code == "L"),
                 )
             )
-
-        luck_attr = attr_by_code.get("L")
-        result.append(
-            RelicInfo(
-                attribute_code="L",
-                attribute_name=luck_attr.name if luck_attr else "Luck",
-                level=prestige_count,
-                total_invested=0,
-                bonus_pct=prestige_count * 5,
-                upgrade_cost=None,
-                can_upgrade=False,
-                material_balance=inventory_by_code.get("L", 0),
-                is_luck=True,
-            )
-        )
 
         await self._db.commit()
         return RelicListResponse(relics=result)
@@ -81,9 +71,6 @@ class RelicService:
     async def upgrade(
         self, player_id: uuid.UUID, attribute_code: str
     ) -> RelicUpgradeResponse:
-        if attribute_code == "L":
-            raise ConflictError("Luck relic upgrades via Prestige only")
-
         relic = (
             await self._db.execute(
                 select(Relic)
@@ -100,7 +87,9 @@ class RelicService:
         if relic.level >= _MAX_LEVEL:
             raise ConflictError("Relic is already at maximum level")
 
-        cost = RewardService.upgrade_cost(relic.level)
+        base_cost = RewardService.upgrade_cost(relic.level)
+        discount_level = await get_node_level(self._db, player_id, "relic_cost_discount")
+        cost = max(1, round(base_cost * (1.0 - node_bonus(discount_level)))) if discount_level > 0 else base_cost
 
         attr = await self._db.scalar(
             select(Attribute).where(Attribute.code == attribute_code)

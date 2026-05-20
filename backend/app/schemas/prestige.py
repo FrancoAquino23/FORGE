@@ -25,8 +25,11 @@ class PlayerBuffInfo(BaseModel):
 class PrestigeStatusResponse(BaseModel):
     prestige_count: int
     threshold_level: int
+    material_cost: int
     active_buffs: list[PlayerBuffInfo]
     available_buff_types: list[BuffTypeInfo]
+    prestige_points_total: int = 0
+    prestige_points_available: int = 0
 
 # Model PrestigeUpRequest (Request body for the all-in prestige up action)
 class PrestigeUpRequest(BaseModel):

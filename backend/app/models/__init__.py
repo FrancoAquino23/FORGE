@@ -13,9 +13,9 @@ from app.models.catalog import (
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
 from app.models.artifact import Artifact, ForgeHistory
 from app.models.prestige import PlayerBuff, PrestigeHistory
-from app.models.activity import ActivityLog
 from app.models.mission import Mission
 from app.models.relic import Relic
+from app.models.skill_tree import PlayerSkillNode
 
 # Import all models
 __all__ = [
@@ -33,7 +33,7 @@ __all__ = [
     "ForgeHistory",
     "PrestigeHistory",
     "PlayerBuff",
-    "ActivityLog",
     "Mission",
     "Relic",
+    "PlayerSkillNode",
 ]

@@ -56,6 +56,8 @@ class PlayerProfile(Base):
     global_xp_bonus: Mapped[Decimal] = mapped_column(
         Numeric(6, 2), nullable=False, default=Decimal("0.00")
     )
+    prestige_points_total: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    prestige_points_available: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

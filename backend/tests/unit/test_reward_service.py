@@ -2,86 +2,86 @@
 # REWARD SERVICE TESTS
 # ==================================================================
 
-from decimal import Decimal
 import pytest
 from app.services.reward_service import RewardService
 
-# Service TestXpForLevel (XP Calculation) 
+
+# Service TestXpForLevel (Static XP Table)
 class TestXpForLevel:
     def test_level_1(self):
-        assert RewardService.xp_for_level(1) == 100
+        assert RewardService.xp_for_level(1) == 500
 
     def test_level_2(self):
-        assert RewardService.xp_for_level(2) == 282
+        assert RewardService.xp_for_level(2) == 1_500
 
     def test_level_5(self):
-        assert RewardService.xp_for_level(5) == 1118
+        assert RewardService.xp_for_level(5) == 4_500
 
-    def test_level_10(self):
-        assert RewardService.xp_for_level(10) == 3162
+    def test_level_9(self):
+        assert RewardService.xp_for_level(9) == 10_000
 
-    def test_increases_monotonically(self):
-        levels = [RewardService.xp_for_level(i) for i in range(1, 20)]
+    def test_level_10_is_zero(self):
+        assert RewardService.xp_for_level(10) == 0
+
+    def test_levels_1_to_9_increase_monotonically(self):
+        levels = [RewardService.xp_for_level(i) for i in range(1, 10)]
         assert levels == sorted(levels)
 
-# Service TestCalculateXp (XP Rewards)
-class TestCalculateXp:
-    def test_base_no_bonus(self):
-        assert RewardService.calculate_xp(0, 0) == 25
-
-    def test_relic_bonus_applied(self):
-        assert RewardService.calculate_xp(1, 0) == 26
-
-    def test_prestige_bonus_applied(self):
-        assert RewardService.calculate_xp(0, 1) == 26
-
-    def test_relic_and_prestige_stack(self):
-        # relic=5, prestige=3 → multiplier = 1 + 8*0.05 = 1.4 → int(25*1.4) = 35
-        assert RewardService.calculate_xp(5, 3) == 35
-
-    def test_minimum_is_1(self):
-        assert RewardService.calculate_xp(0, 0) >= 1
-
-# Service TestCalculateMaterials (Material Rewards)
-class TestCalculateMaterials:
-    def test_base_no_bonus(self):
-        assert RewardService.calculate_materials(0, 0) == 20
-
-    def test_relic_bonus_applied(self):
-        assert RewardService.calculate_materials(1, 0) == 21
-
-    def test_prestige_bonus_applied(self):
-        assert RewardService.calculate_materials(0, 1) == 21
-
-    def test_relic_and_prestige_stack(self):
-        # relic=5, prestige=3 → multiplier = 1.4 → int(20*1.4) = 28
-        assert RewardService.calculate_materials(5, 3) == 28
-
-    def test_minimum_is_1(self):
-        assert RewardService.calculate_materials(0, 0) >= 1
 
 # Service TestApplyXpToAttribute (Leveling Logic)
 class TestApplyXpToAttribute:
     def test_no_level_up(self):
-        xp, level, xp_next, leveled = RewardService.apply_xp_to_attribute(0, 1, 50)
-        assert xp == 50
+        xp, level, xp_next, leveled = RewardService.apply_xp_to_attribute(0, 1, 400)
+        assert xp == 400
         assert level == 1
+        assert xp_next == 500
         assert leveled is False
 
     def test_exact_level_up(self):
-        xp, level, xp_next, leveled = RewardService.apply_xp_to_attribute(0, 1, 100)
+        xp, level, xp_next, leveled = RewardService.apply_xp_to_attribute(0, 1, 500)
         assert level == 2
         assert xp == 0
+        assert xp_next == 1_500
         assert leveled is True
 
     def test_level_up_with_overflow(self):
-        xp, level, _, leveled = RewardService.apply_xp_to_attribute(90, 1, 50)
+        xp, level, xp_next, leveled = RewardService.apply_xp_to_attribute(400, 1, 200)
         assert level == 2
-        assert xp == 40
+        assert xp == 100
         assert leveled is True
 
-    def test_multi_level_up(self):
-        xp, level, _, leveled = RewardService.apply_xp_to_attribute(0, 1, 400)
-        assert level == 3
-        assert xp == 18
+    def test_max_level_blocks_all_xp(self):
+        xp, level, xp_next, leveled = RewardService.apply_xp_to_attribute(0, 10, 99_999)
+        assert level == 10
+        assert xp == 0
+        assert xp_next == 0
+        assert leveled is False
+
+    def test_overflow_xp_discarded_at_max_level(self):
+        xp, level, xp_next, leveled = RewardService.apply_xp_to_attribute(0, 9, 100_000)
+        assert level == 10
+        assert xp == 0
+        assert xp_next == 0
         assert leveled is True
+
+
+# Service TestRelicUpgradeCost (Static Relic Upgrade Cost Table)
+class TestRelicUpgradeCost:
+    def test_level_1_to_2_costs_500(self):
+        assert RewardService.upgrade_cost(1) == 500
+
+    def test_level_2_to_3_costs_1500(self):
+        assert RewardService.upgrade_cost(2) == 1_500
+
+    def test_level_5_to_6_costs_4500(self):
+        assert RewardService.upgrade_cost(5) == 4_500
+
+    def test_level_9_to_10_costs_10000(self):
+        assert RewardService.upgrade_cost(9) == 10_000
+
+    def test_level_10_blocked(self):
+        assert RewardService.upgrade_cost(10) == 0
+
+    def test_mirrors_xp_table_for_all_levels(self):
+        for level in range(1, 11):
+            assert RewardService.upgrade_cost(level) == RewardService.xp_for_level(level)

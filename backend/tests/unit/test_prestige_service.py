@@ -43,19 +43,19 @@ class TestComputeNewBonus:
 class TestAttributeResetContract:
 
     def test_reset_xp_to_next_at_level_1(self):
-        # After prestige reset, level=1, xp_to_next must equal xp_for_level(1) = 100
-        assert RewardService.xp_for_level(1) == 100
+        # After prestige reset, level=1, xp_to_next must equal xp_for_level(1) = 500
+        assert RewardService.xp_for_level(1) == 500
 
     def test_from_reset_level_up_requires_full_xp(self):
-        # From xp=0 at level 1, earning exactly xp_for_level(1) triggers level-up
-        _, level, _, leveled = RewardService.apply_xp_to_attribute(0, 1, 100)
+        # From xp=0 at level 1, earning exactly 500 XP triggers level-up
+        _, level, _, leveled = RewardService.apply_xp_to_attribute(0, 1, 500)
         assert level == 2
         assert leveled is True
 
     def test_from_reset_partial_xp_no_level_up(self):
-        # Earning 99 XP at level 1 should NOT trigger a level-up
-        xp, level, _, leveled = RewardService.apply_xp_to_attribute(0, 1, 99)
+        # Earning 499 XP at level 1 should NOT trigger a level-up
+        xp, level, _, leveled = RewardService.apply_xp_to_attribute(0, 1, 499)
         assert level == 1
         assert leveled is False
-        assert xp == 99
+        assert xp == 499
 

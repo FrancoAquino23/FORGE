@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, activities, player, forge, missions, prestige, relics
+from app.routers import auth, player, forge, missions, prestige, relics
 
 # Import Database models  
 app = FastAPI(
@@ -24,7 +24,6 @@ app.add_middleware(
 
 # Include API routers for different modules
 app.include_router(auth.router)
-app.include_router(activities.router)
 app.include_router(player.router)
 app.include_router(forge.router)
 app.include_router(missions.router)
