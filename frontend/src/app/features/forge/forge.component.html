@@ -1,0 +1,183 @@
+<!-- ==================================================================
+     FORGE COMPONENT STRUCTURE
+     ================================================================== -->
+
+<div class="min-h-screen bg-forge-bg px-4 py-8">
+  <div class="max-w-5xl mx-auto flex flex-col gap-6">
+    <!-- HEADER -->
+    <div class="flex flex-col gap-1.5">
+      <h1 class="text-forge-primary font-black text-lg uppercase tracking-widest flex items-center gap-2.5">
+        <span class="text-xl">⚗</span>
+        TRANSMUTATION FORGE
+      </h1>
+      <p class="text-forge-muted text-[11px] tracking-wider leading-relaxed max-w-lg">
+        Sacrifice equal quantities of the six ordinary materials to crystallize
+        <span class="text-orange-400 font-bold">Stardust</span>
+        — the raw essence of Luck.
+      </p>
+    </div>
+
+    <!-- LOADING -->
+    @if (loading() && !profile()) {
+      <div class="flex items-center gap-2 text-forge-muted text-xs animate-pulse py-8">
+        <span>⚗</span>
+        Igniting the forge...
+      </div>
+    }
+
+    @if (profile()) {
+      <div class="grid lg:grid-cols-[1fr_360px] gap-5">
+        <!-- MATERIALS PANEL -->
+        <div class="forge-card p-5 flex flex-col gap-4">
+          <div class="flex items-center justify-between border-b border-forge-border pb-3">
+            <h2 class="text-[10px] font-black uppercase tracking-widest text-forge-muted">Reagents Required</h2>
+            <span class="text-[10px] font-black text-forge-primary tabular-nums">× {{ costEach() }} each</span>
+          </div>
+          <div class="flex flex-col gap-2">
+            @for (attr of ordinary(); track attr.code) {
+              <div
+                class="flex items-center gap-3 px-3 py-2.5 rounded-sm bg-forge-surface border transition-colors duration-300"
+                [class]="rowBorder(attr.material_balance)"
+              >
+                <div
+                  class="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-300"
+                  [class.bg-green-400]="attr.material_balance >= costEach()"
+                  [class.bg-red-400]="attr.material_balance < costEach()"
+                ></div>
+                <lucide-icon
+                  [img]="getIcon(attr.code)"
+                  [size]="12"
+                  [class]="attrColor(attr.code)"
+                  class="flex-shrink-0"
+                ></lucide-icon>
+                <span class="text-[9px] font-black w-3 flex-shrink-0" [class]="attrColor(attr.code)">
+                  {{ attr.code }}
+                </span>
+
+                <div class="flex-1 flex flex-col gap-1 min-w-0">
+                  <span class="text-forge-muted text-[10px] tracking-wide truncate">
+                    {{ attr.material_name }}
+                  </span>
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      [class]="barColor(attr.code)"
+                      [style.width.%]="fillPct(attr.material_balance)"
+                    ></div>
+                  </div>
+                </div>
+
+                <!-- BALANCE / COST -->
+                <div class="text-right flex-shrink-0 ml-1">
+                  <span
+                    class="text-[11px] font-black tabular-nums transition-colors duration-300"
+                    [class]="balanceColor(attr.material_balance)"
+                  >
+                    {{ attr.material_balance }}
+                  </span>
+                  <span class="text-[9px] text-forge-muted">/ {{ costEach() }}</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- TOTAL -->
+          <div class="flex justify-between items-center border-t border-forge-border pt-3 text-[10px]">
+            <span class="text-forge-muted uppercase tracking-wider">Total materials needed</span>
+            <span class="font-black text-forge-text tabular-nums">{{ costEach() * 6 }}</span>
+          </div>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="flex flex-col gap-4">
+          <!-- STARDUST BALANCE -->
+          <div class="forge-card p-5 flex items-center justify-between">
+            <div>
+              <p class="text-[9px] font-black uppercase tracking-widest text-forge-muted mb-1.5">Stardust Balance</p>
+              <p class="text-3xl font-black text-orange-400 tabular-nums leading-none">
+                {{ stardust()?.material_balance ?? 0 }}
+              </p>
+              <p class="text-[9px] text-forge-muted mt-1 tracking-wider">
+                {{ stardust()?.material_name ?? 'Stardust' }}
+              </p>
+            </div>
+            <div class="stardust-orb text-4xl select-none" [class.animate-forge-pulse]="transmuting()">✨</div>
+          </div>
+
+          <!-- BATCH + FORGE ACTION -->
+          <div class="forge-card p-5 flex flex-col gap-5">
+            <div class="flex items-center justify-between">
+              <h2 class="text-[10px] font-black uppercase tracking-widest text-forge-muted">Batch Size</h2>
+              <span class="text-forge-primary font-black text-base tabular-nums leading-none">{{ batchSize() }}×</span>
+            </div>
+
+            <!-- SLIDER -->
+            <div class="flex flex-col gap-2.5">
+              <input
+                type="range"
+                min="0"
+                [max]="BATCH_STEPS.length - 1"
+                step="1"
+                [value]="sliderIndex()"
+                (input)="onSliderChange($event)"
+                class="forge-slider w-full"
+                [style.--fill-pct]="sliderPct() + '%'"
+              />
+
+              <div class="flex justify-between px-0.5">
+                @for (step of BATCH_STEPS; track step; let i = $index) {
+                  <button
+                    class="text-[9px] tabular-nums transition-colors cursor-pointer"
+                    [class.text-forge-primary]="i === sliderIndex()"
+                    [class.font-black]="i === sliderIndex()"
+                    [class.text-forge-muted]="i !== sliderIndex()"
+                    (click)="sliderIndex.set(i)"
+                  >
+                    {{ step }}×
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- REWARDS -->
+            <div class="bg-forge-surface border border-forge-border rounded p-3.5 flex flex-col gap-2.5 text-[10px]">
+              <div class="flex justify-between items-center">
+                <span class="text-forge-muted uppercase tracking-wider">Cost per material</span>
+                <span class="font-black text-forge-text tabular-nums">{{ costEach() }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-forge-muted uppercase tracking-wider">Total consumed</span>
+                <span class="font-black text-forge-text tabular-nums">{{ costEach() * 6 }}</span>
+              </div>
+              <div class="border-t border-forge-border/60 pt-2.5 flex justify-between items-center">
+                <span class="text-forge-muted uppercase tracking-wider">Stardust yield</span>
+                <span class="font-black text-orange-400 tabular-nums">{{ minReward() }}–{{ maxReward() }} ✨</span>
+              </div>
+            </div>
+
+            <!-- FORGE BUTTON -->
+            <button
+              class="forge-btn-primary btn-shimmer w-full py-3.5 text-xs tracking-widest"
+              [disabled]="!canTransmute()"
+              (click)="transmute()"
+            >
+              @if (transmuting()) {
+                <span class="animate-pulse tracking-widest">⚗ TRANSMUTING...</span>
+              } @else if (!canTransmute()) {
+                INSUFFICIENT MATERIALS
+              } @else {
+                ⚗ FORGE STARDUST
+              }
+            </button>
+
+            @if (!canTransmute() && !transmuting() && ordinary().length) {
+              <p class="text-red-400/80 text-[10px] text-center tracking-wider -mt-2">
+                Need {{ costEach() }} of each · reduce batch or farm more materials
+              </p>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>
