@@ -576,4 +576,9 @@ export class MissionsComponent implements OnInit {
   categoryLabel(category: string | null): string {
     return category ? (CATEGORY_LABELS[category] ?? category) : '—';
   }
+
+  // Function to check if the attribute linked to a mission is already at max level
+  isAttrMaxed(code: string): boolean {
+    return (this.playerState.profile()?.attributes.find((a) => a.code === code)?.level ?? 0) >= 10;
+  }
 }

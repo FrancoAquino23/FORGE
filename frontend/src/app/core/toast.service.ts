@@ -3,7 +3,7 @@
    ================================================================== */
 
 import { Injectable, signal } from '@angular/core';
-import { ActivityLogResponse, MissionClaimResponse, RelicUpgradeResponse } from './api.service';
+import { MissionClaimResponse, RelicUpgradeResponse, TransmuteResponse } from './api.service';
 
 // Types (Toast - For Notifications)
 export type ToastType = 'xp' | 'levelup' | 'loot' | 'claim' | 'error';
@@ -49,33 +49,15 @@ export class ToastService {
     this.toasts.update((list) => list.filter((t) => t.id !== id));
   }
 
-  // Method (From Activity Log Response - Show XP Gain, Level Up, & Loot Drop Notifications)
-  fromActivityLog(res: ActivityLogResponse): void {
-    if (res.level_up.occurred) {
-      this.show({
-        type: 'levelup',
-        icon: '⚡',
-        title: `Level Up: ${ATTR_NAMES[res.attribute_code] ?? res.attribute_code}!`,
-        message: `Now at Level ${res.level_up.new_level}`,
-        attrCode: res.attribute_code,
-      });
-    } else {
-      this.show({
-        type: 'xp',
-        icon: '🔥',
-        title: 'Activity Logged',
-        message: `+${res.xp_earned} XP · +${res.material_earned} ${res.material_name}`,
-      });
-    }
-  }
-
   // Method (Show Mission Completion, XP Gain, Material Gain, and Level Up Notifications)
   fromMissionClaim(res: MissionClaimResponse): void {
+    const xpPart =
+      res.new_attribute_level >= 10 && !res.leveled_up ? 'XP MAX' : `+${res.xp_earned} XP`;
     this.show({
       type: 'claim',
       icon: '✅',
       title: 'Mission Accomplished',
-      message: `+${res.xp_earned} XP · +${res.material_earned} ${res.material_name}`,
+      message: `${xpPart} · +${res.material_earned} ${res.material_name}`,
     });
     if (res.leveled_up) {
       setTimeout(() => {
@@ -98,6 +80,17 @@ export class ToastService {
       title: 'Relic Upgraded',
       message: `Level ${res.new_level} · +${res.new_bonus_pct}% active bonus`,
       attrCode: res.attribute_code,
+    });
+  }
+
+  // Method (Show Transmutation Result — Stardust gained and new balance)
+  fromTransmute(res: TransmuteResponse): void {
+    this.show({
+      type: 'loot',
+      icon: '✨',
+      title: 'Transmutation Complete',
+      message: `+${res.stardust_gained} Stardust · Balance: ${res.new_stardust_balance}`,
+      attrCode: 'L',
     });
   }
 }

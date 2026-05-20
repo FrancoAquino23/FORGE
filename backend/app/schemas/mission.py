@@ -55,7 +55,7 @@ class MissionClaimResponse(BaseModel):
 
 # Model DeployMissionRequest (Request to dispatch a player-created mission)
 class DeployMissionRequest(BaseModel):
-    attribute_code: str = Field(..., pattern="^[SPECIAL]$")
+    attribute_code: str = Field(..., pattern="^[SPECIA]$")
     category: MissionCategory
     description: str = Field(default="", max_length=500)
     detail: str | None = Field(default=None, max_length=1000)

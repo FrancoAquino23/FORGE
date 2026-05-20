@@ -114,26 +114,6 @@ export interface UpdateMissionRequest {
   threat_level?: 'MINOR' | 'MAJOR' | 'CRITICAL';
 }
 
-// Interface (Activity Log Request - Data)
-export interface ActivityLogRequest {
-  attribute_code: string;
-  description?: string;
-}
-
-// Interface (Activity Log Response - Data)
-export interface ActivityLogResponse {
-  activity_id: string;
-  attribute_code: string;
-  material_name: string;
-  xp_earned: number;
-  material_earned: number;
-  new_attribute_level: number;
-  new_attribute_xp: number;
-  xp_to_next_level: number;
-  level_up: { occurred: boolean; new_level: number };
-  material_balance: number;
-}
-
 // Interface (Relic Info - Data)
 export interface RelicInfo {
   attribute_code: string;
@@ -183,8 +163,11 @@ export interface PlayerBuffInfo {
 export interface PrestigeStatusResponse {
   prestige_count: number;
   threshold_level: number;
+  material_cost: number;
   active_buffs: PlayerBuffInfo[];
   available_buff_types: BuffTypeInfo[];
+  prestige_points_total: number;
+  prestige_points_available: number;
 }
 
 // Interface (Prestige Up Request - Data)
@@ -200,6 +183,55 @@ export interface PrestigeUpResponse {
   buff_display_name: string;
   new_stack_count: number;
   new_total_bonus: number;
+}
+
+// Interface (Skill Node Info - Data)
+export interface SkillNodeInfo {
+  node_id: string;
+  path: string;
+  display_name: string;
+  description: string;
+  current_level: number;
+  max_level: number;
+  cost_to_upgrade: number | null;
+  bonus_at_current: number;
+  bonus_at_next: number | null;
+  current_effect: string;
+  next_effect: string | null;
+}
+
+// Interface (Skill Tree Response - Data)
+export interface SkillTreeResponse {
+  nodes: SkillNodeInfo[];
+  pp_total: number;
+  pp_available: number;
+}
+
+// Interface (Upgrade Node Request - Data)
+export interface UpgradeNodeRequest {
+  node_id: string;
+}
+
+// Interface (Upgrade Node Response - Data)
+export interface UpgradeNodeResponse {
+  node_id: string;
+  new_level: number;
+  pp_spent: number;
+  pp_available: number;
+}
+
+// Interface (Reset Tree Response - Data)
+export interface ResetTreeResponse {
+  pp_refunded: number;
+  pp_available: number;
+}
+
+// Interface (Transmute Response - Data)
+export interface TransmuteResponse {
+  batch_size: number;
+  materials_consumed_each: number;
+  stardust_gained: number;
+  new_stardust_balance: number;
 }
 
 // Service (API Service - Data)
@@ -221,11 +253,6 @@ export class ApiService {
   // Method (Deploy Mission)
   deployMission(payload: DeployMissionRequest): Observable<DeployMissionResponse> {
     return this.http.post<DeployMissionResponse>(`${this.BASE}/missions/deploy`, payload);
-  }
-
-  // Method (Log Activity)
-  logActivity(payload: ActivityLogRequest): Observable<ActivityLogResponse> {
-    return this.http.post<ActivityLogResponse>(`${this.BASE}/activities/log`, payload);
   }
 
   // Method (Claim Mission)
@@ -280,5 +307,20 @@ export class ApiService {
   // Method (Prestige Up)
   prestigeUp(payload: PrestigeUpRequest): Observable<PrestigeUpResponse> {
     return this.http.post<PrestigeUpResponse>(`${this.BASE}/prestige/prestige-up`, payload);
+  }
+
+  // Method (Get Skill Tree)
+  getSkillTree(): Observable<SkillTreeResponse> {
+    return this.http.get<SkillTreeResponse>(`${this.BASE}/prestige/tree`);
+  }
+
+  // Method (Upgrade Skill Node)
+  upgradeNode(node_id: string): Observable<UpgradeNodeResponse> {
+    return this.http.post<UpgradeNodeResponse>(`${this.BASE}/prestige/tree/upgrade`, { node_id });
+  }
+
+  // Method (Reset Skill Tree)
+  resetSkillTree(): Observable<ResetTreeResponse> {
+    return this.http.post<ResetTreeResponse>(`${this.BASE}/prestige/tree/reset`, {});
   }
 }

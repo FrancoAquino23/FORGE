@@ -45,11 +45,7 @@
           </div>
 
           <!-- UPGRADE BUTTON -->
-          @if (r.is_luck) {
-            <div class="text-[9px] text-forge-muted text-center py-1 border border-forge-border/30 rounded-sm">
-              Via Prestige
-            </div>
-          } @else if (r.level >= 10) {
+          @if (r.level >= 10) {
             <div
               class="text-[9px] font-black text-center py-1 border rounded-sm"
               [class]="attrColor(r.attribute_code) + ' border-current/30'"
@@ -66,7 +62,9 @@
                 Forging...
               } @else {
                 FORGE UPGRADE
-                <span class="block text-[8px] opacity-70 font-normal mt-0.5">{{ r.upgrade_cost }} mat</span>
+                <span class="block text-[8px] opacity-70 font-normal mt-0.5">
+                  {{ r.upgrade_cost }} {{ r.is_luck ? 'STR' : 'mat' }}
+                </span>
               }
             </button>
           }

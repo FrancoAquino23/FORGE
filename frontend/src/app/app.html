@@ -31,6 +31,13 @@
           Missions
         </a>
         <a
+          routerLink="/forge"
+          routerLinkActive="text-forge-primary"
+          class="text-forge-muted hover:text-forge-text transition-colors"
+        >
+          Forge
+        </a>
+        <a
           routerLink="/prestige"
           routerLinkActive="text-forge-primary"
           class="text-forge-muted hover:text-forge-text transition-colors flex items-center gap-1.5"
@@ -41,6 +48,13 @@
               class="text-[9px] font-black px-1.5 py-0.5 rounded-sm bg-forge-primary/15 text-forge-primary tabular-nums leading-none"
             >{{ playerState.prestigeCount() }}</span>
           }
+        </a>
+        <a
+          routerLink="/skill-tree"
+          routerLinkActive="text-forge-primary"
+          class="text-forge-muted hover:text-forge-text transition-colors"
+        >
+          Skill Tree
         </a>
         <button (click)="auth.logout()" class="text-forge-muted hover:text-red-400 transition-colors cursor-pointer">
           Logout

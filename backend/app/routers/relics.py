@@ -20,7 +20,7 @@ async def get_relics(
     session: AsyncSession = Depends(get_db),
 ) -> RelicListResponse:
     service = RelicService(session)
-    return await service.get_all(player.id, player.prestige_count)
+    return await service.get_all(player.id)
 
 # Endpoint (POST /relics/{attribute_code}/upgrade) to upgrade a specific relic for the current player
 @router.post("/{attribute_code}/upgrade", response_model=RelicUpgradeResponse)

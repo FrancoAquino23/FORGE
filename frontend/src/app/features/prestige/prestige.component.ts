@@ -58,6 +58,9 @@ interface RingSegment {
 // Canonical S.P.E.C.I.A.L. order for ring layout
 const SPECIAL_ORDER = ['S', 'P', 'E', 'C', 'I', 'A', 'L'] as const;
 
+// Ordinary material codes
+const ORDINARY_CODES = new Set(['S', 'P', 'E', 'C', 'I', 'A']);
+
 // Ring geometry constants
 const RING_R = 38;
 const CX = 50;
@@ -146,9 +149,27 @@ export class PrestigeComponent implements OnInit {
     });
   });
 
-  // Helper (True only when all 7 attributes are at threshold and a buff is selected)
+  // Material shortfalls against the required prestige cost
+  readonly materialShortfalls = computed(() => {
+    const cost = this.status()?.material_cost ?? 0;
+    if (cost === 0) return [];
+    return (this.profile()?.attributes ?? [])
+      .filter((a) => ORDINARY_CODES.has(a.code))
+      .map((a) => ({
+        code: a.code,
+        name: MATERIAL_NAMES[a.code] ?? a.code,
+        balance: a.material_balance,
+        shortfall: Math.max(0, cost - a.material_balance),
+      }))
+      .filter((a) => a.shortfall > 0);
+  });
+
+  // Helper (True only when all 7 attributes are at threshold, materials are sufficient, and a buff is selected)
   readonly canPrestigeUp = computed(
-    () => this.ringSegments().every((s) => s.ready) && !!this.selectedBuff,
+    () =>
+      this.ringSegments().every((s) => s.ready) &&
+      this.materialShortfalls().length === 0 &&
+      !!this.selectedBuff,
   );
 
   // Helper (Segments whose level is still below the threshold)

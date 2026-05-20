@@ -218,6 +218,7 @@ export class DashboardComponent implements OnInit {
 
   // Function to calculate the XP percentage for an attribute, used for the XP bar fill
   xpPct(attr: AttributeProfile): number {
+    if (attr.level >= PRESTIGE_THRESHOLD) return 100;
     return attr.xp_to_next ? Math.min(100, (attr.xp_current / attr.xp_to_next) * 100) : 0;
   }
 

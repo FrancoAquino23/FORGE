@@ -142,21 +142,38 @@
           </button>
           @if (!canPrestigeUp() && !prestiging() && hoverPanel()) {
             <div class="requirements-hover-panel">
+
               @if (missingMaterials().length > 0) {
+                <p class="text-[9px] font-black uppercase tracking-wider text-forge-muted/50 mb-1.5">
+                  Levels Missing
+                </p>
                 <div class="req-grid">
                   @for (m of missingMaterials(); track m.code) {
                     <span class="req-name">{{ m.name }}</span>
-                    <span class="req-amount">
-                      <b>{{ m.needed }}</b>
-                      units
-                    </span>
+                    <span class="req-amount"><b>{{ m.needed }}</b> lvls</span>
                   }
                 </div>
-              } @else {
+              }
+
+              @if (materialShortfalls().length > 0) {
+                <p class="text-[9px] font-black uppercase tracking-wider text-forge-muted/50 mb-1.5"
+                   [class.mt-2]="missingMaterials().length > 0">
+                  Materials Short (need {{ status()!.material_cost }} each)
+                </p>
+                <div class="req-grid">
+                  @for (m of materialShortfalls(); track m.code) {
+                    <span class="req-name">{{ m.name }}</span>
+                    <span class="req-amount text-red-400"><b>−{{ m.shortfall }}</b></span>
+                  }
+                </div>
+              }
+
+              @if (missingMaterials().length === 0 && materialShortfalls().length === 0) {
                 <p class="text-[10px] text-forge-muted/50 text-center tracking-wide py-0.5">
                   ⚡ All attributes ready — select a buff
                 </p>
               }
+
             </div>
           }
         </div>
@@ -186,7 +203,14 @@
 
     <!-- MATERIAL RESERVES -->
     <div>
-      <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">Material Reserves</h3>
+      <div class="flex items-baseline justify-between mb-3">
+        <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em]">Material Reserves</h3>
+        <span class="text-[9px] text-forge-muted/50 tracking-wider">
+          Next prestige requires
+          <span class="text-forge-primary font-black">{{ status()!.material_cost }}</span>
+          of each
+        </span>
+      </div>
       <div class="forge-card p-4">
         <div class="grid grid-cols-2 grid-rows-4 grid-flow-col gap-x-8">
           @for (attr of sortedAttributes(); track attr.code) {
@@ -196,10 +220,15 @@
               </span>
               <span class="text-[10px] text-forge-muted flex-1 truncate">{{ materialName(attr.code) }}</span>
               <div class="text-right flex-shrink-0">
-                <span class="text-sm font-black tabular-nums" [style.color]="attrHex(attr.code)">
-                  {{ attr.material_balance }}
-                </span>
-                <span class="text-[9px] text-forge-muted/50 ml-1">units</span>
+                <span
+                  class="text-sm font-black tabular-nums transition-colors"
+                  [style.color]="(attr.code !== 'L' && attr.material_balance < status()!.material_cost) ? '#f87171' : attrHex(attr.code)"
+                >{{ attr.material_balance }}</span>
+                @if (attr.code !== 'L') {
+                  <span class="text-[9px] text-forge-muted/50 ml-1">/ {{ status()!.material_cost }}</span>
+                } @else {
+                  <span class="text-[9px] text-forge-muted/50 ml-1">units</span>
+                }
               </div>
             </div>
           }

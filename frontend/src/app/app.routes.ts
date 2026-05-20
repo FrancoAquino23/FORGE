@@ -49,6 +49,20 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/prestige/prestige.component').then((m) => m.PrestigeComponent),
   },
+  {
+    // Forge route (protected)
+    path: 'forge',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/forge/forge.component').then((m) => m.ForgeComponent),
+  },
+  {
+    // Skill Tree route (protected)
+    path: 'skill-tree',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/skill-tree/skill-tree.component').then((m) => m.SkillTreeComponent),
+  },
   // Fallback route for undefined paths
   { path: '**', redirectTo: 'dashboard' },
 ];

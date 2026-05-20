@@ -3,7 +3,6 @@
 # ==================================================================
 
 import uuid
-from datetime import date
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_player
@@ -29,7 +28,7 @@ async def get_active_missions(
     session: AsyncSession = Depends(get_db),
 ) -> MissionListResponse:
     service = MissionService(session)
-    return await service.get_active_with_progress(player.id, date.today())
+    return await service.get_active_with_progress(player.id)
 
 # Endpoint (POST /missions/deploy) — Dispatch a new player-created PENDING mission
 @router.post("/deploy", response_model=DeployMissionResponse)

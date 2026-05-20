@@ -86,7 +86,11 @@
           <div>
             <div class="flex justify-between text-xs text-forge-muted mb-1">
               <span>XP</span>
-              <span>{{ attr.xp_current }}/{{ attr.xp_to_next }}</span>
+              @if (attr.level >= 10) {
+                <span class="text-forge-primary font-black tracking-widest text-[9px]">MAX</span>
+              } @else {
+                <span>{{ attr.xp_current }}/{{ attr.xp_to_next }}</span>
+              }
             </div>
             <div class="progress-bar">
               <div class="progress-fill" [style.background]="xpBarColor(attr.code)" [style.width.%]="xpPct(attr)"></div>
