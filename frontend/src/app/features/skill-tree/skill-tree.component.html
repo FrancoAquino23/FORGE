@@ -1,0 +1,133 @@
+<!-- ==================================================================
+     SKILL TREE COMPONENT STRUCTURE
+     ================================================================== -->
+
+<div class="max-w-5xl mx-auto px-4 py-8 font-mono">
+  <!-- HEADER -->
+  <div class="flex items-start justify-between mb-8">
+    <div>
+      <h1 class="text-forge-primary font-black tracking-widest text-xl uppercase">◆ Prestige Skill Tree</h1>
+      <p class="text-forge-muted text-xs mt-1 tracking-wide">
+        Invest Prestige Points to unlock permanent passive bonuses. Points are refunded on every prestige.
+      </p>
+    </div>
+
+    @if (tree(); as t) {
+      <div class="text-right flex flex-col items-end gap-2">
+        <div class="text-xs text-forge-muted uppercase tracking-widest">Prestige Points</div>
+        <div class="flex items-baseline gap-1">
+          <span class="text-forge-primary font-black text-2xl tabular-nums">{{ t.pp_available }}</span>
+          <span class="text-forge-muted text-xs">/ {{ t.pp_total }} total</span>
+        </div>
+        <button
+          (click)="resetTree()"
+          [disabled]="resetting() || t.pp_available === t.pp_total"
+          class="text-[10px] uppercase tracking-widest px-3 py-1.5 border border-forge-border rounded-sm text-forge-muted hover:border-amber-500 hover:text-amber-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          @if (resetting()) {
+            Resetting…
+          } @else {
+            ↺ Reset Tree
+          }
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- LOADING -->
+  @if (loading()) {
+    <div class="text-forge-muted text-xs text-center py-16 animate-pulse tracking-widest">Loading skill tree…</div>
+  }
+
+  <!-- PATHS GRID -->
+  @if (!loading() && tree(); as t) {
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      @for (group of paths(); track group.path) {
+        <div class="flex flex-col gap-4">
+          <!-- PATH HEADER -->
+          <div class="flex items-center gap-2 pb-2 border-b border-forge-border">
+            <span class="text-base">{{ pathIcon(group.path) }}</span>
+            <span class="text-[10px] font-black uppercase tracking-widest text-forge-primary">
+              {{ group.path }}
+            </span>
+          </div>
+
+          <!-- NODES -->
+          @for (node of group.nodes; track node.node_id) {
+            <div
+              class="rounded-sm border p-4 flex flex-col gap-3 transition-colors"
+              [class]="
+                node.current_level === node.max_level
+                  ? 'border-forge-primary/40 bg-forge-primary/5'
+                  : 'border-forge-border bg-forge-surface'
+              "
+            >
+              <div class="flex items-start justify-between gap-2">
+                <span class="text-xs font-black tracking-wide text-forge-text leading-tight">
+                  {{ node.display_name }}
+                </span>
+                @if (node.current_level === node.max_level) {
+                  <span
+                    class="text-[9px] font-black px-1.5 py-0.5 rounded-sm bg-forge-primary/15 text-forge-primary tracking-widest shrink-0"
+                  >
+                    ◆ MAX
+                  </span>
+                }
+              </div>
+
+              <!-- DESCRIPTION -->
+              <p class="text-[10px] text-forge-muted leading-relaxed">{{ node.description }}</p>
+
+              <!-- LEVEL -->
+              <div class="flex items-center gap-1.5">
+                @for (filled of nodeDots(node); track $index) {
+                  <span
+                    class="w-2.5 h-2.5 rounded-full border"
+                    [class]="filled ? 'bg-forge-primary border-forge-primary' : 'bg-transparent border-forge-muted/40'"
+                  ></span>
+                }
+                <span class="ml-1.5 text-[10px] text-forge-muted tabular-nums">
+                  {{ node.current_level }} / {{ node.max_level }}
+                </span>
+              </div>
+
+              <!-- EFFECT -->
+              <div class="flex items-center justify-between text-[10px]">
+                <span class="text-forge-muted uppercase tracking-wider">Active</span>
+                <span class="font-black text-forge-text">{{ node.current_effect }}</span>
+              </div>
+
+              <!-- UPGRADE INFO -->
+              @if (node.current_level < node.max_level) {
+                <div class="flex items-center justify-between pt-1 border-t border-forge-border/50">
+                  <span class="text-[10px] text-forge-muted">
+                    Next:
+                    <span class="text-amber-400 font-black">{{ node.next_effect }}</span>
+                  </span>
+                  <button
+                    (click)="upgrade(node)"
+                    [disabled]="!canUpgrade(node) || isUpgrading(node.node_id)"
+                    class="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-sm border border-forge-primary text-forge-primary hover:bg-forge-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    @if (isUpgrading(node.node_id)) {
+                      …
+                    } @else {
+                      {{ node.cost_to_upgrade }} PP
+                    }
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- EMPTY STATE -->
+    @if (t.pp_total === 0) {
+      <p class="text-center text-forge-muted text-xs mt-8 tracking-wide">
+        Complete your first Prestige to earn Prestige Points and unlock this tree.
+      </p>
+    }
+  }
+</div>
