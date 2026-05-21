@@ -3,6 +3,7 @@
    ================================================================== */
 
 import { Component, inject } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { Toast, ToastService, ToastType } from '../../core/toast.service';
 
 // Border color mappings for different toast types
@@ -12,6 +13,9 @@ const TYPE_BORDER: Record<ToastType, string> = {
   loot: 'border-purple-500/60 text-purple-300',
   claim: 'border-green-500/50 text-green-400',
   error: 'border-red-500/60 text-red-400',
+  'node-bronze': 'border-amber-700/70 text-amber-600',
+  'node-silver': 'border-slate-400/60 text-slate-300',
+  'node-gold': 'border-yellow-300/80 text-yellow-100',
 };
 
 // Attribute-specific border/text colors for level-up toasts
@@ -28,6 +32,7 @@ const ATTR_TOAST_COLORS: Record<string, string> = {
 // Main toast component that displays toast notifications
 @Component({
   selector: 'app-toast',
+  imports: [LucideAngularModule],
   templateUrl: './toast.component.html',
   styleUrl: './toast.component.scss',
 })

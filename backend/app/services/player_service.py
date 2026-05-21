@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
 from app.schemas.player import AttributeProfile, PlayerProfileResponse
+from app.services.reward_service import RewardService
 
 # Service PlayerService (Business Logic for Player Profile Retrieval)
 class PlayerService:
@@ -44,7 +45,11 @@ class PlayerService:
                 name=pa.attribute.name,
                 level=pa.level,
                 xp_current=pa.xp_current,
-                xp_to_next=pa.xp_to_next,
+                xp_to_next=(
+                    RewardService.xp_for_level(pa.level)
+                    if pa.attribute.code != "L"
+                    else 0
+                ),
                 material_name=pa.attribute.material_name,
                 material_balance=inv_by_attr.get(pa.attribute_id, 0),
             )

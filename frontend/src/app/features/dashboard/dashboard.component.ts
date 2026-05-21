@@ -2,7 +2,7 @@
    DASHBOARD COMPONENT LOGIC
    ================================================================== */
 
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   LucideAngularModule,
@@ -83,6 +83,20 @@ const GEM_COLORS = [
 // Number of segments in each attribute bar before reaching prestige
 const PRESTIGE_THRESHOLD = 10;
 
+// Static XP required to advance from each level
+const XP_TABLE: Record<number, number> = {
+  1: 500,
+  2: 1_500,
+  3: 2_500,
+  4: 3_500,
+  5: 4_500,
+  6: 5_500,
+  7: 6_500,
+  8: 7_500,
+  9: 10_000,
+  10: 0,
+};
+
 // Main dashboard component that displays player profile, attributes, and inventory
 @Component({
   selector: 'app-dashboard',
@@ -141,6 +155,18 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  // Function to close attribute dropdown
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.attrDropdownOpen = false;
+  }
+
+  // Function to toggle attribute dropdown
+  toggleAttrDropdown(event: MouseEvent): void {
+    event.stopPropagation();
+    this.attrDropdownOpen = !this.attrDropdownOpen;
+  }
+
   // Handle attribute selection from dropdown
   selectAttr(code: string): void {
     this.logAttr = code;
@@ -149,7 +175,7 @@ export class DashboardComponent implements OnInit {
 
   // Deploy a new mission based on user input
   deployMission(): void {
-    if (!this.logAttr || this.deploying()) return;
+    if (!this.logAttr || !this.logDesc.trim() || this.deploying()) return;
     this.deploying.set(true);
 
     const steps = this.logSteps
@@ -216,10 +242,17 @@ export class DashboardComponent implements OnInit {
     return `drop-shadow(0 0 10px ${this.prestigeGemColor(count)})`;
   }
 
+  // Functon to return XP required for Luck (L) is passively synced
+  xpRequired(attr: AttributeProfile): number {
+    if (attr.code === 'L') return 0;
+    return XP_TABLE[attr.level] ?? 0;
+  }
+
   // Function to calculate the XP percentage for an attribute, used for the XP bar fill
   xpPct(attr: AttributeProfile): number {
     if (attr.level >= PRESTIGE_THRESHOLD) return 100;
-    return attr.xp_to_next ? Math.min(100, (attr.xp_current / attr.xp_to_next) * 100) : 0;
+    const req = this.xpRequired(attr);
+    return req > 0 ? Math.min(100, (attr.xp_current / req) * 100) : 0;
   }
 
   // Function to get color class for an attribute based on its code
@@ -240,6 +273,11 @@ export class DashboardComponent implements OnInit {
   // Function to get the appropriate icon for an attribute based on its code
   getIconName(code: string): LucideIconData {
     return ATTR_ICONS[code] ?? Sparkles;
+  }
+
+  // Function to get all attributes for missions
+  missionAttrs(): AttributeProfile[] {
+    return this.profile()?.attributes.filter((a) => a.code !== 'L') ?? [];
   }
 
   // Function to get the display name of an attribute based on its code

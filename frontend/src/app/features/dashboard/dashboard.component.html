@@ -88,8 +88,10 @@
               <span>XP</span>
               @if (attr.level >= 10) {
                 <span class="text-forge-primary font-black tracking-widest text-[9px]">MAX</span>
+              } @else if (attr.code === 'L') {
+                <span class="text-forge-muted text-[9px] tracking-widest">SYNCED</span>
               } @else {
-                <span>{{ attr.xp_current }}/{{ attr.xp_to_next }}</span>
+                <span>{{ attr.xp_current }}/{{ xpRequired(attr) }}</span>
               }
             </div>
             <div class="progress-bar">
@@ -115,7 +117,7 @@
               <button
                 type="button"
                 class="forge-input w-full flex items-center gap-2 text-left cursor-pointer"
-                (click)="attrDropdownOpen = !attrDropdownOpen"
+                (click)="toggleAttrDropdown($event)"
               >
                 @if (logAttr) {
                   <lucide-icon [img]="getIconName(logAttr)" [size]="13" [class]="attrColor(logAttr)"></lucide-icon>
@@ -129,8 +131,9 @@
               @if (attrDropdownOpen) {
                 <div
                   class="absolute z-20 w-full mt-0.5 bg-forge-surface border border-forge-border rounded-sm shadow-lg overflow-hidden"
+                  (click)="$event.stopPropagation()"
                 >
-                  @for (a of profile()!.attributes; track a.code) {
+                  @for (a of missionAttrs(); track a.code) {
                     <button
                       type="button"
                       class="w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-forge-card"
@@ -241,9 +244,15 @@
 
           <button
             class="forge-btn-primary mt-1 uppercase tracking-widest text-xs font-black"
+            [class.btn-action-ready]="
+              !deploying() && !!logAttr && !!logDesc.trim() && (logCategory === 'DAILY_GRIND' || !!logDueDate)
+            "
+            [class.btn-action-locked]="
+              !deploying() && (!logAttr || !logDesc.trim() || ((logCategory === 'MAIN_QUEST' || logCategory === 'SIDE_QUEST') && !logDueDate))
+            "
             (click)="deployMission()"
             [disabled]="
-              deploying() || !logAttr || ((logCategory === 'MAIN_QUEST' || logCategory === 'SIDE_QUEST') && !logDueDate)
+              deploying() || !logAttr || !logDesc.trim() || ((logCategory === 'MAIN_QUEST' || logCategory === 'SIDE_QUEST') && !logDueDate)
             "
           >
             @if (deploying()) {

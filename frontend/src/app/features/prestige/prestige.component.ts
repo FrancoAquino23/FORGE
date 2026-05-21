@@ -3,7 +3,6 @@
    ================================================================== */
 
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { ApiService, PrestigeStatusResponse, PrestigeUpResponse } from '../../core/api.service';
 import { PlayerStateService } from '../../core/player-state.service';
 import { ToastService } from '../../core/toast.service';
@@ -46,20 +45,23 @@ interface RingSegment {
   code: string;
   color: string;
   bgPath: string;
-  fillPath: string | null;
+  fillPath: string;
   fillPct: number;
+  fillOpacity: number;
   level: number;
   threshold: number;
   ready: boolean;
   labelX: string;
   labelY: string;
+  levelX: string;
+  levelY: string;
 }
 
 // Canonical S.P.E.C.I.A.L. order for ring layout
 const SPECIAL_ORDER = ['S', 'P', 'E', 'C', 'I', 'A', 'L'] as const;
 
-// Ordinary material codes
-const ORDINARY_CODES = new Set(['S', 'P', 'E', 'C', 'I', 'A']);
+// Material codes
+const PRESTIGE_MATERIAL_CODES = new Set(['S', 'P', 'E', 'C', 'I', 'A', 'L']);
 
 // Ring geometry constants
 const RING_R = 38;
@@ -84,7 +86,7 @@ function buildArcPath(fromDeg: number, toDeg: number): string {
 
 @Component({
   selector: 'app-prestige',
-  imports: [FormsModule],
+  imports: [],
   templateUrl: './prestige.component.html',
   styleUrl: './prestige.component.scss',
 })
@@ -98,13 +100,8 @@ export class PrestigeComponent implements OnInit {
   prestiging = signal(false);
   prestigeFlash = signal(false);
 
-  selectedBuff = '';
   hoverPanel = signal(false);
-
-  // XP-only buff types
-  readonly xpBuffTypes = computed(() =>
-    (this.status()?.available_buff_types ?? []).filter((bt) => bt.target_type === 'XP'),
-  );
+  hoveredCode = signal<string | null>(null);
 
   // Load component
   ngOnInit(): void {
@@ -131,6 +128,7 @@ export class PrestigeComponent implements OnInit {
       const attr = attrs.find((a) => a.code === code);
       const level = attr?.level ?? 0;
       const fillPct = Math.min(1, level / threshold);
+      const arcPct = level > 0 ? fillPct : 0.03;
       const startDeg = -90 + i * (SEG_ARC + GAP_DEG);
       const midDeg = startDeg + SEG_ARC / 2;
 
@@ -138,13 +136,16 @@ export class PrestigeComponent implements OnInit {
         code,
         color: ATTR_HEX[code] ?? '#f59e0b',
         bgPath: buildArcPath(startDeg, startDeg + SEG_ARC),
-        fillPath: fillPct >= 0.01 ? buildArcPath(startDeg, startDeg + SEG_ARC * fillPct) : null,
+        fillPath: buildArcPath(startDeg, startDeg + SEG_ARC * arcPct),
         fillPct,
+        fillOpacity: level > 0 ? 1 : 0.2,
         level,
         threshold,
         ready: level >= threshold,
         labelX: (CX + LABEL_R * Math.cos(toRad(midDeg))).toFixed(2),
         labelY: (CY + LABEL_R * Math.sin(toRad(midDeg))).toFixed(2),
+        levelX: (CX + (RING_R - 9) * Math.cos(toRad(midDeg))).toFixed(2),
+        levelY: (CY + (RING_R - 9) * Math.sin(toRad(midDeg))).toFixed(2),
       };
     });
   });
@@ -154,7 +155,7 @@ export class PrestigeComponent implements OnInit {
     const cost = this.status()?.material_cost ?? 0;
     if (cost === 0) return [];
     return (this.profile()?.attributes ?? [])
-      .filter((a) => ORDINARY_CODES.has(a.code))
+      .filter((a) => PRESTIGE_MATERIAL_CODES.has(a.code))
       .map((a) => ({
         code: a.code,
         name: MATERIAL_NAMES[a.code] ?? a.code,
@@ -164,28 +165,13 @@ export class PrestigeComponent implements OnInit {
       .filter((a) => a.shortfall > 0);
   });
 
-  // Helper (True only when all 7 attributes are at threshold, materials are sufficient, and a buff is selected)
+  // Helper (True only when all 7 attributes are at threshold and materials are sufficient)
   readonly canPrestigeUp = computed(
-    () =>
-      this.ringSegments().every((s) => s.ready) &&
-      this.materialShortfalls().length === 0 &&
-      !!this.selectedBuff,
+    () => this.ringSegments().every((s) => s.ready) && this.materialShortfalls().length === 0,
   );
-
-  // Helper (Segments whose level is still below the threshold)
-  readonly missingSegments = computed(() => this.ringSegments().filter((s) => !s.ready));
 
   // Helper (Counts attributes already at threshold)
   readonly readyCount = computed(() => this.ringSegments().filter((s) => s.ready).length);
-
-  // Helper (Missing materials with English names and levels needed)
-  readonly missingMaterials = computed(() =>
-    this.missingSegments().map((s) => ({
-      code: s.code,
-      name: MATERIAL_NAMES[s.code] ?? s.code,
-      needed: s.threshold - s.level,
-    })),
-  );
 
   // Helper (Profile attributes sorted in strict SPECIAL order)
   readonly sortedAttributes = computed(() => {
@@ -203,10 +189,9 @@ export class PrestigeComponent implements OnInit {
     if (!this.canPrestigeUp() || this.prestiging()) return;
     this.prestiging.set(true);
 
-    this.api.prestigeUp({ buff_type_code: this.selectedBuff }).subscribe({
+    this.api.prestigeUp({ buff_type_code: '' }).subscribe({
       next: (res: PrestigeUpResponse) => {
         this.prestiging.set(false);
-        this.selectedBuff = '';
         this.playerState.prestigeCount.set(res.prestige_number);
         this.toast.show(
           {
@@ -231,26 +216,6 @@ export class PrestigeComponent implements OnInit {
         });
       },
     });
-  }
-
-  // Function to get the current total bonus for the selected buff type
-  currentBuffBonus(): number {
-    const active = this.status()?.active_buffs.find((b) => b.buff_type_code === this.selectedBuff);
-    return active?.total_bonus ?? 0;
-  }
-
-  // Function to get the projected total bonus after performing prestige
-  nextBuffBonus(): number {
-    const bt = this.status()?.available_buff_types.find((b) => b.code === this.selectedBuff);
-    return this.currentBuffBonus() + (bt?.bonus_percent ?? 0);
-  }
-
-  // Function to return the display name of the currently selected buff type
-  buffPreviewName(): string {
-    return (
-      this.status()?.available_buff_types.find((b) => b.code === this.selectedBuff)?.display_name ??
-      ''
-    );
   }
 
   // Function to return material name for an attribute code
