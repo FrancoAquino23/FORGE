@@ -1,19 +1,15 @@
 <!-- ==================================================================
-     FORGE COMPONENT STRUCTURE
+     FORGE COMPONENT TEMPLATE
      ================================================================== -->
 
 <div class="min-h-screen bg-forge-bg px-4 py-8">
   <div class="max-w-5xl mx-auto flex flex-col gap-6">
     <!-- HEADER -->
     <div class="flex flex-col gap-1.5">
-      <h1 class="text-forge-primary font-black text-lg uppercase tracking-widest flex items-center gap-2.5">
-        <span class="text-xl">⚗</span>
-        TRANSMUTATION FORGE
-      </h1>
-      <p class="text-forge-muted text-[11px] tracking-wider leading-relaxed max-w-lg">
+      <h1 class="text-forge-primary font-black text-lg uppercase tracking-widest">STARDUST CONDENSER</h1>
+      <p class="text-forge-muted text-[11px] tracking-wider leading-relaxed whitespace-nowrap">
         Sacrifice equal quantities of the six ordinary materials to crystallize
         <span class="text-orange-400 font-bold">Stardust</span>
-        — the raw essence of Luck.
       </p>
     </div>
 
@@ -28,12 +24,8 @@
     @if (profile()) {
       <div class="grid lg:grid-cols-[1fr_360px] gap-5">
         <!-- MATERIALS PANEL -->
-        <div class="forge-card p-5 flex flex-col gap-4">
-          <div class="flex items-center justify-between border-b border-forge-border pb-3">
-            <h2 class="text-[10px] font-black uppercase tracking-widest text-forge-muted">Reagents Required</h2>
-            <span class="text-[10px] font-black text-forge-primary tabular-nums">× {{ costEach() }} each</span>
-          </div>
-          <div class="flex flex-col gap-2">
+        <div class="forge-card p-5 flex flex-col">
+          <div class="flex flex-col flex-1 justify-evenly">
             @for (attr of ordinary(); track attr.code) {
               <div
                 class="flex items-center gap-3 px-3 py-2.5 rounded-sm bg-forge-surface border transition-colors duration-300"
@@ -80,12 +72,6 @@
               </div>
             }
           </div>
-
-          <!-- TOTAL -->
-          <div class="flex justify-between items-center border-t border-forge-border pt-3 text-[10px]">
-            <span class="text-forge-muted uppercase tracking-wider">Total materials needed</span>
-            <span class="font-black text-forge-text tabular-nums">{{ costEach() * 6 }}</span>
-          </div>
         </div>
 
         <!-- CONTROLS -->
@@ -101,7 +87,9 @@
                 {{ stardust()?.material_name ?? 'Stardust' }}
               </p>
             </div>
-            <div class="stardust-orb text-4xl select-none" [class.animate-forge-pulse]="transmuting()">✨</div>
+            <div class="stardust-orb select-none" [class.animate-forge-pulse]="transmuting()">
+              <lucide-icon [img]="StardustIcon" [size]="40" class="text-orange-400"></lucide-icon>
+            </div>
           </div>
 
           <!-- BATCH + FORGE ACTION -->
@@ -151,13 +139,18 @@
               </div>
               <div class="border-t border-forge-border/60 pt-2.5 flex justify-between items-center">
                 <span class="text-forge-muted uppercase tracking-wider">Stardust yield</span>
-                <span class="font-black text-orange-400 tabular-nums">{{ minReward() }}–{{ maxReward() }} ✨</span>
+                <span class="font-black text-orange-400 tabular-nums flex items-center gap-1">
+                  {{ minReward() }}–{{ maxReward() }}
+                  <lucide-icon [img]="StardustIcon" [size]="11" class="text-orange-400"></lucide-icon>
+                </span>
               </div>
             </div>
 
             <!-- FORGE BUTTON -->
             <button
-              class="forge-btn-primary btn-shimmer w-full py-3.5 text-xs tracking-widest"
+              class="forge-btn-primary w-full py-3.5 text-xs tracking-widest"
+              [class.btn-action-ready]="canTransmute() && !transmuting()"
+              [class.btn-action-locked]="!canTransmute()"
               [disabled]="!canTransmute()"
               (click)="transmute()"
             >
@@ -166,12 +159,12 @@
               } @else if (!canTransmute()) {
                 INSUFFICIENT MATERIALS
               } @else {
-                ⚗ FORGE STARDUST
+                FORGE STARDUST
               }
             </button>
 
             @if (!canTransmute() && !transmuting() && ordinary().length) {
-              <p class="text-red-400/80 text-[10px] text-center tracking-wider -mt-2">
+              <p class="text-red-400/80 text-[10px] text-center tracking-wider -mt-2 whitespace-nowrap">
                 Need {{ costEach() }} of each · reduce batch or farm more materials
               </p>
             }

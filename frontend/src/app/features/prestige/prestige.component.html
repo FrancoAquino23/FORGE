@@ -14,7 +14,7 @@
 
   @if (profile() && status()) {
     <!-- RING + CONTROLS -->
-    <div class="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-10 mb-10">
+    <div class="flex flex-col lg:flex-row items-center justify-center gap-10 mb-10">
       <!-- RING -->
       <div
         class="relative flex-shrink-0 transition-all duration-1000"
@@ -35,36 +35,55 @@
           </text>
 
           @for (seg of ringSegments(); track seg.code) {
-            <path
-              [attr.d]="seg.bgPath"
-              fill="none"
-              [attr.stroke]="seg.color"
-              stroke-width="6"
-              stroke-opacity="0.14"
-              stroke-linecap="round"
-            />
-            @if (seg.fillPath) {
+            <g (mouseenter)="hoveredCode.set(seg.code)" (mouseleave)="hoveredCode.set(null)" style="cursor: pointer">
               <path
-                [attr.d]="seg.fillPath"
+                [attr.d]="seg.bgPath"
                 fill="none"
                 [attr.stroke]="seg.color"
                 stroke-width="6"
-                [attr.stroke-opacity]="seg.ready ? 1 : 0.55"
+                [attr.stroke-opacity]="hoveredCode() === seg.code ? '0.3' : '0.14'"
                 stroke-linecap="round"
+                style="transition: stroke-opacity 0.2s ease-in-out"
               />
-            }
-            <text
-              [attr.x]="seg.labelX"
-              [attr.y]="seg.labelY"
-              [attr.fill]="seg.color"
-              [attr.fill-opacity]="seg.ready ? 1 : 0.35"
-              font-size="4.8"
-              font-weight="900"
-              text-anchor="middle"
-              dominant-baseline="middle"
-            >
-              {{ seg.code }}
-            </text>
+              <path
+                class="seg-fill"
+                [class.seg-fill--hovered]="hoveredCode() === seg.code"
+                [attr.d]="seg.fillPath"
+                fill="none"
+                [attr.stroke]="seg.color"
+                stroke-linecap="round"
+                [style.stroke-opacity]="hoveredCode() === seg.code ? 1 : seg.fillOpacity"
+                [style.filter]="hoveredCode() === seg.code ? 'drop-shadow(0 0 5px ' + seg.color + ')' : null"
+              />
+              <text
+                [attr.x]="seg.labelX"
+                [attr.y]="seg.labelY"
+                [attr.fill]="seg.color"
+                [attr.fill-opacity]="hoveredCode() === seg.code ? '1' : '0.8'"
+                font-size="4.8"
+                font-weight="900"
+                text-anchor="middle"
+                dominant-baseline="middle"
+                pointer-events="none"
+                style="transition: fill-opacity 0.2s ease-in-out"
+              >
+                {{ seg.code }}
+              </text>
+              @if (hoveredCode() === seg.code) {
+                <text
+                  [attr.x]="seg.levelX"
+                  [attr.y]="seg.levelY"
+                  [attr.fill]="seg.color"
+                  font-size="5.5"
+                  font-weight="900"
+                  text-anchor="middle"
+                  dominant-baseline="middle"
+                  pointer-events="none"
+                >
+                  {{ seg.level }}
+                </text>
+              }
+            </g>
           }
         </svg>
 
@@ -82,52 +101,19 @@
       </div>
 
       <!-- CONTROLS PANEL -->
-      <div class="w-full max-w-xs flex flex-col gap-4">
-        <p class="text-[10px] text-forge-muted/70 leading-relaxed text-center">
-          Reach level {{ status()!.threshold_level }} on all S.P.E.C.I.A.L. attributes to engrave a permanent upgrade.
+      <div class="w-full max-w-xs flex flex-col items-center gap-4">
+        <p class="text-[9px] text-forge-muted/60 tracking-wider text-center uppercase">
+          Next prestige requires
+          <span class="text-forge-primary font-black">{{ status()!.material_cost }}</span>
+          of each material
         </p>
-
-        <!-- NEXT BONUS -->
-        <div class="next-bonus-panel text-center p-4 rounded-sm">
-          <p class="text-[8px] uppercase tracking-[0.25em] text-forge-muted/40 mb-3">Next Bonus</p>
-          @if (selectedBuff) {
-            <p class="text-[9px] text-forge-primary/60 tracking-wider mb-3">{{ buffPreviewName() }}</p>
-            <div class="flex items-center justify-center gap-5">
-              <div class="text-center">
-                <p class="text-[8px] text-forge-muted/35 uppercase tracking-wider mb-1">Current</p>
-                <p class="text-2xl font-black text-forge-muted/40 tabular-nums">{{ currentBuffBonus() }}%</p>
-              </div>
-              <span class="text-forge-muted/25 text-xl font-thin">→</span>
-              <div class="text-center">
-                <p class="text-[8px] text-forge-muted/35 uppercase tracking-wider mb-1">Next</p>
-                <p class="text-4xl font-black next-bonus-value tabular-nums">{{ nextBuffBonus() }}%</p>
-              </div>
-            </div>
-          } @else {
-            <p class="text-[11px] text-forge-muted/35 leading-relaxed tracking-wide italic">
-              Select a buff to reveal
-              <br />
-              your next reward
-            </p>
-          }
-        </div>
-
-        <!-- BUFF SELECTOR -->
-        <div>
-          <label class="block text-[10px] text-forge-muted mb-1.5 uppercase tracking-wider">Buff to Engrave</label>
-          <select class="forge-input text-xs" [(ngModel)]="selectedBuff">
-            <option value="">— Select buff —</option>
-            @for (bt of xpBuffTypes(); track bt.code) {
-              <option [value]="bt.code">{{ bt.display_name }}</option>
-            }
-          </select>
-        </div>
 
         <!-- PRESTIGE UP BUTTON + HOVER REQUIREMENTS PANEL -->
         <div class="prestige-btn-wrapper" (mouseenter)="hoverPanel.set(true)" (mouseleave)="hoverPanel.set(false)">
           <button
             class="forge-btn-primary w-full py-3 text-sm tracking-[0.2em] font-black uppercase"
-            [class.prestige-ready-glow]="canPrestigeUp()"
+            [class.btn-action-ready]="canPrestigeUp() && !prestiging()"
+            [class.btn-action-locked]="!canPrestigeUp() && !prestiging()"
             [class.prestige-disabled]="!canPrestigeUp() && !prestiging()"
             [disabled]="!canPrestigeUp() || prestiging()"
             (click)="prestigeUp()"
@@ -137,43 +123,14 @@
             } @else if (canPrestigeUp()) {
               🔥 ASCEND NOW
             } @else {
-              ⚔ Ascend to Prestige {{ nextPrestigeNumber() }}
+              Ascend to Prestige {{ nextPrestigeNumber() }}
             }
           </button>
           @if (!canPrestigeUp() && !prestiging() && hoverPanel()) {
             <div class="requirements-hover-panel">
-
-              @if (missingMaterials().length > 0) {
-                <p class="text-[9px] font-black uppercase tracking-wider text-forge-muted/50 mb-1.5">
-                  Levels Missing
-                </p>
-                <div class="req-grid">
-                  @for (m of missingMaterials(); track m.code) {
-                    <span class="req-name">{{ m.name }}</span>
-                    <span class="req-amount"><b>{{ m.needed }}</b> lvls</span>
-                  }
-                </div>
-              }
-
-              @if (materialShortfalls().length > 0) {
-                <p class="text-[9px] font-black uppercase tracking-wider text-forge-muted/50 mb-1.5"
-                   [class.mt-2]="missingMaterials().length > 0">
-                  Materials Short (need {{ status()!.material_cost }} each)
-                </p>
-                <div class="req-grid">
-                  @for (m of materialShortfalls(); track m.code) {
-                    <span class="req-name">{{ m.name }}</span>
-                    <span class="req-amount text-red-400"><b>−{{ m.shortfall }}</b></span>
-                  }
-                </div>
-              }
-
-              @if (missingMaterials().length === 0 && materialShortfalls().length === 0) {
-                <p class="text-[10px] text-forge-muted/50 text-center tracking-wide py-0.5">
-                  ⚡ All attributes ready — select a buff
-                </p>
-              }
-
+              <p class="text-[10px] text-forge-muted/50 text-center tracking-wide py-0.5 italic">
+                Prestige requirements not yet met.
+              </p>
             </div>
           }
         </div>
@@ -203,39 +160,22 @@
 
     <!-- MATERIAL RESERVES -->
     <div>
-      <div class="flex items-baseline justify-between mb-3">
-        <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em]">Material Reserves</h3>
-        <span class="text-[9px] text-forge-muted/50 tracking-wider">
-          Next prestige requires
-          <span class="text-forge-primary font-black">{{ status()!.material_cost }}</span>
-          of each
-        </span>
-      </div>
-      <div class="forge-card p-4">
-        <div class="grid grid-cols-2 grid-rows-4 grid-flow-col gap-x-8">
+      <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">Material Reserves</h3>
+      <div class="forge-card p-5">
+        <div class="grid grid-cols-7 divide-x divide-forge-border/30">
           @for (attr of sortedAttributes(); track attr.code) {
-            <div class="flex items-center gap-3 py-2 border-b border-forge-border/20 last:border-0">
-              <span class="text-[11px] font-black w-4 flex-shrink-0" [style.color]="attrHex(attr.code)">
-                {{ attr.code }}
+            <div class="reserve-col">
+              <span class="reserve-code" [style.color]="attrHex(attr.code)">{{ attr.code }}</span>
+              <span class="reserve-name text-forge-muted">{{ materialName(attr.code) }}</span>
+              <span class="reserve-amount tabular-nums" [style.color]="attrHex(attr.code)">
+                {{ attr.material_balance }}
               </span>
-              <span class="text-[10px] text-forge-muted flex-1 truncate">{{ materialName(attr.code) }}</span>
-              <div class="text-right flex-shrink-0">
-                <span
-                  class="text-sm font-black tabular-nums transition-colors"
-                  [style.color]="(attr.code !== 'L' && attr.material_balance < status()!.material_cost) ? '#f87171' : attrHex(attr.code)"
-                >{{ attr.material_balance }}</span>
-                @if (attr.code !== 'L') {
-                  <span class="text-[9px] text-forge-muted/50 ml-1">/ {{ status()!.material_cost }}</span>
-                } @else {
-                  <span class="text-[9px] text-forge-muted/50 ml-1">units</span>
-                }
-              </div>
             </div>
           }
         </div>
       </div>
     </div>
   } @else {
-    <div class="text-forge-muted text-sm animate-pulse text-center py-20">Loading Altar...</div>
+    <div class="text-forge-muted text-sm animate-pulse text-center py-20">Loading Prestige...</div>
   }
 </div>

@@ -412,6 +412,8 @@
                   }
                   <button
                     class="forge-btn-primary text-[10px] uppercase tracking-widest font-black"
+                    [class.btn-action-ready]="canFinish(m) && claiming() !== m.mission_id"
+                    [class.btn-action-locked]="!canFinish(m)"
                     (click)="claim(m)"
                     [disabled]="!canFinish(m) || claiming() === m.mission_id"
                   >

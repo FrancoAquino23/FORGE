@@ -58,14 +58,4 @@
 .stardust-orb {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(251, 146, 60, 0.12) 0%, transparent 70%);
-  border: 1px solid rgba(251, 146, 60, 0.2);
-  transition: box-shadow 0.3s ease;
-
-  &:not(.animate-forge-pulse) {
-    box-shadow: 0 0 14px rgba(251, 146, 60, 0.2);
-  }
 }

@@ -23,17 +23,17 @@
   }
 }
 
-.next-bonus-panel {
-  background: rgba(245, 158, 11, 0.04);
-  border: 1px solid rgba(245, 158, 11, 0.14);
+.seg-fill {
+  stroke-width: 6px;
+  filter: drop-shadow(0 0 0px transparent);
+  transition:
+    stroke-width 0.2s ease-in-out,
+    stroke-opacity 0.2s ease-in-out,
+    filter 0.2s ease-in-out;
 }
 
-.next-bonus-value {
-  color: #f59e0b;
-  text-shadow:
-    0 0 12px rgba(245, 158, 11, 0.7),
-    0 0 28px rgba(245, 158, 11, 0.35),
-    0 0 50px rgba(245, 158, 11, 0.15);
+.seg-fill--hovered {
+  stroke-width: 8.5px;
 }
 
 .prestige-ready-glow {
@@ -58,11 +58,8 @@
 }
 
 .prestige-disabled {
-  opacity: 0.35;
   filter: grayscale(0.4);
   cursor: not-allowed;
-  box-shadow: none !important;
-  animation: none !important;
 }
 
 .prestige-btn-wrapper {
@@ -124,4 +121,33 @@
     color: #f59e0b;
     font-weight: 900;
   }
+}
+
+.reserve-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1.25rem 0.45rem;
+  text-align: center;
+}
+
+.reserve-code {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+.reserve-name {
+  font-size: 0.6rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.reserve-amount {
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: 0.2rem;
 }

@@ -78,6 +78,7 @@ export class ForgeComponent implements OnInit {
 
   readonly BATCH_STEPS = BATCH_STEPS;
   readonly ORDINARY_CODES = ORDINARY_CODES;
+  readonly StardustIcon = Sparkles;
 
   batchSize = computed(() => BATCH_STEPS[this.sliderIndex()]);
   costEach = computed(() => this.batchSize() * 10);
