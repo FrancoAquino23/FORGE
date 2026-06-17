@@ -9,7 +9,7 @@ from app.database import get_db
 from app.models.player import PlayerProfile
 from app.schemas.prestige import (
     PrestigeStatusResponse,
-    PrestigeUpRequest, PrestigeUpResponse,
+    PrestigeUpResponse,
 )
 from app.schemas.skill_tree import (
     ResetTreeResponse,
@@ -32,15 +32,14 @@ async def get_prestige_status(
     service = PrestigeService(session)
     return await service.get_status(player)
 
-# Endpoint (POST /prestige/prestige-up) - Sacrifice all attributes at threshold and apply one buff
+# Endpoint (POST /prestige/prestige-up) - Reset all attributes at threshold and award points per prestige
 @router.post("/prestige-up", response_model=PrestigeUpResponse)
 async def prestige_up(
-    body: PrestigeUpRequest,
     player: PlayerProfile = Depends(get_current_player),
     session: AsyncSession = Depends(get_db),
 ) -> PrestigeUpResponse:
     service = PrestigeService(session)
-    return await service.prestige_up(player, body.buff_type_code)
+    return await service.prestige_up(player)
 
 # Endpoint (GET /prestige/tree) - Returns full skill tree
 @router.get("/tree", response_model=SkillTreeResponse)

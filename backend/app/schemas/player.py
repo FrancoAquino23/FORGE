@@ -18,4 +18,6 @@ class AttributeProfile(BaseModel):
 class PlayerProfileResponse(BaseModel):
     username: str
     prestige_count: int
+    prestige_points_total: int
+    prestige_points_available: int
     attributes: list[AttributeProfile]

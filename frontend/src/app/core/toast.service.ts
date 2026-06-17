@@ -7,7 +7,7 @@ import { Sparkles, LucideIconData } from 'lucide-angular';
 import { MissionClaimResponse, RelicUpgradeResponse, TransmuteResponse } from './api.service';
 
 // Types (Toast - For Notifications)
-export type ToastType = 'xp' | 'levelup' | 'loot' | 'claim' | 'error' | 'node-bronze' | 'node-silver' | 'node-gold';
+export type ToastType = 'xp' | 'levelup' | 'loot' | 'claim' | 'error' | 'node-bronze' | 'node-silver' | 'node-gold' | 'prestige';
 
 // Interface (Toast - Data for Each Toast Notification)
 export interface Toast {

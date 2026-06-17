@@ -8,7 +8,7 @@
     <p class="text-forge-muted text-xs uppercase tracking-[0.4em] mb-1">S.P.E.C.I.A.L.</p>
     <h1 class="text-3xl font-black tracking-[0.15em] text-forge-primary uppercase">Artifact of Prestige</h1>
     <p class="text-forge-muted text-xs mt-2 max-w-sm mx-auto leading-relaxed">
-      Reach the threshold on all 7 attributes and sacrifice them to engrave a permanent buff into the Artifact.
+      Reach the threshold on all 7 attributes and ascend. All attributes reset — Prestige Points awarded.
     </p>
   </div>
 
@@ -136,27 +136,6 @@
         </div>
       </div>
     </div>
-
-    <!-- ENGRAVED BUFFS -->
-    @if (status()!.active_buffs.length) {
-      <div class="mb-8">
-        <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">⚡ Engraved Buffs</h3>
-        <div class="flex flex-wrap gap-2">
-          @for (buff of status()!.active_buffs; track buff.buff_type_code) {
-            <div class="forge-card border border-forge-primary/20 px-4 py-2.5 flex items-center gap-4">
-              <div>
-                <p class="text-[9px] text-forge-muted uppercase tracking-wider">{{ buff.display_name }}</p>
-                <p class="text-lg font-black text-forge-primary leading-tight">+{{ buff.total_bonus }}%</p>
-              </div>
-              <div class="border-l border-forge-border pl-4 text-right">
-                <p class="text-[9px] text-forge-muted/60 uppercase tracking-wider">Stacks</p>
-                <p class="text-sm font-black text-forge-muted">×{{ buff.stack_count }}</p>
-              </div>
-            </div>
-          }
-        </div>
-      </div>
-    }
 
     <!-- MATERIAL RESERVES -->
     <div>

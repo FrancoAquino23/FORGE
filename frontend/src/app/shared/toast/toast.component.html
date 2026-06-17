@@ -15,8 +15,8 @@
         <span class="text-2xl leading-none shrink-0">{{ toast.icon }}</span>
       }
       <div class="flex-1 min-w-0">
-        <p class="font-bold text-xs uppercase tracking-widest">{{ toast.title }}</p>
-        <p class="text-xs mt-0.5 text-forge-muted leading-snug">{{ toast.message }}</p>
+        <p class="font-bold text-xs uppercase tracking-widest" [class.text-special-rainbow]="toast.type === 'prestige'">{{ toast.title }}</p>
+        <p class="text-xs mt-0.5 leading-snug" [class.text-special-rainbow]="toast.type === 'prestige'" [class.text-forge-muted]="toast.type !== 'prestige'">{{ toast.message }}</p>
       </div>
       <!-- DISMISS BUTTON -->
       <button

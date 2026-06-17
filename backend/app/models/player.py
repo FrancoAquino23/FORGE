@@ -4,13 +4,11 @@
 
 import uuid
 from datetime import datetime
-from decimal import Decimal
 from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
-    Numeric,
     SmallInteger,
     String,
     UniqueConstraint,
@@ -50,12 +48,6 @@ class PlayerProfile(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
     )
     prestige_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    global_material_bonus: Mapped[Decimal] = mapped_column(
-        Numeric(6, 2), nullable=False, default=Decimal("0.00")
-    )
-    global_xp_bonus: Mapped[Decimal] = mapped_column(
-        Numeric(6, 2), nullable=False, default=Decimal("0.00")
-    )
     prestige_points_total: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     prestige_points_available: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -66,8 +58,6 @@ class PlayerProfile(Base):
     attributes: Mapped[list["PlayerAttribute"]] = relationship(back_populates="player")
     inventory: Mapped[list["PlayerInventory"]] = relationship(back_populates="player")
     artifact: Mapped["Artifact"] = relationship(back_populates="player", uselist=False)  # type: ignore[name-defined]
-    buffs: Mapped[list["PlayerBuff"]] = relationship(back_populates="player")  # type: ignore[name-defined]
-
 # Model PlayerAttribute (Attributes & Progression)
 class PlayerAttribute(Base):
     __tablename__ = "player_attributes"
@@ -89,9 +79,6 @@ class PlayerAttribute(Base):
     level: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     xp_current: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     xp_to_next: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
-    material_bonus: Mapped[Decimal] = mapped_column(
-        Numeric(6, 2), nullable=False, default=Decimal("0.00")
-    )
 
     player: Mapped["PlayerProfile"] = relationship(back_populates="attributes")
     attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]

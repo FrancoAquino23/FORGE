@@ -60,5 +60,7 @@ class PlayerService:
         return PlayerProfileResponse(
             username=user.username,
             prestige_count=player.prestige_count,
+            prestige_points_total=player.prestige_points_total,
+            prestige_points_available=player.prestige_points_available,
             attributes=attributes,
         )

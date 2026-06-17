@@ -6,39 +6,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ApiService, PrestigeStatusResponse, PrestigeUpResponse } from '../../core/api.service';
 import { PlayerStateService } from '../../core/player-state.service';
 import { ToastService } from '../../core/toast.service';
-
-// Color mappings for attributes
-const ATTR_COLORS: Record<string, string> = {
-  S: 'text-red-400',
-  P: 'text-blue-400',
-  E: 'text-green-400',
-  C: 'text-yellow-300',
-  I: 'text-purple-400',
-  A: 'text-cyan-400',
-  L: 'text-orange-400',
-};
-
-// Hex fill colors per attribute (for SVG strokes and inline styles)
-const ATTR_HEX: Record<string, string> = {
-  S: '#f87171',
-  P: '#60a5fa',
-  E: '#4ade80',
-  C: '#fde047',
-  I: '#c084fc',
-  A: '#22d3ee',
-  L: '#fb923c',
-};
-
-// English material names keyed by attribute code
-const MATERIAL_NAMES: Record<string, string> = {
-  S: 'Damascus Steel',
-  P: 'Quartz Lens',
-  E: 'Carbon Fiber',
-  C: 'Resonance Crystal',
-  I: 'Binary Essence',
-  A: 'Inertial Catalyst',
-  L: 'Stardust',
-};
+import { ATTR_COLORS, ATTR_HEX, MATERIAL_NAMES } from '../../shared/attr-constants';
 
 // Data shape for a single SVG ring segment
 interface RingSegment {
@@ -189,16 +157,16 @@ export class PrestigeComponent implements OnInit {
     if (!this.canPrestigeUp() || this.prestiging()) return;
     this.prestiging.set(true);
 
-    this.api.prestigeUp({ buff_type_code: '' }).subscribe({
+    this.api.prestigeUp().subscribe({
       next: (res: PrestigeUpResponse) => {
         this.prestiging.set(false);
         this.playerState.prestigeCount.set(res.prestige_number);
         this.toast.show(
           {
-            type: 'levelup',
+            type: 'prestige',
             icon: '🔥',
-            title: `PRESTIGE #${res.prestige_number}!`,
-            message: `${res.buff_display_name} +${res.new_total_bonus}% · All attributes reset`,
+            title: `PRESTIGE #${res.prestige_number} ACHIEVED`,
+            message: `All 7 attributes reset · +${res.pp_earned} Prestige Points awarded`,
           },
           6000,
         );

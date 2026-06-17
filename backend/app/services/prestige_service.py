@@ -3,22 +3,16 @@
 # ==================================================================
 
 import random
-import uuid
-from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from app.core.exceptions import InsufficientMaterialsError, NotFoundError, PrestigeNotAvailableError
-from app.models.catalog import Attribute, BuffType, ForgeConfig
+from app.core.exceptions import InsufficientMaterialsError, PrestigeNotAvailableError
+from app.models.catalog import Attribute, ForgeConfig
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
-from app.models.prestige import PlayerBuff, PrestigeHistory
+from app.models.prestige import PrestigeHistory
 from app.models.relic import Relic
 from app.models.skill_tree import PlayerSkillNode
-from app.schemas.prestige import (
-    BuffTypeInfo, PlayerBuffInfo,
-    PrestigeStatusResponse,
-    PrestigeUpResponse,
-)
+from app.schemas.prestige import PrestigeStatusResponse, PrestigeUpResponse
 from app.services.reward_service import RewardService
 from app.services.skill_tree_service import total_pp_for_level
 
@@ -28,25 +22,25 @@ _DEFAULT_THRESHOLD = 10
 # Ordinary attribute codes
 _ORDINARY_CODES = frozenset({"S", "P", "E", "C", "I", "A"})
 
-# Function to compute material cost for next prestige level 
+# Function to compute material cost for next prestige level
 def prestige_material_cost(current_prestige: int) -> int:
     """Return the per-material cost to advance from current_prestige to current_prestige+1."""
     target = current_prestige + 1
     if target == 50:
         return 500_000
     if target <= 2:
-        return target * 100                           
+        return target * 100
     if target <= 5:
-        return 500 + (target - 3) * 200              
+        return 500 + (target - 3) * 200
     if target <= 9:
-        return 1_500 + (target - 6) * 500            
+        return 1_500 + (target - 6) * 500
     if target <= 19:
-        return 4_000 + (target - 10) * 1_000         
+        return 4_000 + (target - 10) * 1_000
     if target <= 34:
-        return 16_000 + (target - 20) * 2_500        
+        return 16_000 + (target - 20) * 2_500
     if target <= 49:
-        return 60_000 + (target - 35) * 10_000       
-    return 200_000 + (target - 49) * 10_000          
+        return 60_000 + (target - 35) * 10_000
+    return 200_000 + (target - 49) * 10_000
 
 # Function to compute points per prestige level
 def prestige_points_for_prestige(prestige_number: int) -> int:
@@ -57,17 +51,11 @@ def prestige_points_for_prestige(prestige_number: int) -> int:
         return 3
     if prestige_number <= 34:
         return 4
-    return 5  
+    return 5
 
 
 # Model PrestigeService (Business Logic for Prestige Sacrifice)
 class PrestigeService:
-    # Function to compute new total bonus for a buff after adding a stack
-    @staticmethod
-    def compute_new_bonus(current_total: Decimal, bonus_per_stack: Decimal) -> Decimal:
-        return current_total + bonus_per_stack
-
-    # Constructor to initialize the service with a database session
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
@@ -76,48 +64,16 @@ class PrestigeService:
         config = await self._db.scalar(select(ForgeConfig))
         threshold = config.prestige_threshold_level if config else _DEFAULT_THRESHOLD
 
-        buffs_result = await self._db.execute(
-            select(PlayerBuff)
-            .options(selectinload(PlayerBuff.buff_type))
-            .where(PlayerBuff.player_id == player.id)
-        )
-        buffs = buffs_result.scalars().all()
-
-        buff_types_result = await self._db.execute(
-            select(BuffType).options(selectinload(BuffType.attribute))
-        )
-        buff_types = buff_types_result.scalars().all()
-
         return PrestigeStatusResponse(
             prestige_count=player.prestige_count,
             threshold_level=threshold,
             material_cost=prestige_material_cost(player.prestige_count),
-            active_buffs=[
-                PlayerBuffInfo(
-                    buff_type_code=b.buff_type.code,
-                    display_name=b.buff_type.display_name,
-                    target_type=b.buff_type.target_type,
-                    stack_count=b.stack_count,
-                    total_bonus=b.total_bonus,
-                )
-                for b in buffs
-            ],
-            available_buff_types=[
-                BuffTypeInfo(
-                    code=bt.code,
-                    display_name=bt.display_name,
-                    target_type=bt.target_type,
-                    bonus_percent=bt.bonus_percent,
-                    attribute_code=bt.attribute.code if bt.attribute else None,
-                )
-                for bt in buff_types
-            ],
             prestige_points_total=player.prestige_points_total,
             prestige_points_available=player.prestige_points_available,
         )
 
-    # Helper to perform a full prestige-up
-    async def prestige_up(self, player: PlayerProfile, buff_type_code: str) -> PrestigeUpResponse:
+    # Helper to perform a full prestige-up (Verify - Reset - Reward PP)
+    async def prestige_up(self, player: PlayerProfile) -> PrestigeUpResponse:
         config = await self._db.scalar(select(ForgeConfig))
         threshold = config.prestige_threshold_level if config else _DEFAULT_THRESHOLD
 
@@ -168,37 +124,6 @@ class PrestigeService:
                     f"Need {material_cost} of each ordinary material to prestige"
                 )
 
-        buff_type = await self._db.scalar(select(BuffType).where(BuffType.code == buff_type_code))
-        if not buff_type:
-            raise NotFoundError(f"Buff type '{buff_type_code}'")
-
-        # Upsert buff (additive stacking)
-        existing_buff = (
-            await self._db.execute(
-                select(PlayerBuff)
-                .where(PlayerBuff.player_id == player.id, PlayerBuff.buff_type_id == buff_type.id)
-                .with_for_update()
-            )
-        ).scalar_one_or_none()
-
-        if existing_buff:
-            existing_buff.stack_count += 1
-            new_total = self.compute_new_bonus(existing_buff.total_bonus, buff_type.bonus_percent)
-            existing_buff.total_bonus = new_total
-            new_stack = existing_buff.stack_count
-        else:
-            new_total = buff_type.bonus_percent
-            new_stack = 1
-            self._db.add(
-                PlayerBuff(player_id=player.id, buff_type_id=buff_type.id, stack_count=1, total_bonus=new_total)
-            )
-
-        # Sync material bonus for MATERIAL buff types
-        if buff_type.target_type == "MATERIAL" and buff_type.attribute_id:
-            mat_attr = pa_by_attr_id.get(buff_type.attribute_id)
-            if mat_attr:
-                mat_attr.material_bonus = new_total
-
         # Reset ALL attributes to level 1
         reset_codes: list[str] = []
         for a in all_attrs:
@@ -212,8 +137,8 @@ class PrestigeService:
         # Apply early_start_boost to randomly selected ordinary attributes
         if early_boost_level > 0:
             ordinary_attrs = [a for a in all_attrs if a.code in _ORDINARY_CODES]
-            num_boosted = early_boost_level                         
-            start_level = 3 if early_boost_level == 3 else 2      
+            num_boosted = early_boost_level
+            start_level = 3 if early_boost_level == 3 else 2
             chosen = random.sample(ordinary_attrs, min(num_boosted, len(ordinary_attrs)))
             for a in chosen:
                 pa = pa_by_attr_id.get(a.id)
@@ -253,7 +178,6 @@ class PrestigeService:
                 player_id=player.id,
                 prestige_number=prestige_number,
                 artifact_level_reached=threshold,
-                buff_type_id=buff_type.id,
             )
         )
 
@@ -274,8 +198,5 @@ class PrestigeService:
         return PrestigeUpResponse(
             prestige_number=prestige_number,
             attributes_reset=reset_codes,
-            buff_type_code=buff_type.code,
-            buff_display_name=buff_type.display_name,
-            new_stack_count=new_stack,
-            new_total_bonus=new_total,
+            pp_earned=pp_earned,
         )

@@ -16,6 +16,7 @@ const TYPE_BORDER: Record<ToastType, string> = {
   'node-bronze': 'border-amber-700/70 text-amber-600',
   'node-silver': 'border-slate-400/60 text-slate-300',
   'node-gold': 'border-yellow-300/80 text-yellow-100',
+  prestige: 'border-transparent toast-prestige',
 };
 
 // Attribute-specific border/text colors for level-up toasts

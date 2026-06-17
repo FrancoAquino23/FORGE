@@ -21,6 +21,8 @@ export interface AttributeProfile {
 export interface PlayerProfile {
   username: string;
   prestige_count: number;
+  prestige_points_total: number;
+  prestige_points_available: number;
   attributes: AttributeProfile[];
 }
 
@@ -46,8 +48,8 @@ export interface MissionProgress {
   reward_material_qty: number;
   expires_at: string;
   is_completable: boolean;
-  status: string;
-  category: string | null;
+  status: 'PENDING' | 'ACTIVE' | 'COMPLETED';
+  category: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND' | null;
   due_date: string | null;
   description: string | null;
   is_favorite: boolean;
@@ -92,7 +94,7 @@ export interface ToggleCheckpointResponse {
 export interface DeployMissionResponse {
   mission_id: string;
   title: string;
-  category: string;
+  category: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND';
   attribute_code: string;
   reward_xp: number;
   reward_material_qty: number;
@@ -112,6 +114,29 @@ export interface UpdateMissionRequest {
   due_date?: string | null;
   checkpoints?: CheckpointUpdateItem[];
   threat_level?: 'MINOR' | 'MAJOR' | 'CRITICAL';
+}
+
+// Interface (Mission History Item - Data)
+export interface MissionHistoryItem {
+  mission_id: string;
+  title: string;
+  objective_description: string;
+  attribute_code: string;
+  attribute_name: string;
+  category: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND' | null;
+  threat_level: 'MINOR' | 'MAJOR' | 'CRITICAL';
+  reward_xp: number;
+  reward_material_qty: number;
+  completed_at: string;
+}
+
+// Interface (Mission History Response - Data)
+export interface MissionHistoryResponse {
+  missions: MissionHistoryItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
 
 // Interface (Relic Info - Data)
@@ -141,48 +166,20 @@ export interface RelicUpgradeResponse {
   new_bonus_pct: number;
 }
 
-// Interface (Buff Type Info - Data)
-export interface BuffTypeInfo {
-  code: string;
-  display_name: string;
-  target_type: string;
-  bonus_percent: number;
-  attribute_code: string | null;
-}
-
-// Interface (Player Buff Info - Data)
-export interface PlayerBuffInfo {
-  buff_type_code: string;
-  display_name: string;
-  target_type: string;
-  stack_count: number;
-  total_bonus: number;
-}
-
 // Interface (Prestige Status Response - Data)
 export interface PrestigeStatusResponse {
   prestige_count: number;
   threshold_level: number;
   material_cost: number;
-  active_buffs: PlayerBuffInfo[];
-  available_buff_types: BuffTypeInfo[];
   prestige_points_total: number;
   prestige_points_available: number;
-}
-
-// Interface (Prestige Up Request - Data)
-export interface PrestigeUpRequest {
-  buff_type_code: string;
 }
 
 // Interface (Prestige Up Response - Data)
 export interface PrestigeUpResponse {
   prestige_number: number;
   attributes_reset: string[];
-  buff_type_code: string;
-  buff_display_name: string;
-  new_stack_count: number;
-  new_total_bonus: number;
+  pp_earned: number;
 }
 
 // Interface (Skill Node Info - Data)
@@ -250,6 +247,13 @@ export class ApiService {
     return this.http.get<MissionListResponse>(`${this.BASE}/missions/active`);
   }
 
+  // Method (Get Mission History)
+  getMissionHistory(page: number = 1, pageSize: number = 10): Observable<MissionHistoryResponse> {
+    return this.http.get<MissionHistoryResponse>(
+      `${this.BASE}/missions/history?page=${page}&page_size=${pageSize}`,
+    );
+  }
+
   // Method (Deploy Mission)
   deployMission(payload: DeployMissionRequest): Observable<DeployMissionResponse> {
     return this.http.post<DeployMissionResponse>(`${this.BASE}/missions/deploy`, payload);
@@ -305,8 +309,8 @@ export class ApiService {
   }
 
   // Method (Prestige Up)
-  prestigeUp(payload: PrestigeUpRequest): Observable<PrestigeUpResponse> {
-    return this.http.post<PrestigeUpResponse>(`${this.BASE}/prestige/prestige-up`, payload);
+  prestigeUp(): Observable<PrestigeUpResponse> {
+    return this.http.post<PrestigeUpResponse>(`${this.BASE}/prestige/prestige-up`, {});
   }
 
   // Method (Get Skill Tree)
