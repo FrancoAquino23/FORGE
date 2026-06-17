@@ -3,7 +3,7 @@
 # ==================================================================
 
 import uuid
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_player
 from app.database import get_db
@@ -12,6 +12,7 @@ from app.schemas.mission import (
     DeployMissionRequest,
     DeployMissionResponse,
     MissionClaimResponse,
+    MissionHistoryResponse,
     MissionListResponse,
     ToggleCheckpointResponse,
     UpdateMissionRequest,
@@ -29,6 +30,17 @@ async def get_active_missions(
 ) -> MissionListResponse:
     service = MissionService(session)
     return await service.get_active_with_progress(player.id)
+
+# Endpoint (GET /missions/history) — Returns completed missions paginated
+@router.get("/history", response_model=MissionHistoryResponse)
+async def get_mission_history(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=50),
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> MissionHistoryResponse:
+    service = MissionService(session)
+    return await service.get_history(player.id, page=page, page_size=page_size)
 
 # Endpoint (POST /missions/deploy) — Dispatch a new player-created PENDING mission
 @router.post("/deploy", response_model=DeployMissionResponse)

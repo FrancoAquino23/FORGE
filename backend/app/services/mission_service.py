@@ -4,7 +4,7 @@
 
 import uuid
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import nullslast, select
+from sqlalchemy import func, nullslast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
@@ -17,6 +17,8 @@ from app.schemas.mission import (
     DeployMissionRequest,
     DeployMissionResponse,
     MissionClaimResponse,
+    MissionHistoryItem,
+    MissionHistoryResponse,
     MissionListResponse,
     MissionProgress,
     ToggleCheckpointResponse,
@@ -222,6 +224,52 @@ class MissionService:
             material_earned=mat_earned,
             new_attribute_level=new_level,
             leveled_up=leveled_up,
+        )
+
+    # Helper to return paginated completed missions for the history tab
+    async def get_history(
+        self, player_id: uuid.UUID, page: int = 1, page_size: int = 10
+    ) -> MissionHistoryResponse:
+        base_query = select(Mission).where(
+            Mission.player_id == player_id,
+            Mission.status == "COMPLETED",
+        )
+
+        total = (await self._db.scalar(
+            select(func.count()).select_from(base_query.subquery())
+        )) or 0
+
+        missions = (
+            await self._db.scalars(
+                base_query
+                .options(selectinload(Mission.target_attribute))
+                .order_by(Mission.completed_at.desc())
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
+        ).all()
+
+        import math
+        return MissionHistoryResponse(
+            missions=[
+                MissionHistoryItem(
+                    mission_id=m.id,
+                    title=m.title,
+                    objective_description=m.objective_description,
+                    attribute_code=m.target_attribute.code,
+                    attribute_name=m.target_attribute.name,
+                    category=m.category,
+                    threat_level=_THREAT_LABEL.get(m.threat_level, "MAJOR"),
+                    reward_xp=m.reward_xp,
+                    reward_material_qty=m.reward_material_qty,
+                    completed_at=m.completed_at,
+                )
+                for m in missions
+            ],
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=math.ceil(total / page_size) if total else 1,
         )
 
     # Helper to delete a PENDING or ACTIVE mission belonging to the player

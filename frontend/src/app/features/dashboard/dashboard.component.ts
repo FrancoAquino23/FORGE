@@ -2,41 +2,16 @@
    DASHBOARD COMPONENT LOGIC
    ================================================================== */
 
-import { Component, HostListener, OnInit, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { LucideAngularModule, LucideIconData } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LucideIconData,
-  Hammer,
-  Eye,
-  Shield,
-  Gem,
-  Cpu,
-  Zap,
-  Sparkles,
-} from 'lucide-angular';
-import { ApiService, AttributeProfile, PlayerProfile } from '../../core/api.service';
-import { ToastService } from '../../core/toast.service';
+  ApiService,
+  AttributeProfile,
+  MissionProgress,
+  PlayerProfile,
+} from '../../core/api.service';
 import { RelicWorkshopComponent } from '../relic-workshop/relic-workshop.component';
-import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
-
-// Category label map used for deploy-mission toast
-const _DEPLOY_CAT_LABEL: Record<string, string> = {
-  MAIN_QUEST: 'Main Quest',
-  SIDE_QUEST: 'Side Quest',
-  DAILY_GRIND: 'Daily Grind',
-};
-
-// Color mappings for attributes
-const ATTR_COLORS: Record<string, string> = {
-  S: 'text-red-400',
-  P: 'text-blue-400',
-  E: 'text-green-400',
-  C: 'text-yellow-300',
-  I: 'text-purple-400',
-  A: 'text-cyan-400',
-  L: 'text-orange-400',
-};
+import { ATTR_COLORS, ATTR_HEX, ATTR_ICONS } from '../../shared/attr-constants';
 
 // Glow effect mappings for attributes (used on hover)
 const ATTR_GLOW: Record<string, string> = {
@@ -49,102 +24,100 @@ const ATTR_GLOW: Record<string, string> = {
   L: 'hover:shadow-[0_0_18px_rgba(251,146,60,0.3)]',
 };
 
-// Hex color values
-const ATTR_BAR_COLORS: Record<string, string> = {
-  S: '#f87171',
-  P: '#60a5fa',
-  E: '#4ade80',
-  C: '#fde047',
-  I: '#c084fc',
-  A: '#22d3ee',
-  L: '#fb923c',
+// Threat bar colors
+const THREAT_BAR: Record<string, string> = {
+  MINOR: '#22d3ee',
+  MAJOR: '#f59e0b',
+  CRITICAL: '#ef4444',
 };
 
-// Lucide icon map for material balance row
-const ATTR_ICONS: Record<string, LucideIconData> = {
-  S: Hammer,
-  P: Eye,
-  E: Shield,
-  C: Gem,
-  I: Cpu,
-  A: Zap,
-  L: Sparkles,
-};
-
-// Prestige gem border color thresholds
-const GEM_COLORS = [
-  { min: 10, color: '#bf00ff' },
-  { min: 7, color: '#3b82f6' },
-  { min: 3, color: '#10b981' },
-  { min: 1, color: '#f59e0b' },
-  { min: 0, color: '#475569' },
+// Visual Prestige tiers
+const VISUAL_TIERS = [
+  {
+    min: 50,
+    name: 'Singularity',
+    color: '#e2e8f0',
+    glow: 'drop-shadow(0 0 16px rgba(226,232,240,0.95))',
+    animated: true,
+  },
+  {
+    min: 35,
+    name: 'Absolute Void',
+    color: '#bf00ff',
+    glow: 'drop-shadow(0 0 14px rgba(191,0,255,0.85))',
+    animated: true,
+  },
+  {
+    min: 20,
+    name: 'Eternal Flame',
+    color: '#ef4444',
+    glow: 'drop-shadow(0 0 12px rgba(239,68,68,0.80))',
+    animated: true,
+  },
+  {
+    min: 10,
+    name: 'Arcane Crystal',
+    color: '#3b82f6',
+    glow: 'drop-shadow(0 0 10px rgba(59,130,246,0.75))',
+    animated: false,
+  },
+  {
+    min: 6,
+    name: 'Forged Obsidian',
+    color: '#10b981',
+    glow: 'drop-shadow(0 0 8px rgba(16,185,129,0.65))',
+    animated: false,
+  },
+  {
+    min: 3,
+    name: 'Smelted Ore',
+    color: '#f59e0b',
+    glow: 'drop-shadow(0 0 6px rgba(245,158,11,0.55))',
+    animated: false,
+  },
+  { min: 0, name: 'Scrap Metal', color: '#475569', glow: 'none', animated: false },
 ] as const;
 
 // Number of segments in each attribute bar before reaching prestige
 const PRESTIGE_THRESHOLD = 10;
 
-// Static XP required to advance from each level
-const XP_TABLE: Record<number, number> = {
-  1: 500,
-  2: 1_500,
-  3: 2_500,
-  4: 3_500,
-  5: 4_500,
-  6: 5_500,
-  7: 6_500,
-  8: 7_500,
-  9: 10_000,
-  10: 0,
-};
-
-// Main dashboard component that displays player profile, attributes, and inventory
+// Main dashboard component
 @Component({
   selector: 'app-dashboard',
-  imports: [RelicWorkshopComponent, LucideAngularModule, FormsModule, DatePickerComponent],
+  imports: [RelicWorkshopComponent, LucideAngularModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   private api = inject(ApiService);
-  private toast = inject(ToastService);
 
   profile = signal<PlayerProfile | null>(null);
+  missions = signal<MissionProgress[]>([]);
   loadError = signal('');
-  deploying = signal(false);
   xpFlash = signal('');
-
-  logAttr = '';
-  logCategory: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND' = 'DAILY_GRIND';
-  logThreatLevel: 'MINOR' | 'MAJOR' | 'CRITICAL' = 'MAJOR';
-  logDesc = '';
-  logDetail = '';
-  logDueDate = '';
-  logSteps = '';
-  attrDropdownOpen = false;
-
-  readonly todayStr = new Date().toISOString().split('T')[0];
 
   readonly SEGMENTS = Array.from({ length: PRESTIGE_THRESHOLD }, (_, i) => i + 1);
 
-  readonly CATEGORIES = [
-    { value: 'MAIN_QUEST' as const, label: 'Main Quest' },
-    { value: 'SIDE_QUEST' as const, label: 'Side Quest' },
-    { value: 'DAILY_GRIND' as const, label: 'Daily Grind' },
-  ];
-
-  readonly THREAT_LEVELS: {
-    value: 'MINOR' | 'MAJOR' | 'CRITICAL';
-    label: string;
-    color: string;
-  }[] = [
-    { value: 'MINOR', label: 'Minor', color: 'text-cyan-400' },
-    { value: 'MAJOR', label: 'Major', color: 'text-amber-400' },
-    { value: 'CRITICAL', label: 'Critical', color: 'text-red-400' },
-  ];
+  // All active missions sorted by priority:
+  urgentMissions = computed<MissionProgress[]>(() => {
+    const all = this.missions();
+    const threatOrder: Record<string, number> = { CRITICAL: 0, MAJOR: 1, MINOR: 2 };
+    return [...all].sort((a, b) => {
+      const aIsDaily = a.category === 'DAILY_GRIND';
+      const bIsDaily = b.category === 'DAILY_GRIND';
+      if (aIsDaily && !bIsDaily) return 1;
+      if (!aIsDaily && bIsDaily) return -1;
+      const aDay = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+      const bDay = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+      if (aDay !== bDay) return aDay - bDay;
+      return (threatOrder[a.threat_level] ?? 1) - (threatOrder[b.threat_level] ?? 1);
+    });
+  });
 
   // Load component
   ngOnInit(): void {
     this.loadProfile();
+    this.loadMissions();
   }
 
   // Load player profile from API
@@ -155,112 +128,52 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // Function to close attribute dropdown
-  @HostListener('document:click')
-  onDocumentClick(): void {
-    this.attrDropdownOpen = false;
+  // Load active missions from API
+  private loadMissions(): void {
+    this.api.getActiveMissions().subscribe({
+      next: (res) => this.missions.set(res.missions),
+      error: () => {},
+    });
   }
 
-  // Function to toggle attribute dropdown
-  toggleAttrDropdown(event: MouseEvent): void {
-    event.stopPropagation();
-    this.attrDropdownOpen = !this.attrDropdownOpen;
+  // Prestige tier helper (Level)
+  prestigeTier(count: number) {
+    return VISUAL_TIERS.find((t) => count >= t.min)!;
   }
 
-  // Handle attribute selection from dropdown
-  selectAttr(code: string): void {
-    this.logAttr = code;
-    this.attrDropdownOpen = false;
+  // Prestige gem helper (Color)
+  prestigeGemColor(count: number): string {
+    return this.prestigeTier(count).color;
   }
 
-  // Deploy a new mission based on user input
-  deployMission(): void {
-    if (!this.logAttr || !this.logDesc.trim() || this.deploying()) return;
-    this.deploying.set(true);
-
-    const steps = this.logSteps
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    this.api
-      .deployMission({
-        attribute_code: this.logAttr,
-        category: this.logCategory,
-        threat_level: this.logThreatLevel,
-        description: this.logDesc.trim() || undefined,
-        detail: this.logDetail.trim() || undefined,
-        due_date: this.logDueDate || undefined,
-        steps: steps.length > 0 ? steps : undefined,
-      })
-      .subscribe({
-        next: (res) => {
-          const catLabel = _DEPLOY_CAT_LABEL[res.category] ?? res.category;
-          this.toast.show({
-            type: 'claim',
-            icon: '⚔',
-            title: 'Mission Forged',
-            message: `${catLabel} mission forged!`,
-          });
-          this.deploying.set(false);
-          this.xpFlash.set(this.logAttr);
-          setTimeout(() => this.xpFlash.set(''), 700);
-          this.logAttr = '';
-          this.logDesc = '';
-          this.logDetail = '';
-          this.logDueDate = '';
-          this.logSteps = '';
-          this.logCategory = 'DAILY_GRIND';
-          this.logThreatLevel = 'MAJOR';
-        },
-        error: (err) => {
-          this.toast.show({
-            type: 'error',
-            icon: '❌',
-            title: 'Error',
-            message: err.error?.detail ?? 'Could not dispatch mission',
-          });
-          this.deploying.set(false);
-        },
-      });
+  // Prestige gem glow helper (Hover effect)
+  prestigeGemGlow(count: number): string {
+    return this.prestigeTier(count).glow;
   }
 
-  // Function to determine the CSS class for each segment in the attribute bars
+  // Prestige gem animation helper (Pulse effect)
+  prestigeGemAnimated(count: number): boolean {
+    return this.prestigeTier(count).animated;
+  }
+
+  // Determine styles for attribute segments based on level and prestige status
   segmentClass(attr: AttributeProfile, seg: number): string {
     if (attr.level >= PRESTIGE_THRESHOLD) return 'seg-prestige';
     return attr.level >= seg ? 'seg-active' : 'seg-off';
   }
 
-  // Function to determine the color of the prestige gem based on the player's prestige count
-  prestigeGemColor(count: number): string {
-    return GEM_COLORS.find((g) => count >= g.min)!.color;
-  }
-
-  // Function to determine the glow effect of the prestige gem based on the player's prestige count
-  prestigeGemGlow(count: number): string {
-    if (count < PRESTIGE_THRESHOLD) return 'none';
-    return `drop-shadow(0 0 10px ${this.prestigeGemColor(count)})`;
-  }
-
-  // Functon to return XP required for Luck (L) is passively synced
-  xpRequired(attr: AttributeProfile): number {
-    if (attr.code === 'L') return 0;
-    return XP_TABLE[attr.level] ?? 0;
-  }
-
-  // Function to calculate the XP percentage for an attribute, used for the XP bar fill
+  // Function to calculate XP percentage for progress bars
   xpPct(attr: AttributeProfile): number {
     if (attr.level >= PRESTIGE_THRESHOLD) return 100;
-    const req = this.xpRequired(attr);
-    return req > 0 ? Math.min(100, (attr.xp_current / req) * 100) : 0;
+    return attr.xp_to_next > 0 ? Math.min(100, (attr.xp_current / attr.xp_to_next) * 100) : 0;
   }
 
   // Function to get color class for an attribute based on its code
   xpBarColor(code: string): string {
-    return ATTR_BAR_COLORS[code] ?? '#f59e0b';
+    return ATTR_HEX[code] ?? '#f59e0b';
   }
 
-  // Function to get the text color class for an attribute based on its code
+  // Function to get text color class for an attribute based on its code
   attrColor(code: string): string {
     return ATTR_COLORS[code] ?? 'text-forge-primary';
   }
@@ -272,16 +185,37 @@ export class DashboardComponent implements OnInit {
 
   // Function to get the appropriate icon for an attribute based on its code
   getIconName(code: string): LucideIconData {
-    return ATTR_ICONS[code] ?? Sparkles;
+    return ATTR_ICONS[code] ?? ATTR_ICONS['L'];
   }
 
-  // Function to get all attributes for missions
-  missionAttrs(): AttributeProfile[] {
-    return this.profile()?.attributes.filter((a) => a.code !== 'L') ?? [];
+  // Mission helper (Threat Level)
+  threatBarColor(level: string): string {
+    return THREAT_BAR[level] ?? '#f59e0b';
   }
 
-  // Function to get the display name of an attribute based on its code
-  getAttrName(code: string): string {
-    return this.profile()?.attributes.find((a) => a.code === code)?.name ?? code;
+  // Mission helper (Threat Text)
+  threatTextClass(level: string): string {
+    const map: Record<string, string> = {
+      MINOR: 'text-cyan-400',
+      MAJOR: 'text-amber-400',
+      CRITICAL: 'text-red-400',
+    };
+    return map[level] ?? 'text-forge-muted';
+  }
+
+  // Mission helper (Due Date formatting)
+  formatDueDate(due: string): string {
+    return new Date(due).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  // Mission helper (Checkpoint completion count)
+  completedCount(m: MissionProgress): number {
+    return m.checkpoints.filter((c) => c.is_completed).length;
+  }
+
+  // Mission helper (Checkpoint completion percentage)
+  checkpointPct(m: MissionProgress): number {
+    if (!m.checkpoints.length) return 0;
+    return Math.round((this.completedCount(m) / m.checkpoints.length) * 100);
   }
 }

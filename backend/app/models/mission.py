@@ -32,7 +32,7 @@ class Mission(Base):
     __tablename__ = "missions"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('ACTIVE', 'COMPLETED', 'EXPIRED', 'ABANDONED', 'PENDING')",
+            "status IN ('ACTIVE', 'COMPLETED', 'PENDING')",
             name="valid_mission_status",
         ),
         CheckConstraint(

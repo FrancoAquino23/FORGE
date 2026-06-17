@@ -4,72 +4,24 @@
 
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  LucideAngularModule,
-  LucideIconData,
-  Hammer,
-  Eye,
-  Shield,
-  Gem,
-  Cpu,
-  Zap,
-  Sparkles,
-  Star,
-  EllipsisVertical,
-} from 'lucide-angular';
+import { LucideAngularModule, LucideIconData, Star, EllipsisVertical } from 'lucide-angular';
 import {
   ApiService,
   CheckpointInfo,
   CheckpointUpdateItem,
+  DeployMissionRequest,
+  MissionHistoryItem,
   MissionListResponse,
   MissionProgress,
   UpdateMissionRequest,
 } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
 import { PlayerStateService } from '../../core/player-state.service';
+import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 
-export type MissionTab = 'DAILY_GRIND' | 'MAIN_QUEST' | 'SIDE_QUEST';
+import { ATTR_COLORS, ATTR_HEX, ATTR_ICONS, RELIC_NAMES } from '../../shared/attr-constants';
 
-// Attribute color maps
-const ATTR_COLORS: Record<string, string> = {
-  S: 'text-red-400',
-  P: 'text-blue-400',
-  E: 'text-green-400',
-  C: 'text-yellow-300',
-  I: 'text-purple-400',
-  A: 'text-cyan-400',
-  L: 'text-orange-400',
-};
-
-const ATTR_BAR: Record<string, string> = {
-  S: '#f87171',
-  P: '#60a5fa',
-  E: '#4ade80',
-  C: '#fde047',
-  I: '#c084fc',
-  A: '#22d3ee',
-  L: '#fb923c',
-};
-
-const RELIC_NAMES: Record<string, string> = {
-  S: 'Anvil of Power',
-  P: 'Beacon of Clarity',
-  E: 'Shield of Eternity',
-  C: 'Chalice of Harmony',
-  I: 'Orb of Logic',
-  A: 'Elixir of Speed',
-  L: 'Totem of Grace',
-};
-
-const ATTR_ICONS: Record<string, LucideIconData> = {
-  S: Hammer,
-  P: Eye,
-  E: Shield,
-  C: Gem,
-  I: Cpu,
-  A: Zap,
-  L: Sparkles,
-};
+export type MissionTab = 'NEW_MISSION' | 'DAILY_GRIND' | 'MAIN_QUEST' | 'SIDE_QUEST' | 'HISTORY';
 
 const CATEGORY_LABELS: Record<string, string> = {
   MAIN_QUEST: 'Main Quest',
@@ -110,9 +62,16 @@ const THREAT_BAR: Record<string, string> = {
   CRITICAL: '#f43f5e',
 };
 
+// Category labels for mission deployment toast
+const _DEPLOY_CAT_LABEL: Record<string, string> = {
+  MAIN_QUEST: 'Main Quest',
+  SIDE_QUEST: 'Side Quest',
+  DAILY_GRIND: 'Daily Grind',
+};
+
 @Component({
   selector: 'app-missions',
-  imports: [LucideAngularModule, FormsModule],
+  imports: [LucideAngularModule, FormsModule, DatePickerComponent],
   templateUrl: './missions.component.html',
   styleUrl: './missions.component.scss',
 })
@@ -122,6 +81,11 @@ export class MissionsComponent implements OnInit {
   private playerState = inject(PlayerStateService);
 
   data = signal<MissionListResponse | null>(null);
+  historyData = signal<MissionHistoryItem[]>([]);
+  historyLoaded = signal(false);
+  historyPage = signal(1);
+  historyTotalPages = signal(1);
+  historyTotal = signal(0);
   loadError = signal('');
   claiming = signal('');
   activeTab = signal<MissionTab>('MAIN_QUEST');
@@ -151,22 +115,57 @@ export class MissionsComponent implements OnInit {
     checkpoints: [],
   };
 
+  deploying = signal(false);
+  logAttr = '';
+  logCategory: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND' = 'DAILY_GRIND';
+  logThreatLevel: 'MINOR' | 'MAJOR' | 'CRITICAL' = 'MAJOR';
+  logDesc = '';
+  logDetail = '';
+  logDueDate = '';
+  logSteps = '';
+  attrDropdownOpen = false;
+
+  readonly todayStr = new Date().toISOString().split('T')[0];
+
   // Lucide icon references for use in template
   readonly starIcon: LucideIconData = Star;
   readonly moreVerticalIcon: LucideIconData = EllipsisVertical;
 
+  // Tab definitions for template iteration
   readonly TABS: { value: MissionTab; label: string }[] = [
+    { value: 'NEW_MISSION', label: 'New Mission' },
     { value: 'MAIN_QUEST', label: 'Main Quests' },
     { value: 'SIDE_QUEST', label: 'Side Quests' },
     { value: 'DAILY_GRIND', label: 'Daily Grinds' },
+    { value: 'HISTORY', label: 'History' },
   ];
 
+  // Attribute codes for filter buttons
   readonly ATTRS = ['S', 'P', 'E', 'C', 'I', 'A', 'L'];
 
+  // Category options for new mission forms
+  readonly CATEGORIES = [
+    { value: 'MAIN_QUEST' as const, label: 'Main Quest' },
+    { value: 'SIDE_QUEST' as const, label: 'Side Quest' },
+    { value: 'DAILY_GRIND' as const, label: 'Daily Grind' },
+  ];
+
+  // Threat level options for new mission forms
   readonly THREAT_LEVELS: { value: string; label: string }[] = [
     { value: 'MINOR', label: 'Minor' },
     { value: 'MAJOR', label: 'Major' },
     { value: 'CRITICAL', label: 'Critical' },
+  ];
+
+  // Threat level options for mission edit forms
+  readonly DEPLOY_THREAT_LEVELS: {
+    value: 'MINOR' | 'MAJOR' | 'CRITICAL';
+    label: string;
+    color: string;
+  }[] = [
+    { value: 'MINOR', label: 'Minor', color: 'text-cyan-400' },
+    { value: 'MAJOR', label: 'Major', color: 'text-amber-400' },
+    { value: 'CRITICAL', label: 'Critical', color: 'text-red-400' },
   ];
 
   // Derived list of missions filtered by active tab and attribute selector
@@ -176,6 +175,8 @@ export class MissionsComponent implements OnInit {
     const attr = this.attrFilter();
     const threat = this.threatFilter();
     const sortDate = this.sortByDate();
+
+    if (tab === 'NEW_MISSION' || tab === 'HISTORY') return [];
 
     let subset: MissionProgress[];
     switch (tab) {
@@ -209,17 +210,16 @@ export class MissionsComponent implements OnInit {
   // Load component
   ngOnInit(): void {
     this.loadMissions();
-  }
-
-  // Destroy component
-  ngOnDestroy(): void {
-    this.loadMissions();
+    if (!this.playerState.profile()) {
+      this.api.getProfile().subscribe({ next: (p) => this.playerState.profile.set(p) });
+    }
   }
 
   // Close open overflow menu when clicking anywhere outside it
   @HostListener('document:click')
   onDocumentClick(): void {
     this.menuOpenId.set('');
+    this.attrDropdownOpen = false;
   }
 
   // Function to load active missions from API
@@ -227,6 +227,107 @@ export class MissionsComponent implements OnInit {
     this.api.getActiveMissions().subscribe({
       next: (res) => this.data.set(res),
       error: () => this.loadError.set('Could not load missions.'),
+    });
+  }
+
+  // Function to load mission history for the given page
+  private loadHistory(page: number = 1): void {
+    this.historyLoaded.set(false);
+    this.api.getMissionHistory(page).subscribe({
+      next: (res) => {
+        this.historyData.set(res.missions);
+        this.historyPage.set(res.page);
+        this.historyTotalPages.set(res.total_pages);
+        this.historyTotal.set(res.total);
+        this.historyLoaded.set(true);
+      },
+      error: () => this.loadError.set('Could not load history.'),
+    });
+  }
+
+  // Navigate to previous history page
+  historyPrev(): void {
+    if (this.historyPage() > 1) this.loadHistory(this.historyPage() - 1);
+  }
+
+  // Navigate to next history page
+  historyNext(): void {
+    if (this.historyPage() < this.historyTotalPages()) this.loadHistory(this.historyPage() + 1);
+  }
+
+  // Toggle attribute dropdown
+  toggleAttrDropdown(event: MouseEvent): void {
+    event.stopPropagation();
+    this.attrDropdownOpen = !this.attrDropdownOpen;
+  }
+
+  // Select attribute
+  selectAttr(code: string): void {
+    this.logAttr = code;
+    this.attrDropdownOpen = false;
+  }
+
+  // Get attribute display name
+  getAttrName(code: string): string {
+    return this.playerState.profile()?.attributes.find((a) => a.code === code)?.name ?? code;
+  }
+
+  // Deploy a mission
+  deployMission(): void {
+    if (!this.logAttr || !this.logDesc.trim() || this.deploying()) return;
+    this.deploying.set(true);
+
+    const steps = this.logSteps
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const payload: DeployMissionRequest = {
+      attribute_code: this.logAttr,
+      category: this.logCategory,
+      threat_level: this.logThreatLevel,
+      description: this.logDesc.trim(),
+      detail: this.logDetail.trim() || undefined,
+      due_date: this.logDueDate || undefined,
+      steps: steps.length > 0 ? steps : undefined,
+    };
+
+    this.api.deployMission(payload).subscribe({
+      next: (res) => {
+        const catLabel = _DEPLOY_CAT_LABEL[res.category] ?? res.category;
+        this.toast.show({
+          type: 'claim',
+          icon: '⚔',
+          title: 'Mission Forged',
+          message: `${catLabel} mission forged!`,
+        });
+        this.deploying.set(false);
+        this.logAttr = '';
+        this.logDesc = '';
+        this.logDetail = '';
+        this.logDueDate = '';
+        this.logSteps = '';
+        this.logCategory = 'DAILY_GRIND';
+        this.logThreatLevel = 'MAJOR';
+        this.loadMissions();
+      },
+      error: (err) => {
+        this.toast.show({
+          type: 'error',
+          icon: '❌',
+          title: 'Error',
+          message: err.error?.detail ?? 'Could not dispatch mission',
+        });
+        this.deploying.set(false);
+      },
+    });
+  }
+
+  // Format "completed_at date"
+  formatCompletedAt(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
     });
   }
 
@@ -459,10 +560,15 @@ export class MissionsComponent implements OnInit {
     this.menuOpenId.set('');
     this.editingId.set('');
     this.deleteConfirmId.set('');
+    if (tab === 'HISTORY' && !this.historyLoaded()) {
+      this.loadHistory(1);
+    }
   }
 
   // Function to return the number of missions visible in a given tab
   tabCount(tab: MissionTab): number {
+    if (tab === 'NEW_MISSION') return 0;
+    if (tab === 'HISTORY') return this.historyTotal();
     const all = this.data()?.missions ?? [];
     switch (tab) {
       case 'MAIN_QUEST':
@@ -511,7 +617,7 @@ export class MissionsComponent implements OnInit {
 
   // Function to map an attribute code to its hex color
   attrBarColor(code: string): string {
-    return ATTR_BAR[code] ?? '#f59e0b';
+    return ATTR_HEX[code] ?? '#f59e0b';
   }
 
   // Function to map a threat level to its hex color
@@ -521,7 +627,7 @@ export class MissionsComponent implements OnInit {
 
   // Function to map an attribute code to its icon
   getIcon(code: string): LucideIconData {
-    return ATTR_ICONS[code] ?? Sparkles;
+    return ATTR_ICONS[code] ?? ATTR_ICONS['L'];
   }
 
   // Function for building the border and hover-glow CSS for a mission card
