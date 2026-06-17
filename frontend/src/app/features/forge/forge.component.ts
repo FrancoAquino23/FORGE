@@ -3,17 +3,8 @@
    ================================================================== */
 
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import {
-  LucideAngularModule,
-  LucideIconData,
-  Hammer,
-  Eye,
-  Shield,
-  Gem,
-  Cpu,
-  Zap,
-  Sparkles,
-} from 'lucide-angular';
+import { LucideAngularModule, LucideIconData } from 'lucide-angular';
+import { ATTR_COLORS, ATTR_ICONS } from '../../shared/attr-constants';
 import { ApiService, PlayerProfile } from '../../core/api.service';
 import { ForgeService } from '../../core/forge.service';
 import { ToastService } from '../../core/toast.service';
@@ -24,27 +15,7 @@ const BATCH_STEPS = [1, 5, 10, 25, 50, 100];
 // Attribute codes
 const ORDINARY_CODES = ['S', 'P', 'E', 'C', 'I', 'A'];
 
-// Icon & color mappings for attributes
-const ATTR_ICONS: Record<string, LucideIconData> = {
-  S: Hammer,
-  P: Eye,
-  E: Shield,
-  C: Gem,
-  I: Cpu,
-  A: Zap,
-  L: Sparkles,
-};
-
-const ATTR_COLORS: Record<string, string> = {
-  S: 'text-red-400',
-  P: 'text-blue-400',
-  E: 'text-green-400',
-  C: 'text-yellow-300',
-  I: 'text-purple-400',
-  A: 'text-cyan-400',
-  L: 'text-orange-400',
-};
-
+// Tailwind classes for forge material bars
 const ATTR_BAR_COLORS: Record<string, string> = {
   S: 'bg-red-400',
   P: 'bg-blue-400',
@@ -78,7 +49,7 @@ export class ForgeComponent implements OnInit {
 
   readonly BATCH_STEPS = BATCH_STEPS;
   readonly ORDINARY_CODES = ORDINARY_CODES;
-  readonly StardustIcon = Sparkles;
+  readonly StardustIcon = ATTR_ICONS['L'];
 
   batchSize = computed(() => BATCH_STEPS[this.sliderIndex()]);
   costEach = computed(() => this.batchSize() * 10);
@@ -145,7 +116,7 @@ export class ForgeComponent implements OnInit {
 
   // Function to get UI icon for an attribute
   getIcon(code: string): LucideIconData {
-    return ATTR_ICONS[code] ?? Sparkles;
+    return ATTR_ICONS[code] ?? ATTR_ICONS['L'];
   }
 
   // Function to get text color for an attribute

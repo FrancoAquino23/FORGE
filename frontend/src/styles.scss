@@ -141,6 +141,63 @@ $forge-muted: #64748b;
   }
 }
 
+// SCROLLBAR UTILITY
+.forge-scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 158, 11, 0.25) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(245, 158, 11, 0.25);
+    border-radius: 2px;
+  }
+}
+
+// CHECKBOX (S.P.E.C.I.A.L. checkpoint style)
+.checkpoint-cb {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+  vertical-align: middle;
+
+  &:checked {
+    background: rgba(245, 158, 11, 0.9);
+    border-color: #f59e0b;
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 0px;
+      width: 5px;
+      height: 8px;
+      border: 2px solid #1a1f2e;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
+  }
+
+  &:hover:not(:checked) {
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+}
+
 // ANIMATIONS
 @keyframes slideIn {
   from {
