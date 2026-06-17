@@ -6,12 +6,10 @@ import random
 import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.exceptions import ConflictError, InsufficientMaterialsError, NotFoundError
+from app.core.exceptions import ConflictError, NotFoundError
 from app.models.catalog import Attribute
-from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
-from app.schemas.forge import ForgeUpgradeResponse, TransmuteRequest, TransmuteResponse
-from app.services.luck_sync import sync_luck_level
-from app.services.reward_service import RewardService
+from app.models.player import PlayerAttribute, PlayerInventory
+from app.schemas.forge import TransmuteRequest, TransmuteResponse
 from app.services.skill_tree_service import get_node_level, node_bonus
 
 # Ordinary attribute codes 
@@ -20,51 +18,12 @@ _ORDINARY_CODES = ["S", "P", "E", "C", "I", "A"]
 # Materials consumed per attribute 
 _TRANSMUTE_COST_PER_UNIT = 10
 
-# Service ForgeService (Business Logic for Attribute Upgrades in the Forge)
+# Service ForgeService (Business Logic for "The Forge")
 class ForgeService:
-    BASE_UPGRADE_COST = 25
-
-    # Function to calculate Upgrade Cost
-    @staticmethod
-    def attribute_upgrade_cost(current_level: int) -> int:
-        return ForgeService.BASE_UPGRADE_COST * current_level
 
     # Function primary Constructor
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
-
-    # Function to upgrade an attribute
-    async def upgrade_attribute(
-        self,
-        player: PlayerProfile,
-        attribute_code: str,
-    ) -> ForgeUpgradeResponse:
-        attr = await self._get_attribute(attribute_code)
-        player_attr, inventory = await self._lock_rows(player.id, attr.id)
-
-        cost = ForgeService.attribute_upgrade_cost(player_attr.level)
-        if inventory.quantity < cost:
-            raise InsufficientMaterialsError(
-                f"Need {cost} {attr.material_name}, have {inventory.quantity}"
-            )
-
-        from_level = player_attr.level
-        inventory.quantity -= cost
-        player_attr.level += 1
-        player_attr.xp_current = 0
-        player_attr.xp_to_next = RewardService.xp_for_level(player_attr.level)
-
-        await sync_luck_level(self._db, player.id)
-        await self._db.commit()
-
-        return ForgeUpgradeResponse(
-            attribute_code=attr.code,
-            from_level=from_level,
-            to_level=player_attr.level,
-            materials_spent=cost,
-            material_name=attr.material_name,
-            new_material_balance=inventory.quantity,
-        )
 
     # Function to transmute ordinary materials into Stardust
     async def transmute(

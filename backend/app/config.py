@@ -17,10 +17,6 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    ANTHROPIC_API_KEY: str = ""
-    AI_MODEL: str = "claude-opus-4-7"
-    USE_AI_MOCK: bool = True
-
     # Database URLs for async and sync connections
     @property
     def async_database_url(self) -> str:

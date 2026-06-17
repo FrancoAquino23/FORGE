@@ -5,7 +5,6 @@
 from datetime import datetime
 from decimal import Decimal
 from sqlalchemy import (
-    JSON,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -27,21 +26,6 @@ class Attribute(Base):
     name: Mapped[str] = mapped_column(String(30), nullable=False)
     material_name: Mapped[str] = mapped_column(String(50), nullable=False)
     icon_key: Mapped[str | None] = mapped_column(String(80))
-    buff_types: Mapped[list["BuffType"]] = relationship(back_populates="attribute")
-
-# Model BuffType (Buff Catalog)
-class BuffType(Base):
-    __tablename__ = "buff_types"
-
-    id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
-    code: Mapped[str] = mapped_column(String(40), unique=True, nullable=False)
-    display_name: Mapped[str] = mapped_column(String(80), nullable=False)
-    target_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    attribute_id: Mapped[int | None] = mapped_column(
-        SmallInteger, ForeignKey("attributes.id"), nullable=True
-    )
-    bonus_percent: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False)
-    attribute: Mapped["Attribute | None"] = relationship(back_populates="buff_types")
 
 # Model ForgeConfig (Mechanics)
 class ForgeConfig(Base):

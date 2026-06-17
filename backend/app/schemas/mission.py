@@ -55,7 +55,7 @@ class MissionClaimResponse(BaseModel):
 
 # Model DeployMissionRequest (Request to dispatch a player-created mission)
 class DeployMissionRequest(BaseModel):
-    attribute_code: str = Field(..., pattern="^[SPECIA]$")
+    attribute_code: str = Field(..., pattern="^[SPECIAL]$")
     category: MissionCategory
     description: str = Field(default="", max_length=500)
     detail: str | None = Field(default=None, max_length=1000)
@@ -91,3 +91,24 @@ class UpdateMissionRequest(BaseModel):
 class ToggleCheckpointResponse(BaseModel):
     checkpoint_id: uuid.UUID
     is_completed: bool
+
+# Model MissionHistoryItem (Data - Single completed mission in the history)
+class MissionHistoryItem(BaseModel):
+    mission_id: uuid.UUID
+    title: str
+    objective_description: str
+    attribute_code: str
+    attribute_name: str
+    category: str | None = None
+    threat_level: str = "MAJOR"
+    reward_xp: int
+    reward_material_qty: int
+    completed_at: datetime
+
+# Model MissionHistoryResponse (Data - Response for listing completed missions)
+class MissionHistoryResponse(BaseModel):
+    missions: list[MissionHistoryItem]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int

@@ -5,14 +5,13 @@
 from app.models.base import Base
 from app.models.catalog import (
     Attribute,
-    BuffType,
     ForgeConfig,
     ForgeTierRecipe,
     VisualTier,
 )
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
 from app.models.artifact import Artifact, ForgeHistory
-from app.models.prestige import PlayerBuff, PrestigeHistory
+from app.models.prestige import PrestigeHistory
 from app.models.mission import Mission
 from app.models.relic import Relic
 from app.models.skill_tree import PlayerSkillNode
@@ -21,7 +20,6 @@ from app.models.skill_tree import PlayerSkillNode
 __all__ = [
     "Base",
     "Attribute",
-    "BuffType",
     "ForgeConfig",
     "ForgeTierRecipe",
     "VisualTier",
@@ -32,7 +30,6 @@ __all__ = [
     "Artifact",
     "ForgeHistory",
     "PrestigeHistory",
-    "PlayerBuff",
     "Mission",
     "Relic",
     "PlayerSkillNode",
