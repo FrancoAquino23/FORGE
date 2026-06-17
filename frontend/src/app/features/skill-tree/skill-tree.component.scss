@@ -381,7 +381,7 @@ $hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
 
   &--ready {
-    animation: btnReadyPulse 2.2s ease-in-out infinite;
+    animation: nodeReadyPulse 2.2s ease-in-out infinite;
   }
 }
 
@@ -434,7 +434,7 @@ $hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
 }
 
-@keyframes btnReadyPulse {
+@keyframes nodeReadyPulse {
   0%,
   100% {
     box-shadow: 0 0 6px var(--path-color);

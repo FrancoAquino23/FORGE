@@ -52,6 +52,7 @@ export class SkillTreeComponent implements OnInit {
   readonly loading = signal(true);
   readonly upgradingNode = signal<string | null>(null);
   readonly resetting = signal(false);
+  readonly confirmReset = signal(false);
   hoverNode = signal<string | null>(null);
 
   readonly hoveredNodeData = computed(() => {
@@ -190,9 +191,20 @@ export class SkillTreeComponent implements OnInit {
     });
   }
 
+  // Function to request reset confirmation
+  requestReset(): void {
+    this.confirmReset.set(true);
+  }
+
+  // Function to cancel pending reset
+  cancelReset(): void {
+    this.confirmReset.set(false);
+  }
+
   // Function to handle skill tree reset
   resetTree(): void {
     if (this.resetting()) return;
+    this.confirmReset.set(false);
     this.resetting.set(true);
     this.api.resetSkillTree().subscribe({
       next: (res) => {

@@ -83,17 +83,31 @@
             <span class="text-forge-muted text-xs">/ {{ t.pp_total }} total</span>
           </div>
           <div class="flex justify-end mt-2">
-            <button
-              (click)="resetTree()"
-              [disabled]="resetting() || t.pp_available === t.pp_total"
-              class="text-[10px] uppercase tracking-widest px-3 py-1.5 border border-forge-border rounded-sm text-forge-muted hover:border-amber-500 hover:text-amber-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              @if (resetting()) {
-                Resetting…
-              } @else {
-                ↺ Reset Tree
-              }
-            </button>
+            @if (confirmReset()) {
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-forge-muted uppercase tracking-wider">Confirm reset?</span>
+                <button
+                  (click)="resetTree()"
+                  class="text-[10px] uppercase tracking-widest px-3 py-1.5 border border-red-500/60 rounded-sm text-red-400 hover:border-red-500 hover:text-red-300 transition-colors"
+                >
+                  Confirm
+                </button>
+                <button
+                  (click)="cancelReset()"
+                  class="text-[10px] uppercase tracking-widest px-3 py-1.5 border border-forge-border rounded-sm text-forge-muted hover:border-forge-primary/50 hover:text-forge-text transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            } @else {
+              <button
+                (click)="requestReset()"
+                [disabled]="resetting() || t.pp_available === t.pp_total"
+                class="text-[10px] uppercase tracking-widest px-3 py-1.5 border border-forge-border rounded-sm text-forge-muted hover:border-amber-500 hover:text-amber-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                @if (resetting()) { Resetting… } @else { ↺ Reset Tree }
+              </button>
+            }
           </div>
         </div>
       }
