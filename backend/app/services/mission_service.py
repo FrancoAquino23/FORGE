@@ -3,7 +3,7 @@
 # ==================================================================
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import func, nullslast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -47,6 +47,16 @@ _CATEGORY_LABELS: dict[str, str] = {
 _THREAT_LABEL: dict[int, str] = {0: "MINOR", 1: "MAJOR", 2: "CRITICAL"}
 _THREAT_VALUE: dict[str, int] = {"MINOR": 0, "MAJOR": 1, "CRITICAL": 2}
 _TL_ORDER: dict[str, int] = {"CRITICAL": 2, "MAJOR": 1, "MINOR": 0}
+
+# Reward multiplier based on streak 
+def _streak_multiplier(streak: int) -> float:
+    if streak >= 14:
+        return 2.0
+    if streak >= 7:
+        return 1.6
+    if streak >= 3:
+        return 1.3
+    return 1.0
 
 # Service for managing missions (fetching, generating, claiming)
 class MissionService:
@@ -163,12 +173,27 @@ class MissionService:
         mission.status = "COMPLETED"
         mission.completed_at = now
 
+        if mission.is_favorite and mission.category == "DAILY_GRIND":
+            today = now.date()
+            yesterday = today - timedelta(days=1)
+            if mission.last_streak_date in (today, yesterday):
+                mission.current_streak += 1
+            else:
+                mission.current_streak = 1
+            mission.last_streak_date = today
+
         # Apply rewards at claim time using current relic & prestige state
         attr_code = mission.target_attribute.code
         relic_level = await self._get_relic_level(player_id, attr_code)
         luck_relic_level = await self._get_relic_level(player_id, "L")
+
+        # Apply streak multiplier to base rewards
+        streak_mult = _streak_multiplier(mission.current_streak) if mission.is_favorite and mission.category == "DAILY_GRIND" else 1.0
+        base_xp = max(1, round(mission.reward_xp * streak_mult))
+        base_mat = max(1, round(mission.reward_material_qty * streak_mult))
+
         xp_earned, mat_earned = RewardService.apply_mission_bonuses(
-            mission.reward_xp, mission.reward_material_qty, relic_level, luck_relic_level
+            base_xp, base_mat, relic_level, luck_relic_level
         )
 
         # Apply global_xp_buff skill node
@@ -450,6 +475,7 @@ class MissionService:
                 is_favorite=mission.is_favorite,
                 checkpoints=checkpoints,
                 threat_level=threat,
+                current_streak=mission.current_streak,
             )
 
         return MissionProgress(
@@ -472,6 +498,7 @@ class MissionService:
             is_favorite=mission.is_favorite,
             checkpoints=checkpoints,
             threat_level=threat,
+            current_streak=mission.current_streak,
         )
 
     # Helper to reset completed favorite DAILY_GRIND missions from previous days back to active
@@ -489,10 +516,14 @@ class MissionService:
                 )
             )
         ).all()
+        yesterday = (now - timedelta(days=1)).date()
         for m in missions:
             m.status = "PENDING" if m.objective_type == "MANUAL" else "ACTIVE"
             m.completed_at = None
             m.expires_at = today_start + timedelta(hours=24)
+            if m.last_streak_date is not None and m.last_streak_date < yesterday:
+                m.current_streak = 0
+                m.last_streak_date = None
         if missions:
             await self._db.commit()
 

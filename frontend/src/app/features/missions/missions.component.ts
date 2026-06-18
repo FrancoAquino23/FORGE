@@ -516,6 +516,14 @@ export class MissionsComponent implements OnInit {
             ),
           });
         }
+        if (res.is_favorite) {
+          this.toast.show({
+            type: 'claim',
+            icon: '🔥',
+            title: 'STREAK UNLOCKED',
+            message: 'Rewards grow the longer your streak holds',
+          });
+        }
       },
       error: () => {
         this.toast.show({
@@ -526,6 +534,14 @@ export class MissionsComponent implements OnInit {
         });
       },
     });
+  }
+
+  // Function to return streak multiplier label for a daily mission
+  streakMultLabel(streak: number): string {
+    if (streak >= 14) return '×2.0';
+    if (streak >= 7) return '×1.6';
+    if (streak >= 3) return '×1.3';
+    return '×1.0';
   }
 
   // Function to toggle description expand/collapse for a card

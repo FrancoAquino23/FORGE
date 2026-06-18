@@ -3,8 +3,8 @@
 # ==================================================================
 
 import uuid
-from datetime import datetime
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, SmallInteger, String, Text, func, text
+from datetime import date, datetime
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Integer, SmallInteger, String, Text, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
@@ -73,6 +73,8 @@ class Mission(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"), default=False)
     threat_level: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text("1"), default=1)
+    current_streak: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    last_streak_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     target_attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]
     checkpoints: Mapped[list["Checkpoint"]] = relationship(
         "Checkpoint",

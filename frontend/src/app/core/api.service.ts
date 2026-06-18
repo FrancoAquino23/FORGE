@@ -55,6 +55,7 @@ export interface MissionProgress {
   is_favorite: boolean;
   checkpoints: CheckpointInfo[];
   threat_level: 'MINOR' | 'MAJOR' | 'CRITICAL';
+  current_streak: number;
 }
 
 // Interface (Mission List Response - Data)

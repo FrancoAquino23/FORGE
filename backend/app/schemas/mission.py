@@ -38,6 +38,7 @@ class MissionProgress(BaseModel):
     is_favorite: bool = False
     checkpoints: list[CheckpointSchema] = []
     threat_level: str = "MAJOR"
+    current_streak: int = 0
 
 # Model MissionListResponse (Data - Response for listing missions)
 class MissionListResponse(BaseModel):
