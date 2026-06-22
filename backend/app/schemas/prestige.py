@@ -3,6 +3,7 @@
 # ==================================================================
 
 from pydantic import BaseModel
+from app.schemas.mission import AchievementUnlocked
 
 # Model PrestigeStatusResponse (Full status for the Prestige view)
 class PrestigeStatusResponse(BaseModel):
@@ -17,3 +18,4 @@ class PrestigeUpResponse(BaseModel):
     prestige_number: int
     attributes_reset: list[str]
     pp_earned: int
+    newly_unlocked: list[AchievementUnlocked] = []

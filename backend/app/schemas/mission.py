@@ -44,6 +44,12 @@ class MissionProgress(BaseModel):
 class MissionListResponse(BaseModel):
     missions: list[MissionProgress]
 
+# Model AchievementUnlocked (Data - Response for an unlocked achievement)
+class AchievementUnlocked(BaseModel):
+    code: str
+    title: str
+    description: str
+
 # Model MissionClaimResponse (Data - Response for claiming a mission)
 class MissionClaimResponse(BaseModel):
     mission_id: uuid.UUID
@@ -53,6 +59,7 @@ class MissionClaimResponse(BaseModel):
     material_earned: int
     new_attribute_level: int
     leveled_up: bool
+    newly_unlocked: list[AchievementUnlocked] = []
 
 # Model DeployMissionRequest (Request to dispatch a player-created mission)
 class DeployMissionRequest(BaseModel):

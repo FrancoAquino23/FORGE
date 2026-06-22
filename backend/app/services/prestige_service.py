@@ -13,6 +13,7 @@ from app.models.prestige import PrestigeHistory
 from app.models.relic import Relic
 from app.models.skill_tree import PlayerSkillNode
 from app.schemas.prestige import PrestigeStatusResponse, PrestigeUpResponse
+from app.services.achievement_service import AchievementService
 from app.services.reward_service import RewardService
 from app.services.skill_tree_service import total_pp_for_level
 
@@ -193,10 +194,19 @@ class PrestigeService:
         locked_profile.prestige_points_total += pp_earned
         locked_profile.prestige_points_available += pp_refunded + pp_earned
 
+        # Check and unlock achievements
+        from app.schemas.mission import AchievementUnlocked
+        unlocked_defs = await AchievementService(self._db).check_and_unlock(locked_profile)
+        newly_unlocked = [
+            AchievementUnlocked(code=a.code, title=a.title, description=a.description)
+            for a in unlocked_defs
+        ]
+
         await self._db.commit()
 
         return PrestigeUpResponse(
             prestige_number=prestige_number,
             attributes_reset=reset_codes,
             pp_earned=pp_earned,
+            newly_unlocked=newly_unlocked,
         )

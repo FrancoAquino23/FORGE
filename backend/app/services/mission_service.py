@@ -10,9 +10,10 @@ from sqlalchemy.orm import selectinload
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models.catalog import Attribute
 from app.models.mission import Checkpoint, Mission
-from app.models.player import PlayerAttribute, PlayerInventory
+from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
 from app.models.relic import Relic
 from app.schemas.mission import (
+    AchievementUnlocked,
     CheckpointSchema,
     DeployMissionRequest,
     DeployMissionResponse,
@@ -25,6 +26,7 @@ from app.schemas.mission import (
     UpdateMissionRequest,
     CheckpointUpdateItem,
 )
+from app.services.achievement_service import AchievementService
 from app.services.luck_sync import sync_luck_level
 from app.services.reward_service import RewardService
 from app.services.skill_tree_service import get_node_level, node_bonus
@@ -239,6 +241,27 @@ class MissionService:
         ).scalar_one()
         inventory.quantity += mat_earned
 
+        # Persist actual awarded values for lifetime stats
+        mission.xp_awarded = xp_earned
+        mission.mat_awarded = mat_earned
+
+        # Update streak on player profile
+        profile = await self._db.scalar(
+            select(PlayerProfile).where(PlayerProfile.id == player_id).with_for_update()
+        )
+        if profile and mission.is_favorite and mission.category == "DAILY_GRIND" and mission.current_streak > 0:
+            if mission.current_streak > profile.best_streak:
+                profile.best_streak = mission.current_streak
+
+        # Check and unlock achievements
+        newly_unlocked = []
+        if profile:
+            unlocked_defs = await AchievementService(self._db).check_and_unlock(profile)
+            newly_unlocked = [
+                AchievementUnlocked(code=a.code, title=a.title, description=a.description)
+                for a in unlocked_defs
+            ]
+
         await self._db.commit()
 
         return MissionClaimResponse(
@@ -249,6 +272,7 @@ class MissionService:
             material_earned=mat_earned,
             new_attribute_level=new_level,
             leveled_up=leveled_up,
+            newly_unlocked=newly_unlocked,
         )
 
     # Helper to return paginated completed missions for the history tab

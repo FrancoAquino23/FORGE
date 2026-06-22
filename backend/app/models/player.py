@@ -14,6 +14,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Boolean,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -50,6 +51,7 @@ class PlayerProfile(Base):
     prestige_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     prestige_points_total: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     prestige_points_available: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    best_streak: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -58,6 +60,7 @@ class PlayerProfile(Base):
     attributes: Mapped[list["PlayerAttribute"]] = relationship(back_populates="player")
     inventory: Mapped[list["PlayerInventory"]] = relationship(back_populates="player")
     artifact: Mapped["Artifact"] = relationship(back_populates="player", uselist=False)  # type: ignore[name-defined]
+    achievements: Mapped[list["PlayerAchievement"]] = relationship(back_populates="player")
 # Model PlayerAttribute (Attributes & Progression)
 class PlayerAttribute(Base):
     __tablename__ = "player_attributes"
@@ -82,6 +85,19 @@ class PlayerAttribute(Base):
 
     player: Mapped["PlayerProfile"] = relationship(back_populates="attributes")
     attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]
+
+# Model PlayerAchievement (Achievements)
+class PlayerAchievement(Base):
+    __tablename__ = "player_achievements"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    player_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("player_profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    achievement_code: Mapped[str] = mapped_column(String, nullable=False)
+    unlocked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    player: Mapped["PlayerProfile"] = relationship(back_populates="achievements")
 
 # Model PlayerInventory (Items & Resources)
 class PlayerInventory(Base):
