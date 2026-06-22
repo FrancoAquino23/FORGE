@@ -31,53 +31,6 @@ const THREAT_BAR: Record<string, string> = {
   CRITICAL: '#ef4444',
 };
 
-// Visual Prestige tiers
-const VISUAL_TIERS = [
-  {
-    min: 50,
-    name: 'Singularity',
-    color: '#e2e8f0',
-    glow: 'drop-shadow(0 0 16px rgba(226,232,240,0.95))',
-    animated: true,
-  },
-  {
-    min: 35,
-    name: 'Absolute Void',
-    color: '#bf00ff',
-    glow: 'drop-shadow(0 0 14px rgba(191,0,255,0.85))',
-    animated: true,
-  },
-  {
-    min: 20,
-    name: 'Eternal Flame',
-    color: '#ef4444',
-    glow: 'drop-shadow(0 0 12px rgba(239,68,68,0.80))',
-    animated: true,
-  },
-  {
-    min: 10,
-    name: 'Arcane Crystal',
-    color: '#3b82f6',
-    glow: 'drop-shadow(0 0 10px rgba(59,130,246,0.75))',
-    animated: false,
-  },
-  {
-    min: 6,
-    name: 'Forged Obsidian',
-    color: '#10b981',
-    glow: 'drop-shadow(0 0 8px rgba(16,185,129,0.65))',
-    animated: false,
-  },
-  {
-    min: 3,
-    name: 'Smelted Ore',
-    color: '#f59e0b',
-    glow: 'drop-shadow(0 0 6px rgba(245,158,11,0.55))',
-    animated: false,
-  },
-  { min: 0, name: 'Scrap Metal', color: '#475569', glow: 'none', animated: false },
-] as const;
-
 // Number of segments in each attribute bar before reaching prestige
 const PRESTIGE_THRESHOLD = 10;
 
@@ -93,10 +46,7 @@ export class DashboardComponent implements OnInit {
 
   profile = signal<PlayerProfile | null>(null);
   missions = signal<MissionProgress[]>([]);
-  loadError = signal('');
   xpFlash = signal('');
-
-  readonly SEGMENTS = Array.from({ length: PRESTIGE_THRESHOLD }, (_, i) => i + 1);
 
   // All active missions sorted by priority:
   urgentMissions = computed<MissionProgress[]>(() => {
@@ -124,7 +74,7 @@ export class DashboardComponent implements OnInit {
   private loadProfile(): void {
     this.api.getProfile().subscribe({
       next: (p) => this.profile.set(p),
-      error: () => this.loadError.set('Could not load profile. Check your token.'),
+      error: () => {},
     });
   }
 
@@ -134,32 +84,6 @@ export class DashboardComponent implements OnInit {
       next: (res) => this.missions.set(res.missions),
       error: () => {},
     });
-  }
-
-  // Prestige tier helper (Level)
-  prestigeTier(count: number) {
-    return VISUAL_TIERS.find((t) => count >= t.min)!;
-  }
-
-  // Prestige gem helper (Color)
-  prestigeGemColor(count: number): string {
-    return this.prestigeTier(count).color;
-  }
-
-  // Prestige gem glow helper (Hover effect)
-  prestigeGemGlow(count: number): string {
-    return this.prestigeTier(count).glow;
-  }
-
-  // Prestige gem animation helper (Pulse effect)
-  prestigeGemAnimated(count: number): boolean {
-    return this.prestigeTier(count).animated;
-  }
-
-  // Determine styles for attribute segments based on level and prestige status
-  segmentClass(attr: AttributeProfile, seg: number): string {
-    if (attr.level >= PRESTIGE_THRESHOLD) return 'seg-prestige';
-    return attr.level >= seg ? 'seg-active' : 'seg-off';
   }
 
   // Function to calculate XP percentage for progress bars

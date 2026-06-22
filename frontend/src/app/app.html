@@ -56,8 +56,11 @@
         >
           Skill Tree
         </a>
-        <button (click)="auth.logout()" class="text-forge-muted hover:text-red-400 transition-colors cursor-pointer">
-          Logout
+        <button
+          class="text-forge-muted hover:text-forge-primary transition-colors cursor-pointer uppercase tracking-wider text-xs font-black"
+          (click)="profileOpen.set(true)"
+        >
+          Profile
         </button>
       </div>
     </nav>
@@ -67,3 +70,4 @@
 </div>
 
 <app-toast />
+<app-profile-modal [open]="profileOpen()" (closed)="profileOpen.set(false)" />

@@ -75,6 +75,8 @@ class Mission(Base):
     threat_level: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text("1"), default=1)
     current_streak: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
     last_streak_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    xp_awarded: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    mat_awarded: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
     target_attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]
     checkpoints: Mapped[list["Checkpoint"]] = relationship(
         "Checkpoint",

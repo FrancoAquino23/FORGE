@@ -63,6 +63,13 @@ export interface MissionListResponse {
   missions: MissionProgress[];
 }
 
+// Interface (Achievement Unlocked - Data)
+export interface AchievementUnlocked {
+  code: string;
+  title: string;
+  description: string;
+}
+
 // Interface (Mission Claim Response - Data)
 export interface MissionClaimResponse {
   mission_id: string;
@@ -72,6 +79,7 @@ export interface MissionClaimResponse {
   material_earned: number;
   new_attribute_level: number;
   leveled_up: boolean;
+  newly_unlocked: AchievementUnlocked[];
 }
 
 // Interface (Deploy Mission Request - Data)
@@ -181,6 +189,17 @@ export interface PrestigeUpResponse {
   prestige_number: number;
   attributes_reset: string[];
   pp_earned: number;
+  newly_unlocked: AchievementUnlocked[];
+}
+
+// Interface (Player Achievement - Data)
+export interface PlayerAchievement {
+  code: string;
+  title: string;
+  description: string;
+  flavor: string;
+  unlocked: boolean;
+  unlocked_at: string | null;
 }
 
 // Interface (Skill Node Info - Data)
@@ -224,6 +243,17 @@ export interface ResetTreeResponse {
   pp_available: number;
 }
 
+// Interface (Player Stats - Data)
+export interface PlayerStats {
+  main_quest_completed: number;
+  side_quest_completed: number;
+  daily_grind_completed: number;
+  total_missions_completed: number;
+  total_xp_earned: number;
+  total_materials_earned: number;
+  best_streak: number;
+}
+
 // Interface (Transmute Response - Data)
 export interface TransmuteResponse {
   batch_size: number;
@@ -241,6 +271,16 @@ export class ApiService {
   // Method (Get Player Profile)
   getProfile(): Observable<PlayerProfile> {
     return this.http.get<PlayerProfile>(`${this.BASE}/player/profile`);
+  }
+
+  // Method (Get Player Stats)
+  getPlayerStats(): Observable<PlayerStats> {
+    return this.http.get<PlayerStats>(`${this.BASE}/player/stats`);
+  }
+
+  // Method (Get Player Achievements)
+  getAchievements(): Observable<PlayerAchievement[]> {
+    return this.http.get<PlayerAchievement[]>(`${this.BASE}/player/achievements`);
   }
 
   // Method (Get Active Missions)

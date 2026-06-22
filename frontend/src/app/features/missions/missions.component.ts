@@ -392,6 +392,7 @@ export class MissionsComponent implements OnInit {
     this.api.claimMission(mission.mission_id).subscribe({
       next: (res) => {
         this.toast.fromMissionClaim(res);
+        if (res.newly_unlocked?.length) this.toast.fromAchievements(res.newly_unlocked);
         this.claiming.set('');
         this.loadMissions();
         this.api.getProfile().subscribe({ next: (p) => this.playerState.profile.set(p) });

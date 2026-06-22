@@ -170,6 +170,7 @@ export class PrestigeComponent implements OnInit {
           },
           6000,
         );
+        if (res.newly_unlocked?.length) this.toast.fromAchievements(res.newly_unlocked);
         this.prestigeFlash.set(true);
         setTimeout(() => this.prestigeFlash.set(false), 1500);
         this.load();

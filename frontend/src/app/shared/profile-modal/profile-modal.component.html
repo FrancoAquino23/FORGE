@@ -1,0 +1,232 @@
+<!-- ==================================================================
+     PROFILE TEMPLATE
+     ================================================================== -->
+
+@if (open) {
+  <!-- OVERLAY -->
+  <div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" (click)="close()"></div>
+
+  <!-- PANEL -->
+  <div
+    class="fixed top-0 right-0 z-50 h-full w-80 bg-forge-surface border-l border-forge-border flex flex-col shadow-2xl profile-panel"
+  >
+    <!-- CLOSE BUTTON -->
+    <button
+      class="absolute top-3 right-3 p-1.5 text-forge-muted/50 hover:text-forge-text transition-colors"
+      (click)="close()"
+    >
+      ✕
+    </button>
+
+    <!-- SCROLLABLE CONTENT -->
+    <div class="flex-1 overflow-y-auto forge-scroll-thin flex flex-col gap-4 p-5 pt-10">
+      <!-- IDENTITY -->
+      <div class="forge-card p-4 flex flex-col items-center gap-3">
+        <!-- AVATAR -->
+        @if (profile()) {
+          <div
+            class="w-14 h-14 rounded-full flex items-center justify-center text-lg font-black border-2 flex-shrink-0"
+            [style.background]="prestigeGemColor(profile()!.prestige_count) + '22'"
+            [style.border-color]="prestigeGemColor(profile()!.prestige_count) + '66'"
+            [style.color]="prestigeGemColor(profile()!.prestige_count)"
+          >
+            {{ initials(profile()!.username) }}
+          </div>
+          <!-- USERNAME -->
+          <div class="text-center">
+            <p class="font-black text-forge-text text-base tracking-widest leading-snug">
+              {{ profile()!.username }}
+            </p>
+          </div>
+          <!-- PRESTIGE GEM + TIER -->
+          <div class="flex flex-col items-center gap-1">
+            <p class="text-[9px] font-black tracking-[0.2em] text-forge-muted uppercase">Prestige</p>
+            <div [style.filter]="prestigeGemGlow(profile()!.prestige_count)">
+              <div
+                class="hex-gem-border"
+                [class.hex-gem-animated]="prestigeGemAnimated(profile()!.prestige_count)"
+                [style.background]="prestigeGemColor(profile()!.prestige_count)"
+              >
+                <div class="hex-gem-inner">
+                  <span
+                    class="font-black text-sm leading-none"
+                    [style.color]="prestigeGemColor(profile()!.prestige_count)"
+                  >
+                    {{ profile()!.prestige_count }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p
+              class="text-[8px] tracking-[0.15em] uppercase"
+              [style.color]="prestigeGemColor(profile()!.prestige_count)"
+            >
+              {{ prestigeTierName(profile()!.prestige_count) }}
+            </p>
+          </div>
+        } @else {
+          <div class="w-14 h-14 rounded-full bg-forge-card animate-pulse"></div>
+          <div class="h-4 w-24 bg-forge-card rounded animate-pulse"></div>
+        }
+      </div>
+
+      <!--S.P.E.C.I.A.L. -->
+      <div class="forge-card p-4 flex flex-col gap-1">
+        <p class="text-[10px] uppercase tracking-widest text-forge-muted mb-2">S.P.E.C.I.A.L.</p>
+        @if (profile()) {
+          @for (attr of profile()!.attributes; track attr.code) {
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-black w-3 flex-shrink-0" [class]="attrColor(attr.code)">
+                {{ attr.code }}
+              </span>
+              <div class="flex gap-[2px] flex-1">
+                @for (seg of SEGMENTS; track seg) {
+                  <div
+                    class="flex-1 h-2 rounded-[1px] transition-opacity"
+                    [class]="segmentClass(attr.level, seg)"
+                    [style.background]="attr.level >= seg ? attrHex(attr.code) : ''"
+                  ></div>
+                }
+              </div>
+              <span class="text-[9px] text-forge-muted w-10 text-right tabular-nums">Lv.{{ attr.level }}</span>
+            </div>
+          }
+        } @else {
+          @for (i of SEGMENTS; track i) {
+            <div class="h-3 bg-forge-card rounded animate-pulse"></div>
+          }
+        }
+      </div>
+
+      <!-- STATS -->
+      <div class="forge-card p-4 flex flex-col gap-2">
+        <p class="text-[10px] uppercase tracking-widest text-forge-muted mb-1">Stats</p>
+        @if (stats()) {
+          <div class="flex justify-between items-baseline">
+            <span class="text-[11px] text-forge-muted">Missions completed</span>
+            <span class="text-[11px] text-forge-text font-black tabular-nums">
+              {{ formatNumber(stats()!.total_missions_completed) }}
+            </span>
+          </div>
+          <div class="flex flex-col gap-0.5 pl-3 border-l border-forge-border/40">
+            <div class="flex justify-between items-baseline">
+              <span class="text-[10px] text-forge-muted/60">Main Quest</span>
+              <span class="text-[10px] text-forge-muted tabular-nums">
+                {{ formatNumber(stats()!.main_quest_completed) }}
+              </span>
+            </div>
+            <div class="flex justify-between items-baseline">
+              <span class="text-[10px] text-forge-muted/60">Side Quest</span>
+              <span class="text-[10px] text-forge-muted tabular-nums">
+                {{ formatNumber(stats()!.side_quest_completed) }}
+              </span>
+            </div>
+            <div class="flex justify-between items-baseline">
+              <span class="text-[10px] text-forge-muted/60">Daily Grind</span>
+              <span class="text-[10px] text-forge-muted tabular-nums">
+                {{ formatNumber(stats()!.daily_grind_completed) }}
+              </span>
+            </div>
+          </div>
+          <div class="border-t border-forge-border/30 my-0.5"></div>
+          <div class="flex justify-between items-baseline">
+            <span class="text-[11px] text-forge-muted">Best streak</span>
+            <span
+              class="text-[11px] font-black tabular-nums"
+              [class]="stats()!.best_streak > 0 ? 'text-amber-400' : 'text-forge-muted'"
+            >
+              @if (stats()!.best_streak > 0) {
+                🔥 {{ stats()!.best_streak }}d
+              } @else {
+                —
+              }
+            </span>
+          </div>
+          <div class="flex justify-between items-baseline">
+            <span class="text-[11px] text-forge-muted">Total XP earned</span>
+            <span class="text-[11px] text-forge-primary font-black tabular-nums">
+              {{ formatNumber(stats()!.total_xp_earned) }}
+            </span>
+          </div>
+          <div class="flex justify-between items-baseline">
+            <span class="text-[11px] text-forge-muted">Total materials</span>
+            <span class="text-[11px] text-forge-primary font-black tabular-nums">
+              {{ formatNumber(stats()!.total_materials_earned) }}
+            </span>
+          </div>
+        } @else {
+          <div class="flex flex-col gap-2">
+            @for (i of [1, 2, 3, 4, 5]; track i) {
+              <div class="h-3 bg-forge-card rounded animate-pulse"></div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- ACHIEVEMENTS -->
+      <div class="forge-card p-4 flex flex-col gap-2">
+        <p class="text-[10px] uppercase tracking-widest text-forge-muted mb-1">Achievements</p>
+        @if (achievements()) {
+          @for (a of achievements()!; track a.code) {
+            <div
+              class="flex items-start gap-2.5 py-1.5 border-b border-forge-border/20 last:border-0"
+              [class.opacity-35]="!a.unlocked"
+            >
+              <span class="text-base leading-none flex-shrink-0 mt-0.5">
+                {{ a.unlocked ? '🏆' : '🔒' }}
+              </span>
+              <div class="flex flex-col gap-0.5 min-w-0">
+                <span
+                  class="text-[11px] font-black tracking-wide"
+                  [class]="a.unlocked ? 'text-forge-primary' : 'text-forge-muted'"
+                >
+                  {{ a.title }}
+                </span>
+                <span class="text-[10px] text-forge-muted/70">{{ a.description }}</span>
+                @if (a.unlocked) {
+                  <span class="text-[9px] text-forge-muted/40 italic leading-snug">{{ a.flavor }}</span>
+                }
+              </div>
+              @if (a.unlocked && a.unlocked_at) {
+                <span class="text-[9px] text-forge-muted/40 flex-shrink-0 ml-auto tabular-nums">
+                  {{ a.unlocked_at | date: 'MMM d' }}
+                </span>
+              }
+            </div>
+          }
+        } @else {
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="h-8 bg-forge-card rounded animate-pulse"></div>
+          }
+        }
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="border-t border-forge-border p-4 flex flex-col gap-2 flex-shrink-0">
+      @if (!confirmingLogout()) {
+        <button
+          class="w-full flex items-center gap-2.5 px-3 py-2 rounded-sm text-xs text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-wide"
+          (click)="requestLogout()"
+        >
+          🚪 Logout
+        </button>
+      } @else {
+        <div class="flex gap-2">
+          <button
+            class="flex-1 px-3 py-2 rounded-sm text-xs text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors tracking-wide font-black uppercase"
+            (click)="confirmLogout()"
+          >
+            Confirm
+          </button>
+          <button
+            class="flex-1 px-3 py-2 rounded-sm text-xs text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
+            (click)="cancelLogout()"
+          >
+            Cancel
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

@@ -4,10 +4,24 @@
 
 import { Injectable, signal } from '@angular/core';
 import { Sparkles, LucideIconData } from 'lucide-angular';
-import { MissionClaimResponse, RelicUpgradeResponse, TransmuteResponse } from './api.service';
+import {
+  AchievementUnlocked,
+  MissionClaimResponse,
+  RelicUpgradeResponse,
+  TransmuteResponse,
+} from './api.service';
 
 // Types (Toast - For Notifications)
-export type ToastType = 'xp' | 'levelup' | 'loot' | 'claim' | 'error' | 'node-bronze' | 'node-silver' | 'node-gold' | 'prestige';
+export type ToastType =
+  | 'xp'
+  | 'levelup'
+  | 'loot'
+  | 'claim'
+  | 'error'
+  | 'node-bronze'
+  | 'node-silver'
+  | 'node-gold'
+  | 'prestige';
 
 // Interface (Toast - Data for Each Toast Notification)
 export interface Toast {
@@ -82,6 +96,23 @@ export class ToastService {
       title: 'Relic Upgraded',
       message: `Level ${res.new_level} · +${res.new_bonus_pct}% active bonus`,
       attrCode: res.attribute_code,
+    });
+  }
+
+  // Method (Show Achievement Unlocked notifications)
+  fromAchievements(unlocked: AchievementUnlocked[]): void {
+    unlocked.forEach((a, i) => {
+      setTimeout(() => {
+        this.show(
+          {
+            type: 'loot',
+            icon: '🏆',
+            title: a.title,
+            message: a.description,
+          },
+          6000,
+        );
+      }, i * 800);
     });
   }
 

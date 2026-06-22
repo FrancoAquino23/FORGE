@@ -21,3 +21,13 @@ class PlayerProfileResponse(BaseModel):
     prestige_points_total: int
     prestige_points_available: int
     attributes: list[AttributeProfile]
+
+# Model PlayerStatsResponse (Endpoint Response)
+class PlayerStatsResponse(BaseModel):
+    main_quest_completed: int
+    side_quest_completed: int
+    daily_grind_completed: int
+    total_missions_completed: int
+    total_xp_earned: int
+    total_materials_earned: int
+    best_streak: int
