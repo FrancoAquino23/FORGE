@@ -5,19 +5,21 @@
 <div class="min-h-screen bg-forge-bg px-4 py-8">
   <div class="max-w-5xl mx-auto flex flex-col gap-6">
     <!-- HEADER -->
-    <div class="flex flex-col gap-1.5">
-      <h1 class="text-forge-primary font-black text-lg uppercase tracking-widest">STARDUST CONDENSER</h1>
-      <p class="text-forge-muted text-[11px] tracking-wider leading-relaxed whitespace-nowrap">
-        Sacrifice equal quantities of the six ordinary materials to crystallize
-        <span class="text-orange-400 font-bold">Stardust</span>
-      </p>
+    <div class="mb-2">
+      <h2 class="forge-page-title">STARDUST CONDENSER</h2>
+      <p class="forge-page-subtitle">Sacrifice materials to crystallize Stardust</p>
     </div>
 
-    <!-- LOADING -->
-    @if (loading() && !profile()) {
-      <div class="flex items-center gap-2 text-forge-muted text-xs animate-pulse py-8">
-        <span>⚗</span>
-        Igniting the forge...
+    <!-- STATE - LOADING / ERROR -->
+    @if (loadError()) {
+      <div class="forge-state-wrap">
+        <ng-icon name="phosphorPlugsBold" size="40" class="forge-state-error-icon" />
+        <span class="forge-state-error-text">Error loading Forge</span>
+      </div>
+    } @else if (loading() && !profile()) {
+      <div class="forge-state-wrap">
+        <ng-icon name="phosphorSpinnerBold" size="40" class="forge-state-loading-icon" />
+        <span class="forge-state-loading-text">Loading Forge...</span>
       </div>
     }
 
@@ -36,18 +38,13 @@
                   [class.bg-green-400]="attr.material_balance >= costEach()"
                   [class.bg-red-400]="attr.material_balance < costEach()"
                 ></div>
-                <lucide-icon
-                  [img]="getIcon(attr.code)"
-                  [size]="12"
-                  [class]="attrColor(attr.code)"
-                  class="flex-shrink-0"
-                ></lucide-icon>
+                <ng-icon [name]="attrIcon(attr.code)" size="12" [class]="attrColor(attr.code)" class="flex-shrink-0" />
                 <span class="text-[9px] font-black w-3 flex-shrink-0" [class]="attrColor(attr.code)">
                   {{ attr.code }}
                 </span>
 
                 <div class="flex-1 flex flex-col gap-1 min-w-0">
-                  <span class="text-forge-muted text-[10px] tracking-wide truncate">
+                  <span class="text-forge-text/60 text-[10px] tracking-wide font-semibold truncate">
                     {{ attr.material_name }}
                   </span>
                   <div class="progress-bar">
@@ -65,9 +62,9 @@
                     class="text-[11px] font-black tabular-nums transition-colors duration-300"
                     [class]="balanceColor(attr.material_balance)"
                   >
-                    {{ attr.material_balance }}
+                    {{ fmt(attr.material_balance) }}
                   </span>
-                  <span class="text-[9px] text-forge-muted">/ {{ costEach() }}</span>
+                  <span class="text-[9px] text-forge-muted tabular-nums">/ {{ fmt(costEach()) }}</span>
                 </div>
               </div>
             }
@@ -79,27 +76,25 @@
           <!-- STARDUST BALANCE -->
           <div class="forge-card p-5 flex items-center justify-between">
             <div>
-              <p class="text-[9px] font-black uppercase tracking-widest text-forge-muted mb-1.5">Stardust Balance</p>
+              <p class="forge-section-title mb-1.5">Stardust Balance</p>
               <p class="text-3xl font-black text-orange-400 tabular-nums leading-none">
-                {{ stardust()?.material_balance ?? 0 }}
-              </p>
-              <p class="text-[9px] text-forge-muted mt-1 tracking-wider">
-                {{ stardust()?.material_name ?? 'Stardust' }}
+                {{ fmt(stardust()?.material_balance ?? 0) }}
               </p>
             </div>
             <div class="stardust-orb select-none" [class.animate-forge-pulse]="transmuting()">
-              <lucide-icon [img]="StardustIcon" [size]="40" class="text-orange-400"></lucide-icon>
+              <ng-icon [name]="StardustIcon" size="40" class="text-orange-400" />
             </div>
           </div>
 
           <!-- BATCH + FORGE ACTION -->
           <div class="forge-card p-5 flex flex-col gap-5">
             <div class="flex items-center justify-between">
-              <h2 class="text-[10px] font-black uppercase tracking-widest text-forge-muted">Batch Size</h2>
-              <span class="text-forge-primary font-black text-base tabular-nums leading-none">{{ batchSize() }}×</span>
+              <h2 class="text-xs uppercase tracking-widest text-forge-text/70 font-bold">Batch Size</h2>
+              <span class="text-forge-primary font-black text-base tabular-nums leading-none">
+                {{ fmt(batchSize()) }}×
+              </span>
             </div>
 
-            <!-- SLIDER -->
             <div class="flex flex-col gap-2.5">
               <input
                 type="range"
@@ -130,32 +125,31 @@
             <!-- REWARDS -->
             <div class="bg-forge-surface border border-forge-border rounded p-3.5 flex flex-col gap-2.5 text-[10px]">
               <div class="flex justify-between items-center">
-                <span class="text-forge-muted uppercase tracking-wider">Cost per material</span>
-                <span class="font-black text-forge-text tabular-nums">{{ costEach() }}</span>
+                <span class="text-forge-text/70 uppercase tracking-widest font-semibold">Cost per material</span>
+                <span class="font-black text-forge-text tabular-nums">{{ fmt(costEach()) }}</span>
               </div>
               <div class="flex justify-between items-center">
-                <span class="text-forge-muted uppercase tracking-wider">Total consumed</span>
-                <span class="font-black text-forge-text tabular-nums">{{ costEach() * 6 }}</span>
+                <span class="text-forge-text/70 uppercase tracking-widest font-semibold">Total consumed</span>
+                <span class="font-black text-forge-text tabular-nums">{{ fmt(costEach() * 6) }}</span>
               </div>
               <div class="border-t border-forge-border/60 pt-2.5 flex justify-between items-center">
-                <span class="text-forge-muted uppercase tracking-wider">Stardust yield</span>
+                <span class="text-forge-text/70 uppercase tracking-widest font-semibold">Stardust yield</span>
                 <span class="font-black text-orange-400 tabular-nums flex items-center gap-1">
-                  {{ minReward() }}–{{ maxReward() }}
-                  <lucide-icon [img]="StardustIcon" [size]="11" class="text-orange-400"></lucide-icon>
+                  {{ fmt(minReward()) }}–{{ fmt(maxReward()) }}
+                  <ng-icon [name]="StardustIcon" size="11" class="text-orange-400" />
                 </span>
               </div>
             </div>
 
-            <!-- FORGE BUTTON -->
             <button
-              class="forge-btn-primary w-full py-3.5 text-xs tracking-widest"
+              class="forge-btn-primary forge-btn-action w-full py-3.5 text-xs"
               [class.btn-action-ready]="canTransmute() && !transmuting()"
               [class.btn-action-locked]="!canTransmute()"
               [disabled]="!canTransmute()"
               (click)="transmute()"
             >
               @if (transmuting()) {
-                <span class="animate-pulse tracking-widest">⚗ TRANSMUTING...</span>
+                <span class="animate-pulse tracking-widest">FORGING...</span>
               } @else if (!canTransmute()) {
                 INSUFFICIENT MATERIALS
               } @else {
@@ -164,13 +158,15 @@
             </button>
 
             @if (!canTransmute() && !transmuting() && ordinary().length) {
-              <p class="text-red-400/80 text-[10px] text-center tracking-wider -mt-2 whitespace-nowrap">
-                Need {{ costEach() }} of each · reduce batch or farm more materials
+              <p class="text-[10px] uppercase tracking-widest font-semibold text-center text-red-400/70 -mt-2">
+                Reduce batch or farm more materials
               </p>
             }
           </div>
         </div>
       </div>
+      <!-- RELIC WORKSHOP -->
+      <app-relic-workshop />
     }
   </div>
 </div>

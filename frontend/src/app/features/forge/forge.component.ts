@@ -2,11 +2,30 @@
    FORGE COMPONENT LOGIC
    ================================================================== */
 
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { LucideAngularModule, LucideIconData } from 'lucide-angular';
-import { ATTR_COLORS, ATTR_ICONS } from '../../shared/attr-constants';
+import { Component, DestroyRef, OnInit, inject, signal, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgIconComponent, provideIcons } from '@ng-icons/core';
+import {
+  phosphorSwordBold,
+  phosphorEyeBold,
+  phosphorShieldBold,
+  phosphorSketchLogoBold,
+  phosphorDnaBold,
+  phosphorLightningBold,
+  phosphorSparkleBold,
+  phosphorSpinnerBold,
+  phosphorPlugsBold,
+} from '@ng-icons/phosphor-icons/bold';
+import {
+  ATTR_COLORS,
+  ATTR_ICONS,
+  ATTR_BAR_COLORS,
+  fmt,
+  attrColor,
+  attrIcon,
+} from '../../shared/ui-constants';
 import { ApiService, PlayerProfile } from '../../core/api.service';
-import { ForgeService } from '../../core/forge.service';
+import { RelicWorkshopComponent } from '../relic-workshop/relic-workshop.component';
 import { ToastService } from '../../core/toast.service';
 
 // Size steps available on the slider
@@ -15,35 +34,38 @@ const BATCH_STEPS = [1, 5, 10, 25, 50, 100];
 // Attribute codes
 const ORDINARY_CODES = ['S', 'P', 'E', 'C', 'I', 'A'];
 
-// Tailwind classes for forge material bars
-const ATTR_BAR_COLORS: Record<string, string> = {
-  S: 'bg-red-400',
-  P: 'bg-blue-400',
-  E: 'bg-green-400',
-  C: 'bg-yellow-300',
-  I: 'bg-purple-400',
-  A: 'bg-cyan-400',
-  L: 'bg-orange-400',
-};
-
+// Row border color constants
 const ROW_OK_BORDER = 'border-green-500/30';
 const ROW_BAD_BORDER = 'border-red-500/25';
 const ROW_NEUTRAL_BORDER = 'border-forge-border';
 
 @Component({
   selector: 'app-forge',
-  standalone: true,
-  imports: [LucideAngularModule],
+  imports: [NgIconComponent, RelicWorkshopComponent],
+  providers: [
+    provideIcons({
+      phosphorSwordBold,
+      phosphorEyeBold,
+      phosphorShieldBold,
+      phosphorSketchLogoBold,
+      phosphorDnaBold,
+      phosphorLightningBold,
+      phosphorSparkleBold,
+      phosphorSpinnerBold,
+      phosphorPlugsBold,
+    }),
+  ],
   templateUrl: './forge.component.html',
   styleUrl: './forge.component.scss',
 })
 export class ForgeComponent implements OnInit {
   private api = inject(ApiService);
-  private forgeApi = inject(ForgeService);
   private toast = inject(ToastService);
+  private destroyRef = inject(DestroyRef);
 
   profile = signal<PlayerProfile | null>(null);
-  loading = signal(false);
+  loading = signal(true);
+  loadError = signal(false);
   transmuting = signal(false);
   sliderIndex = signal(0);
 
@@ -76,13 +98,16 @@ export class ForgeComponent implements OnInit {
   // Load component
   load(): void {
     this.loading.set(true);
-    this.api.getProfile().subscribe({
-      next: (p) => {
-        this.profile.set(p);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
-    });
+    this.api
+      .getProfile()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (p) => {
+          this.profile.set(p);
+          this.loading.set(false);
+        },
+        error: () => this.loadError.set(true),
+      });
   }
 
   // Function to handle slider changes
@@ -96,40 +121,37 @@ export class ForgeComponent implements OnInit {
     if (!this.canTransmute()) return;
     this.transmuting.set(true);
 
-    this.forgeApi.transmute(this.batchSize()).subscribe({
-      next: (res) => {
-        this.transmuting.set(false);
-        this.toast.fromTransmute(res);
-        this.load();
-      },
-      error: (err) => {
-        this.transmuting.set(false);
-        this.toast.show({
-          type: 'error',
-          icon: '❌',
-          title: 'Transmutation Failed',
-          message: err.error?.detail ?? 'Insufficient materials',
-        });
-      },
-    });
+    this.api
+      .transmute(this.batchSize())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.transmuting.set(false);
+          this.toast.fromTransmute(res);
+          this.load();
+        },
+        error: (err: { error?: { detail?: string } }) => {
+          this.transmuting.set(false);
+          this.toast.showError(
+            'Stardust Forge Failed',
+            err,
+            'Could not forge stardust. Please try again.',
+          );
+        },
+      });
   }
 
-  // Function to get UI icon for an attribute
-  getIcon(code: string): LucideIconData {
-    return ATTR_ICONS[code] ?? ATTR_ICONS['L'];
-  }
-
-  // Function to get text color for an attribute
-  attrColor(code: string): string {
-    return ATTR_COLORS[code] ?? 'text-forge-primary';
-  }
+  // Utility functions
+  protected attrIcon = attrIcon;
+  protected fmt = fmt;
+  protected attrColor = attrColor;
 
   // Function to get bar color
   barColor(code: string): string {
     return ATTR_BAR_COLORS[code] ?? 'bg-forge-primary';
   }
 
-  // Function to determine row berder color
+  // Function to determine row border color
   rowBorder(balance: number): string {
     const cost = this.costEach();
     if (cost === 0) return ROW_NEUTRAL_BORDER;
