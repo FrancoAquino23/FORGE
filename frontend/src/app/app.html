@@ -1,5 +1,5 @@
 <!-- ==================================================================
-     FORGE(APPLICATION STRUCTURE)
+     FORGE (APPLICATION STRUCTURE)
      ================================================================== -->
 
 <!-- HEADER -->
@@ -13,53 +13,31 @@
         routerLink="/dashboard"
         class="text-forge-primary font-black tracking-widest text-base uppercase hover:text-amber-400 transition-colors"
       >
-        ⚡ THE FORGE
+        <span class="flex items-center gap-2">
+          <ng-icon name="phosphorRobot" size="36" />
+          THE FORGE
+        </span>
       </a>
       <div class="flex items-center gap-6 text-xs uppercase tracking-wider">
-        <a
-          routerLink="/dashboard"
-          routerLinkActive="text-forge-primary"
-          class="text-forge-muted hover:text-forge-text transition-colors"
-        >
-          Dashboard
-        </a>
-        <a
-          routerLink="/missions"
-          routerLinkActive="text-forge-primary"
-          class="text-forge-muted hover:text-forge-text transition-colors"
-        >
-          Missions
-        </a>
-        <a
-          routerLink="/forge"
-          routerLinkActive="text-forge-primary"
-          class="text-forge-muted hover:text-forge-text transition-colors"
-        >
-          Forge
-        </a>
+        <a routerLink="/dashboard" routerLinkActive="text-forge-primary" class="forge-nav-link">Dashboard</a>
+        <a routerLink="/missions" routerLinkActive="text-forge-primary" class="forge-nav-link">Missions</a>
+        <a routerLink="/forge" routerLinkActive="text-forge-primary" class="forge-nav-link">Forge</a>
         <a
           routerLink="/prestige"
           routerLinkActive="text-forge-primary"
-          class="text-forge-muted hover:text-forge-text transition-colors flex items-center gap-1.5"
+          class="forge-nav-link flex items-center gap-1.5"
         >
           Prestige
           @if (playerState.prestigeCount() > 0) {
             <span
               class="text-[9px] font-black px-1.5 py-0.5 rounded-sm bg-forge-primary/15 text-forge-primary tabular-nums leading-none"
-            >{{ playerState.prestigeCount() }}</span>
+            >
+              {{ playerState.prestigeCount() }}
+            </span>
           }
         </a>
-        <a
-          routerLink="/skill-tree"
-          routerLinkActive="text-forge-primary"
-          class="text-forge-muted hover:text-forge-text transition-colors"
-        >
-          Skill Tree
-        </a>
-        <button
-          class="text-forge-muted hover:text-forge-primary transition-colors cursor-pointer uppercase tracking-wider text-xs font-black"
-          (click)="profileOpen.set(true)"
-        >
+        <a routerLink="/skill-tree" routerLinkActive="text-forge-primary" class="forge-nav-link">Perks</a>
+        <button class="forge-nav-link cursor-pointer uppercase tracking-wider text-xs" (click)="profileOpen.set(true)">
           Profile
         </button>
       </div>

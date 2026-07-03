@@ -4,6 +4,8 @@
 
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NgIconComponent, provideIcons } from '@ng-icons/core';
+import { phosphorRobot } from '@ng-icons/phosphor-icons/regular';
 import { AuthService } from './core/auth.service';
 import { PlayerStateService } from './core/player-state.service';
 import { ToastComponent } from './shared/toast/toast.component';
@@ -11,7 +13,8 @@ import { ProfileModalComponent } from './shared/profile-modal/profile-modal.comp
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastComponent, ProfileModalComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastComponent, ProfileModalComponent, NgIconComponent],
+  viewProviders: [provideIcons({ phosphorRobot })],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
