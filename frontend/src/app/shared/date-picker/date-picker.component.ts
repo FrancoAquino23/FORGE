@@ -14,7 +14,16 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { NgIconComponent, provideIcons } from '@ng-icons/core';
+import {
+  phosphorXCircleBold,
+  phosphorCaretDownBold,
+  phosphorCaretLeftBold,
+  phosphorCaretRightBold,
+  phosphorCalendarDotsBold,
+} from '@ng-icons/phosphor-icons/bold';
 
+// Constants for month names
 const MONTHS = [
   'January',
   'February',
@@ -32,7 +41,16 @@ const MONTHS = [
 
 @Component({
   selector: 'app-date-picker',
-  imports: [],
+  imports: [NgIconComponent],
+  providers: [
+    provideIcons({
+      phosphorXCircleBold,
+      phosphorCaretDownBold,
+      phosphorCaretLeftBold,
+      phosphorCaretRightBold,
+      phosphorCalendarDotsBold,
+    }),
+  ],
   templateUrl: './date-picker.component.html',
 })
 export class DatePickerComponent implements OnChanges {
