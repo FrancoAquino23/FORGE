@@ -2,74 +2,66 @@
    RELIC WORKSHOP COMPONENT LOGIC
    ================================================================== */
 
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
-  LucideAngularModule,
-  LucideIconData,
-  Hammer,
-  Eye,
-  Shield,
-  Gem,
-  Cpu,
-  Zap,
-  Sparkles,
-} from 'lucide-angular';
+  phosphorCrownBold,
+  phosphorHandEyeBold,
+  phosphorCastleTurretBold,
+  phosphorHeartBold,
+  phosphorAtomBold,
+  phosphorInfinityBold,
+  phosphorCloverBold,
+  phosphorStarFourBold,
+} from '@ng-icons/phosphor-icons/bold';
 import { ApiService, RelicInfo } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
+import { ATTR_COLORS, ATTR_HEX, RELIC_NAMES, fmt, attrColor } from '../../shared/ui-constants';
 
-// Mappings for relic names, colors, icons, etc.
-const ATTR_ICONS: Record<string, LucideIconData> = {
-  S: Hammer,
-  P: Eye,
-  E: Shield,
-  C: Gem,
-  I: Cpu,
-  A: Zap,
-  L: Sparkles,
+// Constants for relic icons
+const RELIC_ICONS: Record<string, string> = {
+  S: 'phosphorCrownBold',
+  P: 'phosphorHandEyeBold',
+  E: 'phosphorCastleTurretBold',
+  C: 'phosphorHeartBold',
+  I: 'phosphorAtomBold',
+  A: 'phosphorInfinityBold',
+  L: 'phosphorCloverBold',
 };
 
-// Mapping of attribute codes to their display names for relics
-const RELIC_NAMES: Record<string, string> = {
-  S: 'Anvil of Power',
-  P: 'Beacon of Clarity',
-  E: 'Shield of Eternity',
-  C: 'Chalice of Harmony',
-  I: 'Orb of Logic',
-  A: 'Elixir of Speed',
-  L: 'Totem of Grace',
-};
-
-// Color mappings for relic display based on attribute code
-const ATTR_COLORS: Record<string, string> = {
-  S: 'text-red-400',
-  P: 'text-blue-400',
-  E: 'text-green-400',
-  C: 'text-yellow-300',
-  I: 'text-purple-400',
-  A: 'text-cyan-400',
-  L: 'text-orange-400',
-};
-
-// Border color mappings for relic cards based on attribute code
+// Constants for relic borders
 const BORDER_COLORS: Record<string, string> = {
-  S: 'border-red-500/30 hover:border-red-500/60',
-  P: 'border-blue-500/30 hover:border-blue-500/60',
-  E: 'border-green-500/30 hover:border-green-500/60',
-  C: 'border-yellow-500/30 hover:border-yellow-500/60',
-  I: 'border-purple-500/30 hover:border-purple-500/60',
-  A: 'border-cyan-500/30 hover:border-cyan-500/60',
-  L: 'border-orange-500/30 hover:border-orange-500/60',
+  S: 'border-red-400/30 hover:border-red-400/60',
+  P: 'border-blue-400/30 hover:border-blue-400/60',
+  E: 'border-green-400/30 hover:border-green-400/60',
+  C: 'border-yellow-300/30 hover:border-yellow-300/60',
+  I: 'border-purple-400/30 hover:border-purple-400/60',
+  A: 'border-cyan-400/30 hover:border-cyan-400/60',
+  L: 'border-orange-400/30 hover:border-orange-400/60',
 };
-
 
 @Component({
   selector: 'app-relic-workshop',
-  imports: [LucideAngularModule],
+  imports: [NgIconComponent],
+  providers: [
+    provideIcons({
+      phosphorCrownBold,
+      phosphorStarFourBold,
+      phosphorHandEyeBold,
+      phosphorCastleTurretBold,
+      phosphorHeartBold,
+      phosphorAtomBold,
+      phosphorInfinityBold,
+      phosphorCloverBold,
+    }),
+  ],
   templateUrl: './relic-workshop.component.html',
 })
 export class RelicWorkshopComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private destroyRef = inject(DestroyRef);
 
   relics = signal<RelicInfo[]>([]);
   loading = signal(false);
@@ -80,39 +72,45 @@ export class RelicWorkshopComponent implements OnInit {
     this.load();
   }
 
-  // Function to load the player's relics from the API and update the component state
+  // Function to load component data
   load(): void {
+    if (this.loading()) return;
     this.loading.set(true);
-    this.api.getRelics().subscribe({
-      next: (res) => {
-        this.relics.set(res.relics);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
-    });
+    this.api
+      .getRelics()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.relics.set(res.relics);
+          this.loading.set(false);
+        },
+        error: () => this.loading.set(false),
+      });
   }
 
-  // Function to handle relic upgrade action, sends upgrade request to API and updates state based on response
+  // Function to handle relic upgrade
   upgrade(relic: RelicInfo): void {
     if (this.upgrading() || !relic.can_upgrade) return;
     this.upgrading.set(relic.attribute_code);
 
-    this.api.upgradeRelic(relic.attribute_code).subscribe({
-      next: (res) => {
-        this.upgrading.set('');
-        this.toast.fromRelicUpgrade(res);
-        this.load();
-      },
-      error: (err) => {
-        this.upgrading.set('');
-        this.toast.show({
-          type: 'error',
-          icon: '❌',
-          title: 'Error',
-          message: err.error?.detail ?? 'Could not upgrade relic',
-        });
-      },
-    });
+    this.api
+      .upgradeRelic(relic.attribute_code)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.upgrading.set('');
+          this.toast.fromRelicUpgrade(res);
+          this.load();
+        },
+        error: (err) => {
+          this.upgrading.set('');
+          this.toast.showError(
+            'Relic Upgrade Failed',
+            err,
+            'Could not upgrade relic. Please try again.',
+          );
+        },
+      });
   }
 
   // Function to get the display name of a relic
@@ -120,24 +118,32 @@ export class RelicWorkshopComponent implements OnInit {
     return RELIC_NAMES[code] ?? code;
   }
 
-  // Function to get the color class for a relic
-  attrColor(code: string): string {
-    return ATTR_COLORS[code] ?? 'text-forge-primary';
-  }
+  // Constants & utility functions
+  protected attrColor = attrColor;
 
-  // Function to get the border color class for a relic card
+  // Function to get the border class for a relic
   borderClass(code: string): string {
     return BORDER_COLORS[code] ?? 'border-forge-border';
   }
 
-  // Function to get the appropriate icon for a relic
-  getIcon(code: string): LucideIconData {
-    return ATTR_ICONS[code] ?? Sparkles;
+  // Function to get the icon name for a relic
+  relicIcon(code: string): string {
+    return RELIC_ICONS[code] ?? 'phosphorCloverBold';
   }
 
-  // Function to format the relic level with leading zeros for consistent display
+  // Constants & utility functions
+  protected fmt = fmt;
+  hoveredRelic = signal('');
+
+  // Function to get the glow style for a relic
+  glowStyle(code: string): Record<string, string> {
+    if (this.hoveredRelic() !== code) return {};
+    const hex = ATTR_HEX[code] ?? '';
+    return { 'box-shadow': `0 0 14px ${hex}99` };
+  }
+
+  // Function to format a level number
   formatLevel(n: number): string {
     return String(n).padStart(2, '0');
   }
-
 }

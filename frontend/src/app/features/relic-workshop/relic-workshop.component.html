@@ -4,57 +4,60 @@
 
 <div class="forge-card p-5">
   <div class="mb-4">
-    <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest">Relic Workshop</h3>
+    <h3 class="forge-section-title">Relic Workshop</h3>
   </div>
 
-  @if (loading() && !relics().length) {
-    <p class="text-forge-muted text-xs animate-pulse">Loading relics...</p>
-  } @else {
+  @if (!loading() || relics().length) {
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
       @for (r of relics(); track r.attribute_code) {
         <div
-          class="bg-forge-surface border rounded-sm p-3 flex flex-col gap-2.5 transition-colors font-mono"
+          class="bg-forge-surface border rounded-sm p-3 flex flex-col gap-2.5 transition-colors"
           [class]="borderClass(r.attribute_code)"
+          [style]="glowStyle(r.attribute_code)"
+          (mouseenter)="hoveredRelic.set(r.attribute_code)"
+          (mouseleave)="hoveredRelic.set('')"
         >
           <!-- HEADER -->
-          <div class="flex items-center gap-1.5">
-            <lucide-icon
-              [img]="getIcon(r.attribute_code)"
-              [size]="13"
+          <div class="flex flex-col items-center gap-1 pt-1">
+            <ng-icon [name]="relicIcon(r.attribute_code)" size="20" [class]="attrColor(r.attribute_code)" />
+            <span
+              class="text-[9px] font-black tracking-wider text-center leading-tight"
               [class]="attrColor(r.attribute_code)"
-            ></lucide-icon>
-            <span class="text-[8px] font-black tracking-wider truncate" [class]="attrColor(r.attribute_code)">
+            >
               {{ relicName(r.attribute_code) }}
             </span>
           </div>
 
           <!-- LEVEL BADGE -->
           <div class="flex items-center justify-between">
-            <span class="text-[9px] text-forge-muted uppercase tracking-widest">Level</span>
-            <span class="text-sm font-black leading-none" [class]="attrColor(r.attribute_code)">
+            <span class="text-[9px] text-forge-text/70 uppercase tracking-widest">Level</span>
+            <span class="text-sm font-black leading-none tabular-nums" [class]="attrColor(r.attribute_code)">
               {{ formatLevel(r.level) }}
             </span>
           </div>
 
           <!-- BONUS -->
           <div class="text-center py-0.5">
-            <span class="font-black text-base leading-none" [class]="attrColor(r.attribute_code)">
+            <span class="font-black text-sm leading-none tabular-nums" [class]="attrColor(r.attribute_code)">
               +{{ r.bonus_pct }}%
             </span>
-            <p class="text-[9px] text-forge-muted uppercase tracking-wider mt-0.5">Active Bonus</p>
+            <p class="text-[9px] text-forge-text/70 uppercase tracking-widest mt-0.5">Active Bonus</p>
           </div>
 
           <!-- UPGRADE BUTTON -->
           @if (r.level >= 10) {
             <div
-              class="text-[9px] font-black text-center py-1 border rounded-sm"
+              class="text-[9px] font-black text-center py-1 border rounded-sm flex items-center justify-center gap-1"
               [class]="attrColor(r.attribute_code) + ' border-current/30'"
             >
-              ◆ MAX
+              <ng-icon name="phosphorStarFourBold" size="9" />
+              MAX
             </div>
           } @else {
             <button
-              class="forge-btn-primary text-[9px] uppercase tracking-widest font-black w-full py-1.5"
+              class="forge-btn-primary forge-btn-action text-[9px] w-full py-1.5"
+              [class.btn-action-ready]="r.can_upgrade && upgrading() !== r.attribute_code"
+              [class.btn-action-locked]="upgrading() === r.attribute_code"
               [disabled]="!r.can_upgrade || upgrading() === r.attribute_code"
               (click)="upgrade(r)"
             >
@@ -62,8 +65,8 @@
                 Forging...
               } @else {
                 FORGE UPGRADE
-                <span class="block text-[8px] opacity-70 font-normal mt-0.5">
-                  {{ r.upgrade_cost }} {{ r.is_luck ? 'STR' : 'mat' }}
+                <span class="block text-[9px] font-black tabular-nums opacity-70 mt-0.5">
+                  {{ fmt(r.upgrade_cost ?? 0) }} {{ r.is_luck ? 'STR' : 'mat' }}
                 </span>
               }
             </button>
