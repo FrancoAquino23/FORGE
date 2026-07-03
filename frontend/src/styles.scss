@@ -1,8 +1,8 @@
 /* ==================================================================
-   FORGE (GLOBAL STYLES)
+   FRONT - GLOBAL STYLES
    ================================================================== */
 
-// DESIGN TOKENS
+/* =========== DESIGN TOKENS =========== */
 $forge-bg: #080b0e;
 $forge-surface: #0f1318;
 $forge-card: #141920;
@@ -16,7 +16,7 @@ $forge-muted: #64748b;
 @tailwind components;
 @tailwind utilities;
 
-// BASE STYLES
+/* =========== BASE STYLES =========== */
 @layer base {
   * {
     box-sizing: border-box;
@@ -38,7 +38,7 @@ $forge-muted: #64748b;
   }
 }
 
-// COMPONENT STYLES
+/* =========== COMPONENT STYLES =========== */
 @layer components {
   .forge-card {
     @apply bg-forge-card border border-forge-border rounded-lg;
@@ -47,7 +47,15 @@ $forge-muted: #64748b;
     @apply px-4 py-2 rounded font-bold uppercase tracking-wider text-sm transition-all duration-200 cursor-pointer;
   }
   .forge-btn-primary {
-    @apply forge-btn bg-forge-primary text-black hover:bg-amber-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed;
+    @apply forge-btn bg-forge-primary text-black hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed;
+    -webkit-font-smoothing: antialiased;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+
+    &:active:not(:disabled) {
+      opacity: 0.88;
+      -webkit-font-smoothing: antialiased;
+    }
   }
   .forge-btn-ghost {
     @apply forge-btn border border-forge-border text-forge-muted hover:text-forge-text hover:border-forge-primary/50;
@@ -55,6 +63,13 @@ $forge-muted: #64748b;
   .forge-input {
     @apply bg-forge-surface border border-forge-border rounded px-3 py-2 text-forge-text text-sm
            focus:outline-none focus:border-forge-primary/60 w-full transition-colors;
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px #0f1318 inset;
+      -webkit-text-fill-color: #e2e8f0;
+      caret-color: #e2e8f0;
+    }
   }
   .progress-bar {
     @apply h-1.5 rounded-full bg-forge-border overflow-hidden;
@@ -65,9 +80,74 @@ $forge-muted: #64748b;
   .badge {
     @apply px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider;
   }
+  .forge-page-title {
+    @apply text-xl font-black text-forge-primary tracking-widest;
+  }
+  .forge-page-subtitle {
+    @apply text-forge-text/50 text-xs mt-0.5 tracking-wide uppercase;
+  }
+  .forge-state-wrap {
+    @apply flex flex-col items-center justify-center gap-3 min-h-[400px];
+  }
+  .forge-state-error-icon {
+    @apply text-red-400/60;
+  }
+  .forge-state-error-text {
+    @apply text-xs uppercase tracking-widest text-red-400/60 font-bold;
+  }
+  .forge-state-loading-icon {
+    @apply text-forge-muted/60 animate-spin;
+  }
+  .forge-state-loading-text {
+    @apply text-xs uppercase tracking-widest text-forge-muted/60 font-bold;
+  }
+  .forge-label {
+    @apply block text-xs uppercase tracking-widest text-forge-text/70 mb-1;
+  }
+  .forge-section-title {
+    @apply text-forge-text font-bold text-sm uppercase tracking-widest;
+  }
+  .forge-btn-nav {
+    @apply px-3 py-1 rounded-sm border border-forge-primary/50 text-forge-primary text-[10px] uppercase tracking-wider transition-all hover:shadow-[0_0_10px_rgba(251,146,60,0.4)] hover:border-forge-primary hover:bg-forge-primary/5 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:bg-transparent;
+  }
+  .forge-reward-inline {
+    @apply flex items-center gap-0.5;
+  }
+  .forge-field-error {
+    @apply text-[10px] text-rose-400/70 uppercase tracking-widest mt-1;
+  }
+  .forge-menu-item {
+    @apply w-full px-3 py-2 text-xs text-left text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide;
+  }
+  .forge-stat-label {
+    @apply text-xs text-forge-text/60;
+  }
+  .forge-stat-value {
+    @apply text-xs text-forge-text font-black tabular-nums drop-shadow-[0_0_8px_rgba(226,232,240,0.5)];
+  }
+  .forge-stat-divider {
+    @apply border-t border-forge-border/30 my-0.5;
+  }
+  .forge-btn-action {
+    @apply uppercase tracking-widest font-black;
+  }
+  .forge-btn-filter {
+    @apply text-[10px] tracking-wider uppercase rounded-sm border transition-colors;
+  }
+  .forge-glow-text {
+    @apply drop-shadow-[0_0_8px_rgba(226,232,240,0.5)];
+  }
+  .forge-empty-icon {
+    @apply text-forge-muted/40;
+  }
+  .forge-empty-text {
+    @apply text-[10px] font-black text-forge-muted uppercase tracking-widest;
+  }
+  .forge-nav-link {
+    @apply text-forge-muted hover:text-forge-text transition-colors font-black;
+  }
 }
-
-// RAINBOW (S.P.E.C.I.A.L.)
+/* =========== (S.P.E.C.I.A.L.)=========== */
 @keyframes rainbowShift {
   0% {
     background-position: 0% 50%;
@@ -99,7 +179,7 @@ $forge-muted: #64748b;
   animation: rainbowShift 6s ease infinite;
 }
 
-// LOGIN & REGISTER
+/* =========== LOGIN & REGISTER =========== */
 .login-bg {
   position: relative;
   background:
@@ -117,7 +197,7 @@ $forge-muted: #64748b;
   }
 }
 
-// START FORGE BUTTON
+/* =========== START FORGE BUTTON =========== */
 @keyframes shimmer {
   0% {
     transform: translateX(-150%) skewX(-20deg);
@@ -141,7 +221,7 @@ $forge-muted: #64748b;
   }
 }
 
-// SCROLLBAR UTILITY
+/* =========== SCROLLBAR =========== */
 .forge-scroll-thin {
   scrollbar-width: thin;
   scrollbar-color: rgba(245, 158, 11, 0.25) transparent;
@@ -158,7 +238,7 @@ $forge-muted: #64748b;
   }
 }
 
-// CHECKBOX (S.P.E.C.I.A.L. checkpoint style)
+/* =========== CHECKPOINT CHECKBOX =========== */
 .checkpoint-cb {
   appearance: none;
   -webkit-appearance: none;
@@ -182,14 +262,14 @@ $forge-muted: #64748b;
     &::after {
       content: "";
       position: absolute;
-      left: 2px;
-      top: 0px;
-      width: 5px;
-      height: 8px;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 7px;
       border: 2px solid #1a1f2e;
       border-top: none;
       border-left: none;
-      transform: rotate(45deg);
+      transform: translate(-50%, -60%) rotate(45deg);
     }
   }
 
@@ -198,7 +278,7 @@ $forge-muted: #64748b;
   }
 }
 
-// ANIMATIONS
+/* =========== ANIMATIONS =========== */
 @keyframes slideIn {
   from {
     transform: translateX(110%);
@@ -261,21 +341,6 @@ $forge-muted: #64748b;
   animation: overchargeGlow 1.5s ease-in-out infinite;
 }
 
-@keyframes xpFlash {
-  0% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.8) saturate(1.4);
-  }
-  100% {
-    filter: brightness(1);
-  }
-}
-.animate-xp-gain {
-  animation: xpFlash 0.6s ease-out;
-}
-
 @keyframes eligiblePulse {
   0%,
   100% {
@@ -315,7 +380,7 @@ $forge-muted: #64748b;
   animation: artifactEvolve 1.2s ease-out;
 }
 
-// PRIMARY ACTION BUTTON — READY (shimmer sweep + amber glow pulse)
+/* =========== ACTION BUTTON =========== */
 @keyframes btnReadyPulse {
   0%,
   100% {
