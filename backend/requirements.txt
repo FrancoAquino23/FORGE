@@ -1,5 +1,5 @@
 # ==================================================================
-# PROJECT REQUIREMENTS (BACKEND)
+# BACKEND - PROJECT REQUIREMENTS
 # ==================================================================
 
 fastapi==0.136.1
@@ -13,3 +13,4 @@ pydantic-settings==2.14.0
 python-dotenv==1.2.2
 passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.5.0
+tzdata==2026.2
