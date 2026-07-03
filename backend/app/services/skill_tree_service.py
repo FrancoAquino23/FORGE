@@ -28,38 +28,61 @@ _MAX_NODE_LEVEL = 3
 # Static display labels for the early_start_boost node
 _EARLY_START_LABELS = ("Off", "1 attr → Lv 2", "2 attrs → Lv 2", "3 attrs → Lv 3")
 
+# Static display labels for the "relic_head_start" node
+_RELIC_HEAD_START_LABELS = ("Off", "1 relic → Lv 1", "2 relics → Lv 1", "3 relics → Lv 2")
+
 
 # Buffs (Data - node_id → (path_name, display_name, description))
 _NODES: dict[str, tuple[str, str, str]] = {
     "reduc_transmute_cost": (
-        "Stellar Alchemy",
-        "Reduced Transmutation Cost",
-        "Discount on ordinary materials consumed per transmutation batch.",
+        "Stellar Mastery",
+        "Void Pact",
+        "Discount on materials consumed per Forge operation.",
     ),
     "double_transmute_chance": (
-        "Stellar Alchemy",
-        "Double Transmutation Chance",
-        "Chance of doubling Stardust output after each transmutation.",
+        "Stellar Mastery",
+        "Nova Burst",
+        "Chance to double Stardust output on every Forge.",
     ),
     "mission_material_multiplier": (
-        "Industrial Supply",
-        "Mission Material Multiplier",
-        "Bonus materials from Side Quests and Daily Grinds.",
+        "Industrial Mastery",
+        "Bounty Rush",
+        "Bonus materials from Main Quests and Side Quests.",
     ),
     "relic_cost_discount": (
-        "Industrial Supply",
-        "Relic Cost Discount",
+        "Industrial Mastery",
+        "Forge Oath",
         "Discount on materials required to upgrade relics.",
     ),
     "global_xp_buff": (
-        "Chronological Mastery",
-        "Global XP Buff",
+        "Cycle Mastery",
+        "XP Overdrive",
         "Bonus XP earned from all attribute missions.",
     ),
     "early_start_boost": (
-        "Chronological Mastery",
-        "Early Start Boost",
-        "Ordinary attributes begin at a higher level after prestige.",
+        "Cycle Mastery",
+        "Phantom Reset",
+        "Carries random attributes into a higher level after prestige.",
+    ),
+    "critical_surge": (
+        "Operative Mastery",
+        "Crimson Protocol",
+        "Bonus rewards on CRITICAL threat level missions.",
+    ),
+    "streak_amplifier": (
+        "Operative Mastery",
+        "Chain Reaction",
+        "Bonus rewards on Daily Grind missions with an active streak.",
+    ),
+    "material_compression": (
+        "Prestige Mastery",
+        "Prestige Rift",
+        "Discount on material cost required to ascend.",
+    ),
+    "relic_head_start": (
+        "Prestige Mastery",
+        "Relic Echo",
+        "Carries random relics into a higher level after prestige.",
     ),
 }
 
@@ -75,6 +98,11 @@ def total_pp_for_level(level: int) -> int:
 def _effect_label(node_id: str, level: int) -> str:
     if node_id == "early_start_boost":
         return _EARLY_START_LABELS[level]
+    if node_id == "relic_head_start":
+        return _RELIC_HEAD_START_LABELS[level]
+    if node_id == "material_compression":
+        pct = round(_NODE_BONUSES[level] * 100)
+        return f"-{pct}% cost" if pct > 0 else "0%"
     pct = round(_NODE_BONUSES[level] * 100)
     return f"+{pct}%" if pct > 0 else "0%"
 
@@ -102,10 +130,19 @@ class SkillTreeService:
         ).scalars().all()
         level_map = {r.node_id: r.current_level for r in rows}
 
+        path_siblings: dict[str, list[str]] = {}
+        for nid, (p, _, _) in _NODES.items():
+            path_siblings.setdefault(p, []).append(nid)
+
         nodes: list[SkillNodeInfo] = []
         for node_id, (path, display_name, description) in _NODES.items():
             lvl = level_map.get(node_id, 0)
             cost = _NODE_COSTS[lvl + 1] if lvl < _MAX_NODE_LEVEL else None
+            locked_by_choice = lvl == 0 and any(
+                level_map.get(s, 0) > 0
+                for s in path_siblings[path]
+                if s != node_id
+            )
             nodes.append(
                 SkillNodeInfo(
                     node_id=node_id,
@@ -115,6 +152,7 @@ class SkillTreeService:
                     current_level=lvl,
                     max_level=_MAX_NODE_LEVEL,
                     cost_to_upgrade=cost,
+                    locked_by_choice=locked_by_choice,
                     bonus_at_current=_NODE_BONUSES[lvl],
                     bonus_at_next=_NODE_BONUSES[lvl + 1] if lvl < _MAX_NODE_LEVEL else None,
                     current_effect=_effect_label(node_id, lvl),
@@ -147,6 +185,13 @@ class SkillTreeService:
         current_level = row.current_level if row else 0
         if current_level >= _MAX_NODE_LEVEL:
             raise ConflictError(f"Node '{node_id}' is already at maximum level")
+
+        # Block upgrade if a sibling node in the same path is already active
+        path = _NODES[node_id][0]
+        siblings = [s for s, (p, _, _) in _NODES.items() if p == path and s != node_id]
+        for sibling_id in siblings:
+            if await get_node_level(self._db, player.id, sibling_id) > 0:
+                raise ConflictError(f"Another node in '{path}' is already active. Reset the tree to change your choice.")
 
         cost = _NODE_COSTS[current_level + 1]
 

@@ -10,12 +10,12 @@ from app.models.catalog import Attribute
 from app.models.player import PlayerInventory
 from app.models.relic import Relic
 from app.schemas.relic import RelicInfo, RelicListResponse, RelicUpgradeResponse
+from app.constants import MAX_ATTRIBUTE_LEVEL as _MAX_LEVEL, ORDINARY_CODES_ORDERED
 from app.services.reward_service import RewardService
 from app.services.skill_tree_service import get_node_level, node_bonus
 
-# Constants for relic management
-_UPGRADEABLE_CODES = ["S", "P", "E", "C", "I", "A", "L"]
-_MAX_LEVEL = 10
+# Attribute codes
+_UPGRADEABLE_CODES = (*ORDINARY_CODES_ORDERED, "L")
 
 # Model RelicService (Handles relic-related operations)
 class RelicService:
@@ -56,7 +56,7 @@ class RelicService:
                     attribute_name=attr_by_code[code].name,
                     level=relic.level,
                     total_invested=relic.total_invested,
-                    bonus_pct=relic.level * 5,
+                    bonus_pct=round(relic.level * RewardService.RELIC_BONUS_PER_LEVEL * 100),
                     upgrade_cost=cost,
                     can_upgrade=can_upgrade,
                     material_balance=balance,
@@ -64,7 +64,6 @@ class RelicService:
                 )
             )
 
-        await self._db.commit()
         return RelicListResponse(relics=result)
 
     # Helper method to handle relic upgrades
@@ -124,7 +123,7 @@ class RelicService:
             new_level=relic.level,
             material_spent=cost,
             new_balance=inventory.quantity,
-            new_bonus_pct=relic.level * 5,
+            new_bonus_pct=round(relic.level * RewardService.RELIC_BONUS_PER_LEVEL * 100),
         )
 
     # Helper method to ensure all relics exist for the player, creating any missing ones
@@ -137,10 +136,13 @@ class RelicService:
                 )
             ).all()
         }
+        created = False
         for code in _UPGRADEABLE_CODES:
             if code not in existing:
-                r = Relic(player_id=player_id, attribute_code=code, level=1, total_invested=0)
+                r = Relic(player_id=player_id, attribute_code=code, level=0, total_invested=0)
                 self._db.add(r)
                 existing[code] = r
-        await self._db.flush()
+                created = True
+        if created:
+            await self._db.commit()
         return [existing[code] for code in _UPGRADEABLE_CODES]

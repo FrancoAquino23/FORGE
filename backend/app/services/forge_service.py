@@ -10,10 +10,8 @@ from app.core.exceptions import ConflictError, NotFoundError
 from app.models.catalog import Attribute
 from app.models.player import PlayerAttribute, PlayerInventory
 from app.schemas.forge import TransmuteRequest, TransmuteResponse
+from app.constants import ORDINARY_CODES_ORDERED as _ORDINARY_CODES
 from app.services.skill_tree_service import get_node_level, node_bonus
-
-# Ordinary attribute codes 
-_ORDINARY_CODES = ["S", "P", "E", "C", "I", "A"]
 
 # Materials consumed per attribute 
 _TRANSMUTE_COST_PER_UNIT = 10
@@ -96,40 +94,3 @@ class ForgeService:
             stardust_gained=stardust_gained,
             new_stardust_balance=stardust_inv.quantity,
         )
-
-    # Function (Get Attribute by Code)
-    async def _get_attribute(self, code: str) -> Attribute:
-        attr = await self._db.scalar(select(Attribute).where(Attribute.code == code))
-        if not attr:
-            raise NotFoundError(f"Attribute '{code}'")
-        return attr
-
-    # Function (Lock Rows for Update)
-    async def _lock_rows(
-        self,
-        player_id: uuid.UUID,
-        attribute_id: int,
-    ) -> tuple[PlayerAttribute, PlayerInventory]:
-        player_attr = (
-            await self._db.execute(
-                select(PlayerAttribute)
-                .where(
-                    PlayerAttribute.player_id == player_id,
-                    PlayerAttribute.attribute_id == attribute_id,
-                )
-                .with_for_update()
-            )
-        ).scalar_one()
-
-        inventory = (
-            await self._db.execute(
-                select(PlayerInventory)
-                .where(
-                    PlayerInventory.player_id == player_id,
-                    PlayerInventory.attribute_id == attribute_id,
-                )
-                .with_for_update()
-            )
-        ).scalar_one()
-
-        return player_attr, inventory

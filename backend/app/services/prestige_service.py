@@ -13,15 +13,13 @@ from app.models.prestige import PrestigeHistory
 from app.models.relic import Relic
 from app.models.skill_tree import PlayerSkillNode
 from app.schemas.prestige import PrestigeStatusResponse, PrestigeUpResponse
+from app.constants import ORDINARY_CODES as _ORDINARY_CODES
 from app.services.achievement_service import AchievementService
 from app.services.reward_service import RewardService
-from app.services.skill_tree_service import total_pp_for_level
+from app.services.skill_tree_service import get_node_level, node_bonus, total_pp_for_level
 
 # Default prestige threshold
 _DEFAULT_THRESHOLD = 10
-
-# Ordinary attribute codes
-_ORDINARY_CODES = frozenset({"S", "P", "E", "C", "I", "A"})
 
 # Function to compute material cost for next prestige level
 def prestige_material_cost(current_prestige: int) -> int:
@@ -41,7 +39,7 @@ def prestige_material_cost(current_prestige: int) -> int:
         return 16_000 + (target - 20) * 2_500
     if target <= 49:
         return 60_000 + (target - 35) * 10_000
-    return 200_000 + (target - 49) * 10_000
+    return 500_000
 
 # Function to compute points per prestige level
 def prestige_points_for_prestige(prestige_number: int) -> int:
@@ -95,7 +93,7 @@ class PrestigeService:
             if not pa or pa.level < threshold:
                 raise PrestigeNotAvailableError(threshold)
 
-        # Read early_start_boost level before any resets
+        # Read skill node levels before any resets
         early_boost_level = (
             await self._db.scalar(
                 select(PlayerSkillNode.current_level).where(
@@ -104,9 +102,16 @@ class PrestigeService:
                 )
             )
         ) or 0
+        material_compression_level = await get_node_level(self._db, player.id, "material_compression")
+        relic_head_start_level = await get_node_level(self._db, player.id, "relic_head_start")
 
         # Verify and lock ordinary-material inventories for the material gate
-        material_cost = prestige_material_cost(player.prestige_count)
+        raw_material_cost = prestige_material_cost(player.prestige_count)
+        if material_compression_level > 0:
+            discount = node_bonus(material_compression_level)
+            material_cost = max(1, round(raw_material_cost * (1.0 - discount)))
+        else:
+            material_cost = raw_material_cost
         ordinary_attr_ids = [a.id for a in all_attrs if a.code in _ORDINARY_CODES]
         ordinary_inventories = (
             await self._db.execute(
@@ -158,8 +163,20 @@ class PrestigeService:
                 select(Relic).where(Relic.player_id == player.id).with_for_update()
             )
         ).scalars().all()
+        existing_codes = [r.attribute_code for r in all_relics]
         for relic in all_relics:
             await self._db.delete(relic)
+
+        if relic_head_start_level > 0 and existing_codes:
+            num_saved = min(relic_head_start_level, len(existing_codes))
+            head_start_relic_level = 2 if relic_head_start_level == 3 else 1
+            chosen_codes = random.sample(existing_codes, num_saved)
+            for code in chosen_codes:
+                self._db.add(Relic(
+                    player_id=player.id,
+                    attribute_code=code,
+                    level=head_start_relic_level,
+                ))
 
         # Reset skill tree nodes and compute full points per prestige refund
         all_nodes = (

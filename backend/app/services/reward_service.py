@@ -2,8 +2,7 @@
 # REWARD SERVICE
 # ==================================================================
 
-# Max level for attributes & relics
-_MAX_LEVEL = 10
+from app.constants import MAX_ATTRIBUTE_LEVEL as _MAX_LEVEL
 
 # Table of XP required to upgrade a level (Data)
 _XP_TABLE: dict[int, int] = {
