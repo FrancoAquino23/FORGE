@@ -31,8 +31,9 @@ export class AuthService {
 
   // Method (Register - Get Token from API and Store in Local Storage)
   register(username: string, email: string, password: string) {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
     return this.http
-      .post<TokenResponse>(`${this.BASE}/auth/register`, { username, email, password })
+      .post<TokenResponse>(`${this.BASE}/auth/register`, { username, email, password, timezone })
       .pipe(tap((res) => localStorage.setItem('forge_token', res.access_token)));
   }
 

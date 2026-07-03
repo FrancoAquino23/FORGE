@@ -3,7 +3,7 @@
    ================================================================== */
 
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 // Interface (Attribute Profile - Data)
@@ -211,6 +211,7 @@ export interface SkillNodeInfo {
   current_level: number;
   max_level: number;
   cost_to_upgrade: number | null;
+  locked_by_choice: boolean;
   bonus_at_current: number;
   bonus_at_next: number | null;
   current_effect: string;
@@ -245,13 +246,52 @@ export interface ResetTreeResponse {
 
 // Interface (Player Stats - Data)
 export interface PlayerStats {
-  main_quest_completed: number;
-  side_quest_completed: number;
-  daily_grind_completed: number;
   total_missions_completed: number;
   total_xp_earned: number;
   total_materials_earned: number;
   best_streak: number;
+}
+
+// Interface (Category Breakdown - Data)
+export interface CategoryBreakdown {
+  main_quest: number;
+  side_quest: number;
+  daily_grind: number;
+  total: number;
+}
+
+// Interface (Threat Breakdown - Data)
+export interface ThreatBreakdown {
+  minor: number;
+  major: number;
+  critical: number;
+}
+
+// Interface (Attribute Metric - Data)
+export interface AttributeMetric {
+  code: string;
+  name: string;
+  missions_completed: number;
+  xp_earned: number;
+}
+
+// Interface (Avg Resolution Time - Data)
+export interface AvgResolutionTime {
+  main_quest_hours: number | null;
+  side_quest_hours: number | null;
+  daily_grind_hours: number | null;
+}
+
+// Interface (Player Metrics - Data)
+export interface PlayerMetrics {
+  week_label: string;
+  week_offset: number;
+  has_previous: boolean;
+  has_next: boolean;
+  category_breakdown: CategoryBreakdown;
+  threat_breakdown: ThreatBreakdown;
+  attribute_breakdown: AttributeMetric[];
+  avg_resolution_hours: AvgResolutionTime;
 }
 
 // Interface (Transmute Response - Data)
@@ -278,6 +318,12 @@ export class ApiService {
     return this.http.get<PlayerStats>(`${this.BASE}/player/stats`);
   }
 
+  // Method (Get Player Metrics)
+  getMetrics(weekOffset: number = 0): Observable<PlayerMetrics> {
+    const params = new HttpParams().set('week_offset', weekOffset);
+    return this.http.get<PlayerMetrics>(`${this.BASE}/player/metrics`, { params });
+  }
+
   // Method (Get Player Achievements)
   getAchievements(): Observable<PlayerAchievement[]> {
     return this.http.get<PlayerAchievement[]>(`${this.BASE}/player/achievements`);
@@ -290,9 +336,8 @@ export class ApiService {
 
   // Method (Get Mission History)
   getMissionHistory(page: number = 1, pageSize: number = 10): Observable<MissionHistoryResponse> {
-    return this.http.get<MissionHistoryResponse>(
-      `${this.BASE}/missions/history?page=${page}&page_size=${pageSize}`,
-    );
+    const params = new HttpParams().set('page', page).set('page_size', pageSize);
+    return this.http.get<MissionHistoryResponse>(`${this.BASE}/missions/history`, { params });
   }
 
   // Method (Deploy Mission)
@@ -367,5 +412,12 @@ export class ApiService {
   // Method (Reset Skill Tree)
   resetSkillTree(): Observable<ResetTreeResponse> {
     return this.http.post<ResetTreeResponse>(`${this.BASE}/prestige/tree/reset`, {});
+  }
+
+  // Method (Transform materials into Stardust)
+  transmute(batchSize: number): Observable<TransmuteResponse> {
+    return this.http.post<TransmuteResponse>(`${this.BASE}/forge/transmute`, {
+      batch_size: batchSize,
+    });
   }
 }

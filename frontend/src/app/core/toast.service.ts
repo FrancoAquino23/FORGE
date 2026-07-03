@@ -3,24 +3,21 @@
    ================================================================== */
 
 import { Injectable, signal } from '@angular/core';
-import { Sparkles, LucideIconData } from 'lucide-angular';
 import {
   AchievementUnlocked,
   MissionClaimResponse,
   RelicUpgradeResponse,
   TransmuteResponse,
 } from './api.service';
+import { ATTR_COLORS, ATTR_ICONS, ATTR_NAMES, RELIC_NAMES } from '../shared/ui-constants';
 
 // Types (Toast - For Notifications)
 export type ToastType =
-  | 'xp'
+  | 'success'
   | 'levelup'
   | 'loot'
-  | 'claim'
   | 'error'
-  | 'node-bronze'
-  | 'node-silver'
-  | 'node-gold'
+  | 'node'
   | 'prestige';
 
 // Interface (Toast - Data for Each Toast Notification)
@@ -28,21 +25,12 @@ export interface Toast {
   id: number;
   type: ToastType;
   icon: string;
-  lucideIcon?: LucideIconData;
+  ngIcon?: string;
+  iconColor?: string;
   title: string;
   message: string;
   attrCode?: string;
 }
-
-const ATTR_NAMES: Record<string, string> = {
-  S: 'Strength',
-  P: 'Perception',
-  E: 'Endurance',
-  C: 'Charisma',
-  I: 'Intelligence',
-  A: 'Agility',
-  L: 'Luck',
-};
 
 // Service (ToastService - Manages Toast Notifications)
 @Injectable({ providedIn: 'root' })
@@ -65,25 +53,39 @@ export class ToastService {
     this.toasts.update((list) => list.filter((t) => t.id !== id));
   }
 
+  // Method (Show Error Toast)
+  showError(title: string, err?: { error?: { detail?: string } }, fallback = 'An error occurred.'): void {
+    this.show({
+      type: 'error',
+      icon: '',
+      ngIcon: 'phosphorWarningBold',
+      title,
+      message: err?.error?.detail ?? fallback,
+    });
+  }
+
   // Method (Show Mission Completion, XP Gain, Material Gain, and Level Up Notifications)
   fromMissionClaim(res: MissionClaimResponse): void {
     const xpPart =
       res.new_attribute_level >= 10 && !res.leveled_up ? 'XP MAX' : `+${res.xp_earned} XP`;
     this.show({
-      type: 'claim',
-      icon: '✅',
+      type: 'success',
+      icon: '',
+      ngIcon: 'phosphorCheckCircleBold',
       title: 'Mission Accomplished',
-      message: `${xpPart} · +${res.material_earned} ${res.material_name}`,
+      message: `${xpPart} & +${res.material_earned} ${res.material_name}`,
     });
     if (res.leveled_up) {
       setTimeout(() => {
         this.show({
           type: 'levelup',
-          icon: '⚡',
-          title: `Level Up: ${ATTR_NAMES[res.attribute_code] ?? res.attribute_code}!`,
-          message: `Now at Level ${res.new_attribute_level}`,
+          icon: '',
+          ngIcon: ATTR_ICONS[res.attribute_code] ?? 'phosphorSparkleBold',
+          iconColor: ATTR_COLORS[res.attribute_code],
+          title: `Level Up: ${ATTR_NAMES[res.attribute_code] ?? res.attribute_code}`,
+          message: '',
           attrCode: res.attribute_code,
-        });
+        }, 6000);
       }, 600);
     }
   }
@@ -91,12 +93,14 @@ export class ToastService {
   // Method (Show Relic Upgrade, New Level, and Bonus Percentage Notifications)
   fromRelicUpgrade(res: RelicUpgradeResponse): void {
     this.show({
-      type: 'claim',
-      icon: '⚒',
-      title: 'Relic Upgraded',
-      message: `Level ${res.new_level} · +${res.new_bonus_pct}% active bonus`,
+      type: 'success',
+      icon: '',
+      ngIcon: ATTR_ICONS[res.attribute_code] ?? 'phosphorSparkleBold',
+      iconColor: ATTR_COLORS[res.attribute_code],
+      title: `Level Up: ${RELIC_NAMES[res.attribute_code] ?? res.attribute_code}`,
+      message: '',
       attrCode: res.attribute_code,
-    });
+    }, 6000);
   }
 
   // Method (Show Achievement Unlocked notifications)
@@ -106,9 +110,11 @@ export class ToastService {
         this.show(
           {
             type: 'loot',
-            icon: '🏆',
-            title: a.title,
-            message: a.description,
+            icon: '',
+            ngIcon: 'phosphorTrophyBold',
+            iconColor: 'text-amber-300',
+            title: 'Achievement Unlocked',
+            message: a.title,
           },
           6000,
         );
@@ -121,9 +127,10 @@ export class ToastService {
     this.show({
       type: 'loot',
       icon: '',
-      lucideIcon: Sparkles,
-      title: 'Stardust Obtained',
-      message: `+${res.stardust_gained} ✦ Balance: ${res.new_stardust_balance}`,
+      ngIcon: 'phosphorSparkleBold',
+      iconColor: ATTR_COLORS['L'],
+      title: 'Stardust Forged',
+      message: `+${res.stardust_gained}`,
       attrCode: 'L',
     });
   }

@@ -108,7 +108,7 @@ $forge-muted: #64748b;
     @apply text-forge-text font-bold text-sm uppercase tracking-widest;
   }
   .forge-btn-nav {
-    @apply px-3 py-1 rounded-sm border border-forge-primary/50 text-forge-primary text-[10px] uppercase tracking-wider transition-all hover:shadow-[0_0_10px_rgba(251,146,60,0.4)] hover:border-forge-primary hover:bg-forge-primary/5 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:bg-transparent;
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-sm border border-forge-primary/50 text-forge-primary text-[10px] uppercase tracking-wider transition-all hover:shadow-[0_0_10px_rgba(251,146,60,0.4)] hover:border-forge-primary hover:bg-forge-primary/5 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:bg-transparent;
   }
   .forge-reward-inline {
     @apply flex items-center gap-0.5;
