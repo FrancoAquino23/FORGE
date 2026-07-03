@@ -5,24 +5,27 @@
 <!-- HEADER -->
 <div class="login-bg min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-sm">
-    <div class="text-center mb-8">
-      <h1 class="text-5xl font-black text-forge-primary tracking-widest mb-1">THE FORGE</h1>
+    <div class="text-center mb-8 flex flex-col items-center">
+      <ng-icon name="phosphorRobot" size="64" class="text-forge-primary mb-1" />
+      <p class="text-6xl font-black text-forge-primary tracking-widest leading-none">THE</p>
+      <p class="text-6xl font-black text-forge-primary tracking-widest leading-none mb-2">FORGE</p>
       <p class="text-special-rainbow text-xs tracking-[0.3em] uppercase font-bold">S.P.E.C.I.A.L. Edition</p>
     </div>
 
     <!-- REGISTER FORM -->
     <div class="forge-card p-6 shadow-forge">
-      <h2 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-5">Create Account</h2>
+      <h2 class="forge-section-title mb-5">Create Account</h2>
 
       <form (ngSubmit)="submit()" class="flex flex-col gap-4">
         <div>
-          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Username</label>
+          <label class="block text-xs text-forge-text/60 mb-1 uppercase tracking-widest">Username</label>
           <input
             class="forge-input"
             type="text"
-            [(ngModel)]="username"
+            [ngModel]="username()"
+            (ngModelChange)="username.set($event)"
             name="username"
-            placeholder="warrior_forge"
+            placeholder="ghost_paladin"
             required
             minlength="3"
             maxlength="50"
@@ -31,26 +34,28 @@
         </div>
 
         <div>
-          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Email</label>
+          <label class="block text-xs text-forge-text/60 mb-1 uppercase tracking-widest">Email</label>
           <input
             class="forge-input"
             type="email"
-            [(ngModel)]="email"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
             name="email"
-            placeholder="warrior@forge.io"
+            placeholder="ghost@forge.io"
             required
             autocomplete="email"
           />
         </div>
 
         <div>
-          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Password</label>
+          <label class="block text-xs text-forge-text/60 mb-1 uppercase tracking-widest">Password</label>
           <input
             class="forge-input"
             type="password"
-            [(ngModel)]="password"
+            [ngModel]="password()"
+            (ngModelChange)="password.set($event)"
             name="password"
-            placeholder="•••••••• (min. 8 characters)"
+            placeholder="min. 8 characters"
             required
             minlength="8"
             autocomplete="new-password"
@@ -63,17 +68,17 @@
           </p>
         }
         <!-- SUBMIT BUTTON -->
-        <button class="forge-btn-primary btn-shimmer w-full mt-1" type="submit" [disabled]="loading()">
+        <button class="forge-btn-primary forge-btn-action btn-shimmer w-full mt-1" type="submit" [disabled]="loading()">
           @if (loading()) {
-            Forging your legend...
+            FORGING YOUR LEGEND...
           } @else {
-            Create Account
+            CREATE ACCOUNT
           }
         </button>
       </form>
     </div>
     <!-- LOGIN INSTRUCTION -->
-    <p class="text-center text-forge-muted text-xs mt-4">
+    <p class="text-center text-forge-text/50 text-[10px] mt-4 uppercase tracking-widest">
       Already have an account?
       <a routerLink="/login" class="text-forge-primary hover:text-amber-400 transition-colors">Sign in</a>
     </p>
