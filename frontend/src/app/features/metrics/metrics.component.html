@@ -1,0 +1,248 @@
+﻿<!-- ==================================================================
+     METRICS PANEL TEMPLATE
+     ================================================================== -->
+
+<div class="forge-card p-5 flex flex-col gap-4 min-h-52">
+  <!-- HEADER -->
+  <div class="flex items-center justify-between gap-2 flex-shrink-0">
+    <h3 class="forge-section-title">Weekly Report</h3>
+    <div class="flex items-center gap-2">
+      <button class="forge-btn-nav" (click)="prevWeek()" [disabled]="!metrics()?.has_previous || loading()">
+        <ng-icon name="phosphorCaretCircleLeftBold" />
+        Prev
+      </button>
+
+      @if (loading() && !metrics()) {
+        <div class="h-3 w-24 bg-forge-surface rounded animate-pulse"></div>
+      } @else if (metrics()) {
+        <span class="text-[11px] font-black text-forge-text tabular-nums tracking-wide">
+          {{ metrics()!.week_label }}
+        </span>
+      }
+
+      <button class="forge-btn-nav" (click)="nextWeek()" [disabled]="!metrics()?.has_next || loading()">
+        Next
+        <ng-icon name="phosphorCaretCircleRightBold" />
+      </button>
+    </div>
+  </div>
+
+  <!-- SKELETONS -->
+  @if (loading() && !metrics()) {
+    <div class="grid grid-cols-2 gap-3 flex-1">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="bg-forge-surface rounded-sm p-3 flex flex-col gap-2">
+          <div class="h-2.5 w-24 bg-forge-card rounded animate-pulse"></div>
+          @for (j of [1, 2, 3]; track j) {
+            <div class="flex flex-col gap-1">
+              <div class="h-2 w-full bg-forge-card rounded animate-pulse"></div>
+              <div class="h-1 bg-forge-card rounded-full animate-pulse"></div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- EMPTY STATE -->
+  @if (!loading() && metrics() && metrics()!.category_breakdown.total === 0) {
+    <div class="flex-1 flex flex-col items-center justify-center gap-3 text-center py-4">
+      <ng-icon name="phosphorPresentationChartBold" size="32" class="forge-empty-icon" />
+      <p class="forge-empty-text">No activity this week</p>
+    </div>
+  }
+
+  <!-- STATS GRID -->
+  @if (!loading() && metrics() && metrics()!.category_breakdown.total > 0) {
+    <div class="grid grid-cols-2 gap-3 flex-1 min-h-0">
+      <!-- COMPLETED MISSIONS BY CATEGORY -->
+      <div class="bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
+        <p class="text-[9px] uppercase tracking-widest text-forge-text/70 flex-shrink-0">
+          Completed missions by category
+        </p>
+        <div class="flex flex-col gap-1.5 flex-1">
+          <div class="flex flex-col gap-0.5">
+            <div class="flex justify-between items-baseline">
+              <span class="text-[9px] font-black uppercase" [class]="catColor('MAIN_QUEST')">Main</span>
+              <span class="text-[9px] text-forge-text tabular-nums font-black">
+                {{ metrics()!.category_breakdown.main_quest }}
+              </span>
+            </div>
+            <div class="h-1 bg-forge-card rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full"
+                [class]="catBarColor('MAIN_QUEST')"
+                [style.width]="barPct(metrics()!.category_breakdown.main_quest, catMax(metrics()!))"
+              ></div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <div class="flex justify-between items-baseline">
+              <span class="text-[9px] font-black uppercase" [class]="catColor('SIDE_QUEST')">Side</span>
+              <span class="text-[9px] text-forge-text tabular-nums font-black">
+                {{ metrics()!.category_breakdown.side_quest }}
+              </span>
+            </div>
+            <div class="h-1 bg-forge-card rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full"
+                [class]="catBarColor('SIDE_QUEST')"
+                [style.width]="barPct(metrics()!.category_breakdown.side_quest, catMax(metrics()!))"
+              ></div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <div class="flex justify-between items-baseline">
+              <span class="text-[9px] font-black uppercase" [class]="catColor('DAILY_GRIND')">Daily</span>
+              <span class="text-[9px] text-forge-text tabular-nums font-black">
+                {{ metrics()!.category_breakdown.daily_grind }}
+              </span>
+            </div>
+            <div class="h-1 bg-forge-card rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full"
+                [class]="catBarColor('DAILY_GRIND')"
+                [style.width]="barPct(metrics()!.category_breakdown.daily_grind, catMax(metrics()!))"
+              ></div>
+            </div>
+          </div>
+        </div>
+        <div class="border-t border-forge-border/20 pt-1.5 flex justify-between flex-shrink-0">
+          <span class="text-[9px] text-forge-text/70 uppercase font-bold">Total</span>
+          <span class="text-[10px] font-black text-forge-text tabular-nums">
+            {{ fmt(metrics()!.category_breakdown.total) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- THREAT DISTRIBUTION -->
+      <div class="bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
+        <p class="text-[9px] uppercase tracking-widest text-forge-text/70 flex-shrink-0">Missions by threat level</p>
+        <div class="flex flex-col gap-1.5 flex-1">
+          <div class="flex flex-col gap-0.5">
+            <div class="flex justify-between items-baseline">
+              <span class="text-[9px] font-black uppercase" [class]="threatTextColor('MINOR')">Minor</span>
+              <span class="text-[9px] text-forge-text tabular-nums font-black">
+                {{ metrics()!.threat_breakdown.minor }}
+              </span>
+            </div>
+            <div class="h-1 bg-forge-card rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full"
+                [class]="threatBarBgColor('MINOR')"
+                [style.width]="barPct(metrics()!.threat_breakdown.minor, threatMax(metrics()!))"
+              ></div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <div class="flex justify-between items-baseline">
+              <span class="text-[9px] font-black uppercase" [class]="threatTextColor('MAJOR')">Major</span>
+              <span class="text-[9px] text-forge-text tabular-nums font-black">
+                {{ metrics()!.threat_breakdown.major }}
+              </span>
+            </div>
+            <div class="h-1 bg-forge-card rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full"
+                [class]="threatBarBgColor('MAJOR')"
+                [style.width]="barPct(metrics()!.threat_breakdown.major, threatMax(metrics()!))"
+              ></div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <div class="flex justify-between items-baseline">
+              <span class="text-[9px] font-black uppercase" [class]="threatTextColor('CRITICAL')">Critical</span>
+              <span class="text-[9px] text-forge-text tabular-nums font-black">
+                {{ metrics()!.threat_breakdown.critical }}
+              </span>
+            </div>
+            <div class="h-1 bg-forge-card rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full"
+                [class]="threatBarBgColor('CRITICAL')"
+                [style.width]="barPct(metrics()!.threat_breakdown.critical, threatMax(metrics()!))"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPLETED MISSIONS BY ATTRIBUTE -->
+      <div class="bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
+        <p class="text-[9px] uppercase tracking-widest text-forge-text/70 flex-shrink-0">
+          Completed missions by attribute
+        </p>
+        @if (metrics()!.attribute_breakdown.length === 0) {
+          <p class="text-[9px] text-forge-muted/50 italic">No data.</p>
+        } @else {
+          <div class="flex flex-col gap-1.5 flex-1">
+            @for (attr of metrics()!.attribute_breakdown; track attr.code) {
+              <div class="flex flex-col gap-0.5">
+                <div class="flex justify-between items-baseline gap-1">
+                  <div class="flex items-baseline gap-1 min-w-0">
+                    <span class="text-[9px] font-black w-2.5 flex-shrink-0" [style.color]="attrHex(attr.code)">
+                      {{ attr.code }}
+                    </span>
+                    <span class="text-[9px] font-semibold truncate" [style.color]="attrHex(attr.code)">
+                      {{ attr.name }}
+                    </span>
+                  </div>
+                  <span class="text-[9px] text-forge-text font-black flex-shrink-0 tabular-nums">
+                    {{ attr.missions_completed }}
+                  </span>
+                </div>
+                <div class="h-1 bg-forge-card rounded-full overflow-hidden">
+                  <div
+                    class="h-full rounded-full"
+                    [style.background]="attrHex(attr.code)"
+                    [style.width]="barPct(attr.missions_completed, attrMax(metrics()!.attribute_breakdown))"
+                  ></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- AVERAGE RESOLUTION TIME -->
+      <div class="bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
+        <p class="text-[9px] uppercase tracking-widest text-forge-text/70 flex-shrink-0">Average resolution time</p>
+        <div class="flex flex-col gap-2 flex-1 justify-around">
+          <div class="flex justify-between items-center">
+            <span class="text-[9px] font-black uppercase" [class]="catColor('MAIN_QUEST')">Main Quest</span>
+            <span
+              class="text-sm font-black tabular-nums"
+              [class]="
+                metrics()!.avg_resolution_hours.main_quest_hours !== null ? 'text-forge-text' : 'text-forge-muted/40'
+              "
+            >
+              {{ formatHours(metrics()!.avg_resolution_hours.main_quest_hours) }}
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-[9px] font-black uppercase" [class]="catColor('SIDE_QUEST')">Side Quest</span>
+            <span
+              class="text-sm font-black tabular-nums"
+              [class]="
+                metrics()!.avg_resolution_hours.side_quest_hours !== null ? 'text-forge-text' : 'text-forge-muted/40'
+              "
+            >
+              {{ formatHours(metrics()!.avg_resolution_hours.side_quest_hours) }}
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-[9px] font-black uppercase" [class]="catColor('DAILY_GRIND')">Daily Grind</span>
+            <span
+              class="text-sm font-black tabular-nums"
+              [class]="
+                metrics()!.avg_resolution_hours.daily_grind_hours !== null ? 'text-forge-text' : 'text-forge-muted/40'
+              "
+            >
+              {{ formatHours(metrics()!.avg_resolution_hours.daily_grind_hours) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
