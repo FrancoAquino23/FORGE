@@ -52,6 +52,10 @@ class PlayerProfile(Base):
     prestige_points_total: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     prestige_points_available: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     best_streak: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    total_missions_completed: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    total_xp_earned: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    total_materials_earned: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False, server_default=text("'UTC'"), default="UTC")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -81,7 +85,7 @@ class PlayerAttribute(Base):
     )
     level: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     xp_current: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    xp_to_next: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
+    xp_to_next: Mapped[int] = mapped_column(Integer, nullable=False, default=500)
 
     player: Mapped["PlayerProfile"] = relationship(back_populates="attributes")
     attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]
@@ -89,6 +93,9 @@ class PlayerAttribute(Base):
 # Model PlayerAchievement (Achievements)
 class PlayerAchievement(Base):
     __tablename__ = "player_achievements"
+    __table_args__ = (
+        UniqueConstraint("player_id", "achievement_code", name="uq_player_achievement"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     player_id: Mapped[uuid.UUID] = mapped_column(

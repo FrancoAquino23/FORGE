@@ -77,6 +77,8 @@ class Mission(Base):
     last_streak_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     xp_awarded: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
     mat_awarded: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    last_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    times_completed: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
     target_attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]
     checkpoints: Mapped[list["Checkpoint"]] = relationship(
         "Checkpoint",
