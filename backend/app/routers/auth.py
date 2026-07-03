@@ -5,6 +5,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ConflictError, UnauthorizedError
 from app.core.security import create_access_token, hash_password, verify_password
@@ -44,7 +45,7 @@ async def register(
     await session.flush()
 
     # Create player profile
-    profile = PlayerProfile(user_id=user.id)
+    profile = PlayerProfile(user_id=user.id, timezone=body.timezone)
     session.add(profile)
     await session.flush()
 
@@ -57,7 +58,10 @@ async def register(
         session.add(PlayerAttribute(player_id=profile.id, attribute_id=attr.id))
         session.add(PlayerInventory(player_id=profile.id, attribute_id=attr.id))
 
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        raise ConflictError("Email or username already registered")
 
     return TokenResponse(access_token=create_access_token(str(user.id)))
 
