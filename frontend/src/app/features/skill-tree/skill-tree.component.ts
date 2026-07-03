@@ -2,7 +2,24 @@
    SKILL TREE COMPONENT LOGIC
    ================================================================== */
 
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgIconComponent, provideIcons } from '@ng-icons/core';
+import {
+  phosphorArrowCounterClockwiseBold,
+  phosphorMagnifyingGlassBold,
+  phosphorSpinnerBold,
+  phosphorPlugsBold,
+  phosphorBiohazardBold,
+  phosphorGearSixBold,
+  phosphorGraphBold,
+  phosphorMedalBold,
+  phosphorStarBold,
+  phosphorTimerBold,
+  phosphorProhibitBold,
+  phosphorCaretCircleLeftBold,
+  phosphorCaretCircleRightBold,
+} from '@ng-icons/phosphor-icons/bold';
 import {
   ApiService,
   SkillNodeInfo,
@@ -10,57 +27,85 @@ import {
   UpgradeNodeResponse,
 } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
+import { PlayerStateService } from '../../core/player-state.service';
 
 type PathGroup = { path: string; nodes: SkillNodeInfo[] };
 
-// Icons for each path
+// Phosphor Bold icon name for each path
 const PATH_ICONS: Record<string, string> = {
-  'Stellar Alchemy': '✨',
-  'Industrial Supply': '🔩',
-  'Chronological Mastery': '⚡',
+  'Stellar Mastery': 'phosphorStarBold',
+  'Industrial Mastery': 'phosphorGearSixBold',
+  'Cycle Mastery': 'phosphorTimerBold',
+  'Operative Mastery': 'phosphorBiohazardBold',
+  'Prestige Mastery': 'phosphorMedalBold',
 };
 
-// Hex fill colors per path
+// Unified color for all paths (slate white — distinct from all S.P.E.C.I.A.L. attribute colors)
 const PATH_COLORS: Record<string, string> = {
-  'Stellar Alchemy': '#f59e0b',
-  'Industrial Supply': '#60a5fa',
-  'Chronological Mastery': '#c084fc',
-};
-
-// Central symbol displayed inside each node hex
-const PATH_SYMBOLS: Record<string, string> = {
-  'Stellar Alchemy': '◈',
-  'Industrial Supply': '⬡',
-  'Chronological Mastery': '◎',
+  'Stellar Mastery': '#e2e8f0',
+  'Industrial Mastery': '#e2e8f0',
+  'Cycle Mastery': '#e2e8f0',
+  'Operative Mastery': '#e2e8f0',
+  'Prestige Mastery': '#e2e8f0',
 };
 
 // Desired order of paths displayed (UI)
-const PATH_ORDER = ['Stellar Alchemy', 'Industrial Supply', 'Chronological Mastery'];
+const PATH_ORDER = [
+  'Stellar Mastery',
+  'Industrial Mastery',
+  'Cycle Mastery',
+  'Operative Mastery',
+  'Prestige Mastery',
+];
 
 @Component({
   selector: 'app-skill-tree',
   standalone: true,
-  imports: [],
+  imports: [NgIconComponent],
+  viewProviders: [
+    provideIcons({
+      phosphorArrowCounterClockwiseBold,
+      phosphorMagnifyingGlassBold,
+      phosphorSpinnerBold,
+      phosphorPlugsBold,
+      phosphorStarBold,
+      phosphorGearSixBold,
+      phosphorTimerBold,
+      phosphorBiohazardBold,
+      phosphorMedalBold,
+      phosphorGraphBold,
+      phosphorProhibitBold,
+      phosphorCaretCircleLeftBold,
+      phosphorCaretCircleRightBold,
+    }),
+  ],
   templateUrl: './skill-tree.component.html',
   styleUrl: './skill-tree.component.scss',
 })
 export class SkillTreeComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private destroyRef = inject(DestroyRef);
+  private playerState = inject(PlayerStateService);
+
+  readonly prestigeCount = this.playerState.prestigeCount;
 
   readonly tree = signal<SkillTreeResponse | null>(null);
   readonly loading = signal(true);
+  readonly loadError = signal(false);
   readonly upgradingNode = signal<string | null>(null);
   readonly resetting = signal(false);
   readonly confirmReset = signal(false);
   hoverNode = signal<string | null>(null);
 
+  // Property to get the currently hovered node data
   readonly hoveredNodeData = computed(() => {
     const id = this.hoverNode();
     if (!id) return null;
     return this.tree()?.nodes.find((n) => n.node_id === id) ?? null;
   });
 
+  // Property to get the list of paths & nodes
   readonly paths = computed<PathGroup[]>(() => {
     const nodes = this.tree()?.nodes ?? [];
     const map = new Map<string, SkillNodeInfo[]>();
@@ -72,6 +117,30 @@ export class SkillTreeComponent implements OnInit {
     return PATH_ORDER.filter((p) => map.has(p)).map((p) => ({ path: p, nodes: map.get(p)! }));
   });
 
+  // Property to get the current path index
+  readonly currentPathIndex = signal(0);
+
+  // Property to get the current path data
+  readonly currentPath = computed<PathGroup | null>(() => {
+    const list = this.paths();
+    const idx = this.currentPathIndex();
+    return list[idx] ?? null;
+  });
+
+  // Function no navigate to the previous path
+  prevPath(): void {
+    const len = this.paths().length;
+    this.currentPathIndex.update((i) => (i - 1 + len) % len);
+    this.hoverNode.set(null);
+  }
+
+  // Function to navigate to the next path
+  nextPath(): void {
+    const len = this.paths().length;
+    this.currentPathIndex.update((i) => (i + 1) % len);
+    this.hoverNode.set(null);
+  }
+
   // Initialize component
   ngOnInit(): void {
     this.loadTree();
@@ -80,18 +149,21 @@ export class SkillTreeComponent implements OnInit {
   // Load component
   loadTree(): void {
     this.loading.set(true);
-    this.api.getSkillTree().subscribe({
-      next: (data) => {
-        this.tree.set(data);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
-    });
+    this.api
+      .getSkillTree()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.tree.set(data);
+          this.loading.set(false);
+        },
+        error: () => this.loadError.set(true),
+      });
   }
 
   // Function to get icon for a path
   pathIcon(path: string): string {
-    return PATH_ICONS[path] ?? '◆';
+    return PATH_ICONS[path] ?? '';
   }
 
   // Function to get the CSS color for a path
@@ -99,15 +171,11 @@ export class SkillTreeComponent implements OnInit {
     return PATH_COLORS[path] ?? '#f59e0b';
   }
 
-  // Function to get the central symbol for a path's nodes
-  nodeSymbol(path: string): string {
-    return PATH_SYMBOLS[path] ?? '◆';
-  }
-
   // Function to derive visual state for a node
-  nodeState(node: SkillNodeInfo): 'locked' | 'available' | 'active' | 'maxed' {
+  nodeState(node: SkillNodeInfo): 'locked' | 'available' | 'active' | 'maxed' | 'choice-locked' {
     if (node.current_level === node.max_level) return 'maxed';
     if (node.current_level > 0) return 'active';
+    if (node.locked_by_choice) return 'choice-locked';
     if (node.cost_to_upgrade !== null) return 'available';
     return 'locked';
   }
@@ -139,7 +207,7 @@ export class SkillTreeComponent implements OnInit {
   // Function to check if a node can be upgraded
   canUpgrade(node: SkillNodeInfo): boolean {
     const pp = this.tree()?.pp_available ?? 0;
-    return node.cost_to_upgrade !== null && pp >= node.cost_to_upgrade;
+    return node.cost_to_upgrade !== null && pp >= node.cost_to_upgrade && !node.locked_by_choice;
   }
 
   // Function to check if a node is currently being upgraded
@@ -152,43 +220,70 @@ export class SkillTreeComponent implements OnInit {
     if (!this.canUpgrade(node) || this.upgradingNode()) return;
     this.upgradingNode.set(node.node_id);
 
-    this.api.upgradeNode(node.node_id).subscribe({
-      next: (res: UpgradeNodeResponse) => {
-        this.tree.update((t) =>
-          t
-            ? {
-                ...t,
-                nodes: t.nodes.map((n) =>
-                  n.node_id === res.node_id
-                    ? {
-                        ...n,
-                        current_level: res.new_level,
-                        cost_to_upgrade: res.new_level < n.max_level ? res.new_level + 1 : null,
-                        current_effect: n.next_effect ?? n.current_effect,
-                        next_effect: res.new_level < n.max_level ? null : null,
-                      }
-                    : n,
-                ),
-                pp_available: res.pp_available,
-              }
-            : t,
-        );
-        this.upgradingNode.set(null);
-        const isMaxed = res.new_level >= node.max_level;
-        const tierType = isMaxed ? 'node-gold' : res.new_level === 1 ? 'node-bronze' : 'node-silver';
-        const tierIcon = isMaxed ? '🥇' : res.new_level === 1 ? '🥉' : '🥈';
-        this.toast.show({
-          type: tierType,
-          icon: tierIcon,
-          title: isMaxed ? `${node.display_name} — MAXED` : 'Node Upgraded',
-          message: isMaxed
-            ? `Level ${res.new_level}/${node.max_level} · Fully Mastered`
-            : `${node.display_name} → Level ${res.new_level}/${node.max_level}`,
-        });
-        this.loadTree();
-      },
-      error: () => this.upgradingNode.set(null),
-    });
+    this.api
+      .upgradeNode(node.node_id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: UpgradeNodeResponse) => {
+          this.tree.update((t) =>
+            t
+              ? {
+                  ...t,
+                  nodes: t.nodes.map((n) =>
+                    n.node_id === res.node_id
+                      ? {
+                          ...n,
+                          current_level: res.new_level,
+                          cost_to_upgrade: res.new_level < n.max_level ? res.new_level + 1 : null,
+                          current_effect: n.next_effect ?? n.current_effect,
+                          next_effect: res.new_level < n.max_level ? null : null,
+                        }
+                      : n,
+                  ),
+                  pp_available: res.pp_available,
+                }
+              : t,
+          );
+          this.upgradingNode.set(null);
+          const isMaxed = res.new_level >= node.max_level;
+          const isFirstChoice = node.current_level === 0;
+          const medalColor = isMaxed
+            ? 'text-yellow-400'
+            : res.new_level === 1
+              ? 'text-orange-400'
+              : 'text-slate-300';
+          this.toast.show({
+            type: 'node',
+            icon: '',
+            ngIcon: 'phosphorMedalBold',
+            iconColor: medalColor,
+            title: isMaxed
+              ? `Maxed: ${node.display_name}`
+              : `Level ${res.new_level}: ${node.display_name}`,
+            message: '',
+          });
+          if (isFirstChoice && !isMaxed) {
+            setTimeout(() => {
+              this.toast.show({
+                type: 'success',
+                icon: '',
+                ngIcon: 'phosphorFlagBold',
+                title: 'Path Chosen',
+                message: 'Path locked',
+              });
+            }, 800);
+          }
+          this.loadTree();
+        },
+        error: (err: { error?: { detail?: string } }) => {
+          this.upgradingNode.set(null);
+          this.toast.showError(
+            'Node Upgrade Failed',
+            err,
+            'Could not upgrade node. Please try again.',
+          );
+        },
+      });
   }
 
   // Function to request reset confirmation
@@ -206,18 +301,30 @@ export class SkillTreeComponent implements OnInit {
     if (this.resetting()) return;
     this.confirmReset.set(false);
     this.resetting.set(true);
-    this.api.resetSkillTree().subscribe({
-      next: (res) => {
-        this.resetting.set(false);
-        this.toast.show({
-          type: 'claim',
-          icon: '↺',
-          title: 'Skill Tree Reset',
-          message: `+${res.pp_refunded} PP refunded`,
-        });
-        this.loadTree();
-      },
-      error: () => this.resetting.set(false),
-    });
+    this.api
+      .resetSkillTree()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.resetting.set(false);
+          this.toast.show({
+            type: 'success',
+            icon: '',
+            ngIcon: 'phosphorArrowCounterClockwiseBold',
+            iconColor: 'text-white',
+            title: 'Perks Reset',
+            message: `+${res.pp_refunded} PP refunded`,
+          });
+          this.loadTree();
+        },
+        error: () => {
+          this.resetting.set(false);
+          this.toast.showError(
+            'Perk Reset Failed',
+            undefined,
+            'Could not reset perk. Please try again.',
+          );
+        },
+      });
   }
 }

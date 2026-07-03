@@ -1,178 +1,236 @@
-<!-- ==================================================================
+﻿<!-- ==================================================================
      SKILL TREE COMPONENT TEMPLATE
      ================================================================== -->
 
-<div class="max-w-5xl mx-auto px-4 py-8 font-mono">
-  <!-- LAYOUT -->
-  <div class="page-layout">
-    <!-- MAIN TREE -->
-    <div class="tree-section">
-      <div class="mb-10">
-        <h1 class="text-forge-primary font-black tracking-widest text-xl uppercase">◆ Prestige Skill Tree</h1>
-        <p class="text-forge-muted text-xs mt-1 tracking-wide">
-          Invest Prestige Points to unlock permanent passive bonuses. Points are refunded on every prestige.
-        </p>
-      </div>
+<div class="max-w-5xl mx-auto px-4 py-8">
+  <!-- HEADER -->
+  <div class="mb-10">
+    <h2 class="forge-page-title">PERKS</h2>
+    <p class="forge-page-subtitle">Invest prestige points to unlock permanent passive bonuses</p>
+  </div>
 
-      <!-- LOADING -->
-      @if (loading()) {
-        <div class="text-forge-muted text-xs text-center py-16 animate-pulse tracking-widest">Loading skill tree…</div>
+  <!-- STATE - LOADING / ERROR -->
+  @if (loadError()) {
+    <div class="forge-state-wrap">
+      <ng-icon name="phosphorPlugsBold" size="40" class="forge-state-error-icon" />
+      <span class="forge-state-error-text">Error loading Perks</span>
+    </div>
+  } @else if (loading()) {
+    <div class="forge-state-wrap">
+      <ng-icon name="phosphorSpinnerBold" size="40" class="forge-state-loading-icon" />
+      <span class="forge-state-loading-text">Loading Perks...</span>
+    </div>
+  } @else if (tree()) {
+    <!-- LAYOUT -->
+    <div class="relative min-h-[500px]">
+      <!-- LOCKED OVERLAY -->
+      @if (prestigeCount() === 0) {
+        <div
+          class="absolute inset-0 z-50 backdrop-blur-sm bg-black/40 flex items-center justify-center pointer-events-auto"
+        >
+          <div class="forge-card p-16 flex flex-col items-center gap-8 border border-forge-border/60 shadow-2xl">
+            <ng-icon name="phosphorProhibitBold" size="80" class="text-forge-muted/60" />
+            <div class="flex flex-col items-center gap-2 text-center">
+              <span class="text-lg font-black uppercase tracking-widest text-forge-text/60">Perks Locked</span>
+              <span class="text-sm uppercase tracking-widest text-forge-muted/70">
+                Complete your first Prestige to unlock
+              </span>
+            </div>
+          </div>
+        </div>
       }
+      <div class="page-layout">
+        <!-- MAIN TREE -->
+        <div class="tree-section">
+          <!-- CAROUSEL -->
+          @if (tree(); as t) {
+            @let group = currentPath();
+            @if (group) {
+              <!-- VERTICAL CARD -->
+              <div class="carousel-card" [style.--path-color]="pathColor(group.path)">
+                <div class="card-header">
+                  <ng-icon
+                    [name]="pathIcon(group.path)"
+                    class="card-icon"
+                    [style.color]="pathColor(group.path)"
+                  ></ng-icon>
+                  <span class="card-name">{{ group.path }}</span>
+                </div>
+                <div class="fork-connector">
+                  <div class="fork-stem"></div>
+                  <div class="fork-branches">
+                    <div class="fork-branch fork-branch--left"></div>
+                    <div class="fork-branch fork-branch--right"></div>
+                  </div>
+                </div>
 
-      <!-- TREE GRID -->
-      @if (!loading() && tree(); as t) {
-        <div class="tree-layout">
-          @for (group of paths(); track group.path) {
-            <div class="tree-path" [style.--path-color]="pathColor(group.path)">
-              <!-- PATH HEADER -->
-              <div class="path-header">
-                <span class="path-icon">{{ pathIcon(group.path) }}</span>
-                <span class="path-label">{{ group.path }}</span>
+                <div class="card-nodes">
+                  <div class="path-nodes">
+                    @for (node of group.nodes; track node.node_id; let i = $index; let last = $last) {
+                      <div class="node-wrapper" (mouseenter)="hoverNode.set(node.node_id)">
+                        <div [class]="nodeHexClass(node)">
+                          <div class="node-hex-inner">
+                            <ng-icon name="phosphorGraphBold" class="node-symbol"></ng-icon>
+                          </div>
+                        </div>
+                        <div class="node-info">
+                          <span class="node-name">{{ node.display_name }}</span>
+                          <span class="node-level">{{ node.current_level }}&thinsp;/&thinsp;{{ node.max_level }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
               </div>
 
-              <!-- NODES + CONNECTORS -->
-              <div class="path-nodes">
-                @for (node of group.nodes; track node.node_id; let i = $index; let last = $last) {
-                  <!-- NODE -->
-                  <div
-                    class="node-wrapper"
-                    (mouseenter)="hoverNode.set(node.node_id)"
-                    (mouseleave)="hoverNode.set(null)"
-                  >
-                    <!-- HEXAGON -->
-                    <div [class]="nodeHexClass(node)">
-                      <div class="node-hex-inner">
-                        <span class="node-symbol">{{ nodeSymbol(group.path) }}</span>
-                      </div>
-                    </div>
+              <!-- CHOOSE ONE -->
+              <p class="choose-one-notice">Choose one node per path — reset tree to change your selection</p>
 
-                    <!-- PERMANENT NODE INFO -->
-                    <div class="node-info">
-                      <span class="node-name">{{ node.display_name }}</span>
-                      <span class="node-level">{{ node.current_level }}&thinsp;/&thinsp;{{ node.max_level }}</span>
+              <div class="carousel-dots">
+                @for (p of paths(); track p.path; let i = $index) {
+                  <button
+                    class="carousel-dot"
+                    [class.carousel-dot--active]="i === currentPathIndex()"
+                    [style.--path-color]="pathColor(p.path)"
+                    (click)="currentPathIndex.set(i); hoverNode.set(null)"
+                  ></button>
+                }
+              </div>
+
+              <!-- NAV ROW -->
+              <div class="carousel-nav" [style.--path-color]="pathColor(group.path)">
+                <button class="forge-btn-nav" (click)="prevPath()" [disabled]="paths().length <= 1">
+                  <ng-icon name="phosphorCaretCircleLeftBold" />
+                  Prev
+                </button>
+                <span class="carousel-counter">{{ currentPathIndex() + 1 }} / {{ paths().length }}</span>
+                <button class="forge-btn-nav" (click)="nextPath()" [disabled]="paths().length <= 1">
+                  Next
+                  <ng-icon name="phosphorCaretCircleRightBold" />
+                </button>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="tree-sidebar">
+          <!-- POINTS + RESET -->
+          @if (tree(); as t) {
+            <div class="text-right">
+              <div class="forge-section-title">Prestige Points</div>
+              <div class="flex items-baseline gap-1 justify-end mt-1">
+                <span class="text-forge-text font-black text-2xl tabular-nums forge-glow-text">
+                  {{ t.pp_available }}
+                </span>
+                <span class="text-forge-text/60 text-xs tabular-nums font-semibold">/ {{ t.pp_total }} total</span>
+              </div>
+              <div class="flex justify-end mt-2">
+                @if (confirmReset()) {
+                  <div class="border border-forge-border/40 rounded-sm overflow-hidden">
+                    <div
+                      class="px-3 py-2 text-[10px] text-forge-muted border-b border-forge-border/40 uppercase tracking-wider whitespace-nowrap"
+                    >
+                      Reset Perks?
+                    </div>
+                    <div class="flex">
+                      <button
+                        (click)="resetTree()"
+                        class="flex-1 px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-forge-card transition-colors tracking-wide font-bold border-r border-forge-border/40"
+                      >
+                        Reset
+                      </button>
+                      <button
+                        (click)="cancelReset()"
+                        class="flex-1 px-3 py-2 text-xs text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
-
-                  <!-- CONNECTOR TO NEXT NODE -->
-                  @if (!last) {
-                    <div [class]="connectorClass(group.nodes, i)"></div>
-                  }
+                } @else {
+                  <button
+                    (click)="requestReset()"
+                    [disabled]="resetting() || t.pp_available === t.pp_total"
+                    class="forge-btn-primary forge-btn-action px-3 py-1.5 text-[10px] flex items-center gap-1.5"
+                    [class.btn-action-ready]="!resetting() && t.pp_available < t.pp_total"
+                    [class.btn-action-locked]="resetting() || t.pp_available === t.pp_total"
+                  >
+                    <ng-icon name="phosphorArrowCounterClockwiseBold" size="11" />
+                    @if (resetting()) {
+                      Resetting...
+                    } @else {
+                      Reset Perks
+                    }
+                  </button>
                 }
               </div>
             </div>
           }
-        </div>
 
-        <!-- EMPTY STATE -->
-        @if (t.pp_total === 0) {
-          <p class="text-center text-forge-muted text-xs mt-8 tracking-wide">
-            Complete your first Prestige to earn Prestige Points and unlock this tree.
-          </p>
-        }
-      }
-    </div>
-
-    <!-- SIDEBAR -->
-    <div class="tree-sidebar">
-      <!-- POINTS PER PRESTIGE COUNTER + RESET -->
-      @if (tree(); as t) {
-        <div class="text-right">
-          <div class="text-xs text-forge-muted uppercase tracking-widest">Prestige Points</div>
-          <div class="flex items-baseline gap-1 justify-end mt-1">
-            <span class="text-forge-primary font-black text-2xl tabular-nums">{{ t.pp_available }}</span>
-            <span class="text-forge-muted text-xs">/ {{ t.pp_total }} total</span>
-          </div>
-          <div class="flex justify-end mt-2">
-            @if (confirmReset()) {
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] text-forge-muted uppercase tracking-wider">Confirm reset?</span>
-                <button
-                  (click)="resetTree()"
-                  class="text-[10px] uppercase tracking-widest px-3 py-1.5 border border-red-500/60 rounded-sm text-red-400 hover:border-red-500 hover:text-red-300 transition-colors"
-                >
-                  Confirm
-                </button>
-                <button
-                  (click)="cancelReset()"
-                  class="text-[10px] uppercase tracking-widest px-3 py-1.5 border border-forge-border rounded-sm text-forge-muted hover:border-forge-primary/50 hover:text-forge-text transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            } @else {
-              <button
-                (click)="requestReset()"
-                [disabled]="resetting() || t.pp_available === t.pp_total"
-                class="text-[10px] uppercase tracking-widest px-3 py-1.5 border border-forge-border rounded-sm text-forge-muted hover:border-amber-500 hover:text-amber-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          <!-- NODE DETAIL -->
+          <div class="node-detail-panel">
+            @if (hoveredNodeData(); as node) {
+              <div
+                class="detail-inner"
+                [style.--path-color]="node.current_level === node.max_level ? '#f59e0b' : '#e2e8f0'"
               >
-                @if (resetting()) { Resetting… } @else { ↺ Reset Tree }
-              </button>
-            }
-          </div>
-        </div>
-      }
+                <p class="detail-name">{{ node.display_name }}</p>
+                <p class="detail-desc">{{ node.description }}</p>
 
-      <!-- NODE DETAIL -->
-      <div class="node-detail-panel">
-        @if (hoveredNodeData(); as node) {
-          <div class="detail-inner" [style.--path-color]="pathColor(node.path)">
-            <p class="detail-name">{{ node.display_name }}</p>
-            <p class="detail-desc">{{ node.description }}</p>
-
-            <!-- LEVEL DOTS -->
-            <div class="detail-dots">
-              @for (filled of nodeDots(node); track $index) {
-                <span class="dot" [class.dot--filled]="filled"></span>
-              }
-              <span class="detail-level-text">{{ node.current_level }} / {{ node.max_level }}</span>
-            </div>
-
-            <!-- EFFECTS -->
-            <div class="detail-effects">
-              <div class="effect-row">
-                <span class="effect-label">Active</span>
-                <span class="effect-value">{{ node.current_effect }}</span>
-              </div>
-              @if (node.next_effect) {
-                <div class="effect-row">
-                  <span class="effect-label">Next</span>
-                  <span class="effect-value effect-value--next">{{ node.next_effect }}</span>
+                <div class="detail-dots">
+                  @for (filled of nodeDots(node); track $index) {
+                    <span class="dot" [class.dot--filled]="filled"></span>
+                  }
+                  <span class="detail-level-text">{{ node.current_level }} / {{ node.max_level }}</span>
                 </div>
-              }
-            </div>
 
-            <!-- ACTION -->
-            @if (node.current_level === node.max_level) {
-              <div class="detail-maxed">◆ MAX LEVEL</div>
-            } @else if (nodeState(node) === 'locked') {
-              <div class="detail-locked-msg">Unlock previous node first</div>
-            } @else {
-              <button
-                class="detail-upgrade-btn"
-                [class.detail-upgrade-btn--ready]="canUpgrade(node)"
-                [disabled]="!canUpgrade(node) || isUpgrading(node.node_id)"
-                (click)="upgrade(node)"
-              >
-                @if (isUpgrading(node.node_id)) {
-                  Upgrading…
-                } @else if (canUpgrade(node)) {
-                  Upgrade · {{ node.cost_to_upgrade }} PP
+                <div class="detail-effects">
+                  <div class="effect-row">
+                    <span class="effect-label">Active</span>
+                    <span class="effect-value">{{ node.current_effect }}</span>
+                  </div>
+                  @if (node.next_effect) {
+                    <div class="effect-row">
+                      <span class="effect-label">Next</span>
+                      <span class="effect-value effect-value--next">{{ node.next_effect }}</span>
+                    </div>
+                  }
+                </div>
+
+                @if (node.current_level === node.max_level) {
+                  <div class="detail-maxed">MAX LEVEL</div>
+                } @else if (nodeState(node) === 'choice-locked') {
+                  <div class="detail-choice-locked-msg">Path committed — reset tree to change selection</div>
+                } @else if (nodeState(node) === 'locked') {
+                  <div class="detail-locked-msg">Unlock previous node first</div>
                 } @else {
-                  {{ node.cost_to_upgrade }} PP needed
+                  <button
+                    class="detail-upgrade-btn forge-btn-primary forge-btn-action w-full mt-1 text-xs"
+                    [class.btn-action-ready]="canUpgrade(node) && !isUpgrading(node.node_id)"
+                    [class.btn-action-locked]="!canUpgrade(node)"
+                    [disabled]="!canUpgrade(node) || isUpgrading(node.node_id)"
+                    (click)="upgrade(node)"
+                  >
+                    @if (isUpgrading(node.node_id)) {
+                      Upgrading...
+                    } @else if (canUpgrade(node)) {
+                      Upgrade &middot; {{ node.cost_to_upgrade }} PP
+                    } @else {
+                      {{ node.cost_to_upgrade }} PP needed
+                    }
+                  </button>
                 }
-              </button>
+              </div>
+            } @else {
+              <div class="detail-empty">
+                <ng-icon name="phosphorMagnifyingGlassBold" size="32" class="forge-empty-icon" />
+                <span class="forge-empty-text">Hover a node to inspect</span>
+              </div>
             }
           </div>
-        } @else {
-          <div class="detail-empty">
-            <span>
-              Hover a node
-              <br />
-              to inspect
-            </span>
-          </div>
-        }
+        </div>
       </div>
     </div>
-  </div>
+  }
 </div>
