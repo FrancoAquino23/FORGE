@@ -1,29 +1,44 @@
-<!-- ==================================================================
+﻿<!-- ==================================================================
      DASHBOARD COMPONENT TEMPLATE
      ================================================================== -->
 
 <div class="max-w-6xl mx-auto px-4 py-8">
+  <!-- HEADER -->
+  <div class="mb-6">
+    <h2 class="forge-page-title">COMMAND CENTER</h2>
+    <p class="forge-page-subtitle">Active operations overview</p>
+  </div>
+
+  <!-- STATE - LOADING / ERROR -->
+  @if (loadError()) {
+    <div class="forge-state-wrap">
+      <ng-icon name="phosphorPlugsBold" size="40" class="forge-state-error-icon" />
+      <span class="forge-state-error-text">Error loading Dashboard</span>
+    </div>
+  } @else if (!profile()) {
+    <div class="forge-state-wrap">
+      <ng-icon name="phosphorSpinnerBold" size="40" class="forge-state-loading-icon" />
+      <span class="forge-state-loading-text">Loading Dashboard...</span>
+    </div>
+  }
+
   <!-- S.P.E.C.I.A.L. ATTRIBUTE GRID -->
   @if (profile()) {
-    <h3 class="text-forge-muted text-xs uppercase tracking-[0.3em] mb-3">S.P.E.C.I.A.L. Attributes</h3>
+    <h3 class="forge-section-title mb-3">S.P.E.C.I.A.L. Attributes</h3>
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
       @for (attr of profile()!.attributes; track attr.code) {
-        <div
-          class="forge-card p-4 flex flex-col gap-3 transition-shadow"
-          [class]="attrGlow(attr.code)"
-          [class.animate-xp-gain]="xpFlash() === attr.code"
-        >
+        <div class="forge-card p-4 flex flex-col gap-3">
           <div class="flex items-start justify-between">
             <span class="text-4xl font-black leading-none" [class]="attrColor(attr.code)">
               {{ attr.code }}
             </span>
-            <span class="badge bg-forge-surface border border-forge-border text-forge-muted">
+            <span class="badge bg-forge-surface border border-forge-border text-forge-muted tabular-nums">
               {{ attr.level }}
             </span>
           </div>
           <div>
             <p class="text-forge-text text-xs font-semibold">{{ attr.name }}</p>
-            <p class="text-forge-muted text-[10px] whitespace-nowrap overflow-hidden">{{ attr.material_name }}</p>
+            <p class="text-forge-muted text-[10px]">{{ attr.material_name }}</p>
           </div>
           <div>
             <div class="flex justify-between text-xs text-forge-muted mb-1">
@@ -33,7 +48,7 @@
               } @else if (attr.code === 'L') {
                 <span class="text-forge-muted text-[9px] tracking-widest">SYNCED</span>
               } @else {
-                <span>{{ attr.xp_current }}/{{ attr.xp_to_next }}</span>
+                <span class="tabular-nums">{{ fmt(attr.xp_current) }}/{{ fmt(attr.xp_to_next) }}</span>
               }
             </div>
             <div class="progress-bar">
@@ -41,115 +56,106 @@
             </div>
           </div>
           <div class="flex justify-end items-center">
-            <lucide-icon [img]="getIconName(attr.code)" [size]="14" [class]="attrColor(attr.code)"></lucide-icon>
+            <ng-icon [name]="attrIcon(attr.code)" size="14" [class]="attrColor(attr.code)" />
           </div>
         </div>
       }
     </div>
 
-    <!-- ACTIVE MISSIONS + RELIC WORKSHOP -->
-    <div class="flex flex-col gap-6">
-      <!-- ACTIVE MISSIONS PANEL -->
-      <div class="forge-card p-5">
-        <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-4">Active Missions</h3>
+    <!-- METRICS + ACTIVE MISSIONS -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <app-metrics />
+      <div class="forge-card p-5 flex flex-col gap-4 min-h-52">
+        <div class="flex items-center justify-between gap-2 flex-shrink-0">
+          <h3 class="forge-section-title">Active Missions</h3>
+          @if (urgentMissions().length > MISSIONS_PER_PAGE) {
+            <div class="flex items-center gap-2">
+              <button class="forge-btn-nav" (click)="prevMissionsPage()" [disabled]="missionsPage() === 0">
+                <ng-icon name="phosphorCaretCircleLeftBold" />
+                Prev
+              </button>
+              <span class="text-[11px] font-black text-forge-text tabular-nums tracking-wide">
+                {{ missionsPage() + 1 }} / {{ missionsTotalPages() }}
+              </span>
+              <button
+                class="forge-btn-nav"
+                (click)="nextMissionsPage()"
+                [disabled]="missionsPage() >= missionsTotalPages() - 1"
+              >
+                Next
+                <ng-icon name="phosphorCaretCircleRightBold" />
+              </button>
+            </div>
+          }
+        </div>
 
         @if (urgentMissions().length === 0) {
-          <!-- EMPTY STATE -->
-          <div class="py-6 text-center">
-            <p class="text-forge-muted text-xs leading-relaxed italic">
-              No pending threats. The forge recognizes what the data confirms:
-            </p>
-            <p class="text-special-rainbow text-xs font-black tracking-widest uppercase mt-1">You are S.P.E.C.I.A.L.</p>
+          <div class="flex-1 flex flex-col items-center justify-center gap-3 text-center py-4">
+            <ng-icon name="phosphorWarningBold" size="32" class="forge-empty-icon" />
+            <p class="forge-empty-text">All quiet on the forge front</p>
           </div>
         } @else {
-          <div class="relative">
-            <div class="flex flex-col gap-3 max-h-[22rem] overflow-y-auto pr-1 forge-scroll-thin">
-              @for (m of urgentMissions(); track m.mission_id) {
-                <div class="forge-card p-4 border border-forge-border/40 flex flex-col gap-2.5">
-                  <!-- HEADER -->
-                  <div class="flex items-start justify-between gap-2">
-                    <div class="flex-1 min-w-0">
-                      <p class="font-black text-forge-text text-sm leading-snug">{{ m.objective_description }}</p>
-                      <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                        <lucide-icon
-                          [img]="getIconName(m.attribute_code)"
-                          [size]="11"
-                          [class]="attrColor(m.attribute_code)"
-                        ></lucide-icon>
-                        <span [class]="attrColor(m.attribute_code) + ' text-[10px] tracking-wider'">
-                          {{ m.attribute_name }}
-                        </span>
-                        <span class="text-[10px] text-forge-border">·</span>
-                        <span
-                          [class]="
-                            threatTextClass(m.threat_level) + ' text-[10px] uppercase tracking-widest font-black'
-                          "
-                        >
-                          {{ m.threat_level }}
-                        </span>
-                        @if (m.category === 'DAILY_GRIND') {
-                          <span class="text-[10px] text-forge-border">·</span>
-                          <span class="text-[10px] text-forge-muted/60 font-bold">Daily</span>
-                        } @else if (m.due_date) {
-                          <span class="text-[10px] text-forge-border">·</span>
-                          <span class="text-[10px] text-forge-muted/60">Due {{ formatDueDate(m.due_date) }}</span>
-                        }
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-2 flex-shrink-0 text-xs text-forge-muted">
-                      <span>
-                        ⚡
-                        <b [class]="attrColor(m.attribute_code)">+{{ m.reward_xp }}</b>
+          <div class="flex flex-col gap-3">
+            @for (m of pagedMissions(); track m.mission_id) {
+              <div class="forge-card p-4 border border-forge-border/40 flex flex-col gap-2.5">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex-1 min-w-0">
+                    <p class="font-black text-forge-text text-sm leading-snug">{{ m.objective_description }}</p>
+                    <div class="flex items-center gap-2.5 flex-wrap mt-0.5">
+                      <ng-icon [name]="attrIcon(m.attribute_code)" size="11" [class]="attrColor(m.attribute_code)" />
+                      <span [class]="attrColor(m.attribute_code) + ' text-[10px] tracking-wider'">
+                        {{ m.attribute_name }}
                       </span>
-                      <span>
-                        🔩
-                        <b [class]="attrColor(m.attribute_code)">+{{ m.reward_material_qty }}</b>
+
+                      <span
+                        [class]="threatTextClass(m.threat_level) + ' text-[10px] uppercase tracking-widest font-black'"
+                      >
+                        {{ m.threat_level }}
                       </span>
+                      @if (m.category === 'DAILY_GRIND') {
+                        <span class="text-[10px] font-semibold text-forge-text/60">Daily</span>
+                      } @else if (m.due_date) {
+                        <span class="text-[10px] font-semibold text-forge-text/60">
+                          Due {{ formatDueDate(m.due_date) }}
+                        </span>
+                      }
                     </div>
                   </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="forge-reward-inline text-xs">
+                      <ng-icon name="phosphorFlaskBold" size="11" class="text-violet-400" />
+                      <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ fmt(m.reward_xp) }}</b>
+                    </span>
+                    <span class="forge-reward-inline text-xs">
+                      <ng-icon name="phosphorNutBold" size="11" class="text-stone-400" />
+                      <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ m.reward_material_qty }}</b>
+                    </span>
+                  </div>
+                </div>
 
-                  <!-- PROGRESS BAR -->
-                  @if (m.checkpoints.length > 0) {
-                    <div>
-                      <div class="flex justify-between text-[10px] text-forge-muted mb-1">
-                        <span class="uppercase tracking-wider">Steps</span>
-                        <span class="font-bold text-forge-text">
-                          {{ completedCount(m) }} / {{ m.checkpoints.length }}
-                        </span>
-                      </div>
-                      <div class="progress-bar">
-                        <div
-                          class="progress-fill"
-                          [style.background]="threatBarColor(m.threat_level)"
-                          [style.width.%]="checkpointPct(m)"
-                          style="transition: width 0.4s ease-out"
-                        ></div>
-                      </div>
+                @if (m.checkpoints.length > 0) {
+                  <div>
+                    <div class="flex justify-between text-[10px] text-forge-muted mb-1">
+                      <span class="uppercase tracking-wider">Steps</span>
+                      <span class="font-bold text-forge-text tabular-nums">
+                        {{ completedCount(m) }} / {{ m.checkpoints.length }}
+                      </span>
                     </div>
-                  } @else {
                     <div class="progress-bar">
                       <div
                         class="progress-fill"
                         [style.background]="threatBarColor(m.threat_level)"
-                        style="width: 100%"
+                        [style.width.%]="checkpointPct(m)"
+                        style="transition: width 0.4s ease-out"
                       ></div>
                     </div>
-                  }
-                </div>
-              }
-            </div>
-
-            @if (urgentMissions().length > 3) {
-              <div
-                class="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-forge-card to-transparent rounded-b"
-              ></div>
+                  </div>
+                }
+              </div>
             }
           </div>
         }
       </div>
-
-      <!-- RELIC WORKSHOP -->
-      <app-relic-workshop />
     </div>
   }
 </div>

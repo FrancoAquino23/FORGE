@@ -2,34 +2,41 @@
    DASHBOARD COMPONENT LOGIC
    ================================================================== */
 
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { LucideAngularModule, LucideIconData } from 'lucide-angular';
+import { Component, DestroyRef, OnInit, inject, signal, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgIconComponent, provideIcons } from '@ng-icons/core';
+import {
+  phosphorSwordBold,
+  phosphorEyeBold,
+  phosphorShieldBold,
+  phosphorSketchLogoBold,
+  phosphorDnaBold,
+  phosphorLightningBold,
+  phosphorSparkleBold,
+  phosphorWarningBold,
+  phosphorFlaskBold,
+  phosphorNutBold,
+  phosphorSpinnerBold,
+  phosphorPlugsBold,
+  phosphorCaretCircleLeftBold,
+  phosphorCaretCircleRightBold,
+} from '@ng-icons/phosphor-icons/bold';
 import {
   ApiService,
   AttributeProfile,
   MissionProgress,
   PlayerProfile,
 } from '../../core/api.service';
-import { RelicWorkshopComponent } from '../relic-workshop/relic-workshop.component';
-import { ATTR_COLORS, ATTR_HEX, ATTR_ICONS } from '../../shared/attr-constants';
-
-// Glow effect mappings for attributes (used on hover)
-const ATTR_GLOW: Record<string, string> = {
-  S: 'hover:shadow-[0_0_18px_rgba(248,113,113,0.3)]',
-  P: 'hover:shadow-[0_0_18px_rgba(96,165,250,0.3)]',
-  E: 'hover:shadow-[0_0_18px_rgba(74,222,128,0.3)]',
-  C: 'hover:shadow-[0_0_18px_rgba(253,224,71,0.3)]',
-  I: 'hover:shadow-[0_0_18px_rgba(192,132,252,0.3)]',
-  A: 'hover:shadow-[0_0_18px_rgba(34,211,238,0.3)]',
-  L: 'hover:shadow-[0_0_18px_rgba(251,146,60,0.3)]',
-};
-
-// Threat bar colors
-const THREAT_BAR: Record<string, string> = {
-  MINOR: '#22d3ee',
-  MAJOR: '#f59e0b',
-  CRITICAL: '#ef4444',
-};
+import { MetricsComponent } from '../metrics/metrics.component';
+import {
+  ATTR_HEX,
+  fmt,
+  attrColor,
+  attrIcon,
+  threatBarColor,
+  threatTextClass,
+  formatDueDate,
+} from '../../shared/ui-constants';
 
 // Number of segments in each attribute bar before reaching prestige
 const PRESTIGE_THRESHOLD = 10;
@@ -37,16 +44,38 @@ const PRESTIGE_THRESHOLD = 10;
 // Main dashboard component
 @Component({
   selector: 'app-dashboard',
-  imports: [RelicWorkshopComponent, LucideAngularModule],
+  imports: [MetricsComponent, NgIconComponent],
+  providers: [
+    provideIcons({
+      phosphorSwordBold,
+      phosphorEyeBold,
+      phosphorShieldBold,
+      phosphorSketchLogoBold,
+      phosphorDnaBold,
+      phosphorLightningBold,
+      phosphorSparkleBold,
+      phosphorWarningBold,
+      phosphorFlaskBold,
+      phosphorNutBold,
+      phosphorSpinnerBold,
+      phosphorPlugsBold,
+      phosphorCaretCircleLeftBold,
+      phosphorCaretCircleRightBold,
+    }),
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   private api = inject(ApiService);
+  private destroyRef = inject(DestroyRef);
 
   profile = signal<PlayerProfile | null>(null);
   missions = signal<MissionProgress[]>([]);
-  xpFlash = signal('');
+  loadError = signal(false);
+
+  missionsPage = signal(0);
+  readonly MISSIONS_PER_PAGE = 3;
 
   // All active missions sorted by priority:
   urgentMissions = computed<MissionProgress[]>(() => {
@@ -64,6 +93,25 @@ export class DashboardComponent implements OnInit {
     });
   });
 
+  pagedMissions = computed<MissionProgress[]>(() => {
+    const start = this.missionsPage() * this.MISSIONS_PER_PAGE;
+    return this.urgentMissions().slice(start, start + this.MISSIONS_PER_PAGE);
+  });
+
+  missionsTotalPages = computed(() =>
+    Math.ceil(this.urgentMissions().length / this.MISSIONS_PER_PAGE),
+  );
+
+  // Previous page navigation for active missions
+  prevMissionsPage(): void {
+    if (this.missionsPage() > 0) this.missionsPage.update((p) => p - 1);
+  }
+
+  // Next page navigation for active missions
+  nextMissionsPage(): void {
+    if (this.missionsPage() < this.missionsTotalPages() - 1) this.missionsPage.update((p) => p + 1);
+  }
+
   // Load component
   ngOnInit(): void {
     this.loadProfile();
@@ -72,18 +120,24 @@ export class DashboardComponent implements OnInit {
 
   // Load player profile from API
   private loadProfile(): void {
-    this.api.getProfile().subscribe({
-      next: (p) => this.profile.set(p),
-      error: () => {},
-    });
+    this.api
+      .getProfile()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (p) => this.profile.set(p),
+        error: () => this.loadError.set(true),
+      });
   }
 
   // Load active missions from API
   private loadMissions(): void {
-    this.api.getActiveMissions().subscribe({
-      next: (res) => this.missions.set(res.missions),
-      error: () => {},
-    });
+    this.api
+      .getActiveMissions()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => this.missions.set(res.missions),
+        error: () => {},
+      });
   }
 
   // Function to calculate XP percentage for progress bars
@@ -97,40 +151,13 @@ export class DashboardComponent implements OnInit {
     return ATTR_HEX[code] ?? '#f59e0b';
   }
 
-  // Function to get text color class for an attribute based on its code
-  attrColor(code: string): string {
-    return ATTR_COLORS[code] ?? 'text-forge-primary';
-  }
-
-  // Function to get glow class for an attribute based on its code
-  attrGlow(code: string): string {
-    return ATTR_GLOW[code] ?? '';
-  }
-
-  // Function to get the appropriate icon for an attribute based on its code
-  getIconName(code: string): LucideIconData {
-    return ATTR_ICONS[code] ?? ATTR_ICONS['L'];
-  }
-
-  // Mission helper (Threat Level)
-  threatBarColor(level: string): string {
-    return THREAT_BAR[level] ?? '#f59e0b';
-  }
-
-  // Mission helper (Threat Text)
-  threatTextClass(level: string): string {
-    const map: Record<string, string> = {
-      MINOR: 'text-cyan-400',
-      MAJOR: 'text-amber-400',
-      CRITICAL: 'text-red-400',
-    };
-    return map[level] ?? 'text-forge-muted';
-  }
-
-  // Mission helper (Due Date formatting)
-  formatDueDate(due: string): string {
-    return new Date(due).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
+  // Constants & utility functions
+  protected attrColor = attrColor;
+  protected attrIcon = attrIcon;
+  protected threatBarColor = threatBarColor;
+  protected threatTextClass = threatTextClass;
+  protected fmt = fmt;
+  protected formatDueDate = formatDueDate;
 
   // Mission helper (Checkpoint completion count)
   completedCount(m: MissionProgress): number {
