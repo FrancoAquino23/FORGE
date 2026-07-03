@@ -2,9 +2,43 @@
    MISSIONS COMPONENT LOGIC
    ================================================================== */
 
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  HostListener,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, LucideIconData, Star, EllipsisVertical } from 'lucide-angular';
+import { NgIconComponent, provideIcons } from '@ng-icons/core';
+import {
+  phosphorSwordBold,
+  phosphorEyeBold,
+  phosphorShieldBold,
+  phosphorSketchLogoBold,
+  phosphorDnaBold,
+  phosphorLightningBold,
+  phosphorSparkleBold,
+  phosphorCompassBold,
+  phosphorFlaskBold,
+  phosphorNutBold,
+  phosphorDotsThreeVerticalBold,
+  phosphorRepeatBold,
+  phosphorStarBold,
+  phosphorClockBold,
+  phosphorSpinnerBold,
+  phosphorPlugsBold,
+  phosphorScrollBold,
+  phosphorCaretCircleLeftBold,
+  phosphorCaretCircleRightBold,
+  phosphorCaretDownBold,
+  phosphorXCircleBold,
+  phosphorPlusBold,
+} from '@ng-icons/phosphor-icons/bold';
+import { phosphorStarFill } from '@ng-icons/phosphor-icons/fill';
 import {
   ApiService,
   CheckpointInfo,
@@ -19,7 +53,20 @@ import { ToastService } from '../../core/toast.service';
 import { PlayerStateService } from '../../core/player-state.service';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 
-import { ATTR_COLORS, ATTR_HEX, ATTR_ICONS, RELIC_NAMES } from '../../shared/attr-constants';
+import {
+  ATTR_HEX,
+  CATEGORY_COLORS,
+  RELIC_NAMES,
+  THREAT_GLOW,
+  THREAT_BORDER,
+  THREAT_FAV_BG,
+  fmt,
+  attrColor,
+  attrIcon,
+  threatBarColor,
+  threatTextClass,
+  formatDueDate,
+} from '../../shared/ui-constants';
 
 export type MissionTab = 'NEW_MISSION' | 'DAILY_GRIND' | 'MAIN_QUEST' | 'SIDE_QUEST' | 'HISTORY';
 
@@ -29,54 +76,42 @@ const CATEGORY_LABELS: Record<string, string> = {
   DAILY_GRIND: 'Daily Grind',
 };
 
-// Threat level maps
-const THREAT_TEXT: Record<string, string> = {
-  MINOR: 'text-sky-400',
-  MAJOR: 'text-amber-400',
-  CRITICAL: 'text-rose-500',
-};
-
-// MINOR/MAJOR/CRITICAL glow
-const THREAT_GLOW: Record<string, string> = {
-  MINOR: 'hover:shadow-[0_0_18px_rgba(56,189,248,0.22)]',
-  MAJOR: 'hover:shadow-[0_0_18px_rgba(251,191,36,0.22)]',
-  CRITICAL: 'shadow-[0_0_22px_rgba(244,63,94,0.32)]',
-};
-
-const THREAT_BORDER: Record<string, string> = {
-  MINOR: 'border-sky-500/35',
-  MAJOR: 'border-amber-500/40',
-  CRITICAL: 'border-rose-500/50',
-};
-
-const THREAT_FAV_BG: Record<string, string> = {
-  MINOR: 'bg-sky-950/30',
-  MAJOR: 'bg-amber-950/30',
-  CRITICAL: 'bg-rose-950/30',
-};
-
-// Hex values for progress bar fill
-const THREAT_BAR: Record<string, string> = {
-  MINOR: '#38bdf8',
-  MAJOR: '#fbbf24',
-  CRITICAL: '#f43f5e',
-};
-
-// Category labels for mission deployment toast
-const _DEPLOY_CAT_LABEL: Record<string, string> = {
-  MAIN_QUEST: 'Main Quest',
-  SIDE_QUEST: 'Side Quest',
-  DAILY_GRIND: 'Daily Grind',
-};
-
 @Component({
   selector: 'app-missions',
-  imports: [LucideAngularModule, FormsModule, DatePickerComponent],
+  imports: [NgIconComponent, FormsModule, DatePickerComponent],
+  providers: [
+    provideIcons({
+      phosphorSwordBold,
+      phosphorEyeBold,
+      phosphorShieldBold,
+      phosphorSketchLogoBold,
+      phosphorDnaBold,
+      phosphorLightningBold,
+      phosphorSparkleBold,
+      phosphorCompassBold,
+      phosphorFlaskBold,
+      phosphorNutBold,
+      phosphorDotsThreeVerticalBold,
+      phosphorRepeatBold,
+      phosphorStarBold,
+      phosphorStarFill,
+      phosphorClockBold,
+      phosphorSpinnerBold,
+      phosphorPlugsBold,
+      phosphorScrollBold,
+      phosphorCaretCircleLeftBold,
+      phosphorCaretCircleRightBold,
+      phosphorCaretDownBold,
+      phosphorXCircleBold,
+      phosphorPlusBold,
+    }),
+  ],
   templateUrl: './missions.component.html',
   styleUrl: './missions.component.scss',
 })
 export class MissionsComponent implements OnInit {
   private api = inject(ApiService);
+  private destroyRef = inject(DestroyRef);
   private toast = inject(ToastService);
   private playerState = inject(PlayerStateService);
 
@@ -86,15 +121,16 @@ export class MissionsComponent implements OnInit {
   historyPage = signal(1);
   historyTotalPages = signal(1);
   historyTotal = signal(0);
-  loadError = signal('');
+
+  loadError = signal(false);
+  historyLoadError = signal(false);
   claiming = signal('');
-  activeTab = signal<MissionTab>('MAIN_QUEST');
+  activeTab = signal<MissionTab>('NEW_MISSION');
   attrFilter = signal('');
   threatFilter = signal('');
   sortByDate = signal(false);
 
   private expandedSet = signal(new Set<string>());
-  hoverCardId = signal('');
   menuOpenId = signal('');
   editingId = signal('');
   savingEdit = signal(false);
@@ -116,20 +152,17 @@ export class MissionsComponent implements OnInit {
   };
 
   deploying = signal(false);
-  logAttr = '';
-  logCategory: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND' = 'DAILY_GRIND';
-  logThreatLevel: 'MINOR' | 'MAJOR' | 'CRITICAL' = 'MAJOR';
-  logDesc = '';
-  logDetail = '';
-  logDueDate = '';
-  logSteps = '';
-  attrDropdownOpen = false;
+  formSubmitted = signal(false);
+  logAttr = signal('');
+  logCategory = signal<'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND'>('DAILY_GRIND');
+  logThreatLevel = signal<'MINOR' | 'MAJOR' | 'CRITICAL'>('MAJOR');
+  logDesc = signal('');
+  logDetail = signal('');
+  logDueDate = signal('');
+  logSteps = signal('');
+  attrDropdownOpen = signal(false);
 
   readonly todayStr = new Date().toISOString().split('T')[0];
-
-  // Lucide icon references for use in template
-  readonly starIcon: LucideIconData = Star;
-  readonly moreVerticalIcon: LucideIconData = EllipsisVertical;
 
   // Tab definitions for template iteration
   readonly TABS: { value: MissionTab; label: string }[] = [
@@ -141,7 +174,7 @@ export class MissionsComponent implements OnInit {
   ];
 
   // Attribute codes for filter buttons
-  readonly ATTRS = ['S', 'P', 'E', 'C', 'I', 'A', 'L'];
+  readonly ATTRS = ['S', 'P', 'E', 'C', 'I', 'A'];
 
   // Category options for new mission forms
   readonly CATEGORIES = [
@@ -150,15 +183,8 @@ export class MissionsComponent implements OnInit {
     { value: 'DAILY_GRIND' as const, label: 'Daily Grind' },
   ];
 
-  // Threat level options for new mission forms
-  readonly THREAT_LEVELS: { value: string; label: string }[] = [
-    { value: 'MINOR', label: 'Minor' },
-    { value: 'MAJOR', label: 'Major' },
-    { value: 'CRITICAL', label: 'Critical' },
-  ];
-
-  // Threat level options for mission edit forms
-  readonly DEPLOY_THREAT_LEVELS: {
+  // Threat level for new mission forms & filter buttons
+  readonly THREAT_LEVELS: {
     value: 'MINOR' | 'MAJOR' | 'CRITICAL';
     label: string;
     color: string;
@@ -211,7 +237,10 @@ export class MissionsComponent implements OnInit {
   ngOnInit(): void {
     this.loadMissions();
     if (!this.playerState.profile()) {
-      this.api.getProfile().subscribe({ next: (p) => this.playerState.profile.set(p) });
+      this.api
+        .getProfile()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({ next: (p) => this.playerState.profile.set(p) });
     }
   }
 
@@ -219,30 +248,36 @@ export class MissionsComponent implements OnInit {
   @HostListener('document:click')
   onDocumentClick(): void {
     this.menuOpenId.set('');
-    this.attrDropdownOpen = false;
+    this.attrDropdownOpen.set(false);
   }
 
   // Function to load active missions from API
   private loadMissions(): void {
-    this.api.getActiveMissions().subscribe({
-      next: (res) => this.data.set(res),
-      error: () => this.loadError.set('Could not load missions.'),
-    });
+    this.api
+      .getActiveMissions()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => this.data.set(res),
+        error: () => this.loadError.set(true),
+      });
   }
 
   // Function to load mission history for the given page
   private loadHistory(page: number = 1): void {
     this.historyLoaded.set(false);
-    this.api.getMissionHistory(page).subscribe({
-      next: (res) => {
-        this.historyData.set(res.missions);
-        this.historyPage.set(res.page);
-        this.historyTotalPages.set(res.total_pages);
-        this.historyTotal.set(res.total);
-        this.historyLoaded.set(true);
-      },
-      error: () => this.loadError.set('Could not load history.'),
-    });
+    this.api
+      .getMissionHistory(page, 5)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.historyData.set(res.missions);
+          this.historyPage.set(res.page);
+          this.historyTotalPages.set(res.total_pages);
+          this.historyTotal.set(res.total);
+          this.historyLoaded.set(true);
+        },
+        error: () => this.historyLoadError.set(true),
+      });
   }
 
   // Navigate to previous history page
@@ -258,13 +293,13 @@ export class MissionsComponent implements OnInit {
   // Toggle attribute dropdown
   toggleAttrDropdown(event: MouseEvent): void {
     event.stopPropagation();
-    this.attrDropdownOpen = !this.attrDropdownOpen;
+    this.attrDropdownOpen.set(!this.attrDropdownOpen());
   }
 
   // Select attribute
   selectAttr(code: string): void {
-    this.logAttr = code;
-    this.attrDropdownOpen = false;
+    this.logAttr.set(code);
+    this.attrDropdownOpen.set(false);
   }
 
   // Get attribute display name
@@ -274,52 +309,58 @@ export class MissionsComponent implements OnInit {
 
   // Deploy a mission
   deployMission(): void {
-    if (!this.logAttr || !this.logDesc.trim() || this.deploying()) return;
+    this.formSubmitted.set(true);
+    if (!this.logAttr() || !this.logDesc().trim() || this.deploying()) return;
+    if (this.logCategory() !== 'DAILY_GRIND' && !this.logDueDate()) return;
     this.deploying.set(true);
 
-    const steps = this.logSteps
+    const steps = this.logSteps()
       .split('\n')
-      .map((s) => s.trim())
+      .map((s: string) => s.trim())
       .filter(Boolean);
     const payload: DeployMissionRequest = {
-      attribute_code: this.logAttr,
-      category: this.logCategory,
-      threat_level: this.logThreatLevel,
-      description: this.logDesc.trim(),
-      detail: this.logDetail.trim() || undefined,
-      due_date: this.logDueDate || undefined,
+      attribute_code: this.logAttr(),
+      category: this.logCategory(),
+      threat_level: this.logThreatLevel(),
+      description: this.logDesc().trim(),
+      detail: this.logDetail().trim() || undefined,
+      due_date: this.logDueDate() || undefined,
       steps: steps.length > 0 ? steps : undefined,
     };
 
-    this.api.deployMission(payload).subscribe({
-      next: (res) => {
-        const catLabel = _DEPLOY_CAT_LABEL[res.category] ?? res.category;
-        this.toast.show({
-          type: 'claim',
-          icon: '⚔',
-          title: 'Mission Forged',
-          message: `${catLabel} mission forged!`,
-        });
-        this.deploying.set(false);
-        this.logAttr = '';
-        this.logDesc = '';
-        this.logDetail = '';
-        this.logDueDate = '';
-        this.logSteps = '';
-        this.logCategory = 'DAILY_GRIND';
-        this.logThreatLevel = 'MAJOR';
-        this.loadMissions();
-      },
-      error: (err) => {
-        this.toast.show({
-          type: 'error',
-          icon: '❌',
-          title: 'Error',
-          message: err.error?.detail ?? 'Could not dispatch mission',
-        });
-        this.deploying.set(false);
-      },
-    });
+    this.api
+      .deployMission(payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (_res) => {
+          this.toast.show({
+            type: 'success',
+            icon: '',
+            ngIcon: 'phosphorClipboardTextBold',
+            title: 'Mission Created',
+            message: '',
+          });
+          this.deploying.set(false);
+          this.formSubmitted.set(false);
+          this.logAttr.set('');
+          this.logDesc.set('');
+          this.logDetail.set('');
+          this.logDueDate.set('');
+          this.logSteps.set('');
+          this.logCategory.set('DAILY_GRIND');
+          this.logThreatLevel.set('MAJOR');
+          this.historyLoaded.set(false);
+          this.loadMissions();
+        },
+        error: (err) => {
+          this.toast.showError(
+            'Mission Deploy Failed',
+            err,
+            'Could not deploy mission. Please try again.',
+          );
+          this.deploying.set(false);
+        },
+      });
   }
 
   // Format "completed_at date"
@@ -371,17 +412,15 @@ export class MissionsComponent implements OnInit {
         : null,
     );
 
-    this.api.toggleCheckpoint(cp.id).subscribe({
-      error: () => {
-        this.toast.show({
-          type: 'error',
-          icon: '❌',
-          title: 'Error',
-          message: 'Could not update checkpoint',
-        });
-        this.loadMissions();
-      },
-    });
+    this.api
+      .toggleCheckpoint(cp.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        error: () => {
+          this.toast.showError('Error', undefined, 'Could not update checkpoint');
+          this.loadMissions();
+        },
+      });
   }
 
   // Function to claim a mission reward
@@ -389,24 +428,30 @@ export class MissionsComponent implements OnInit {
     if (this.claiming() || !this.canFinish(mission)) return;
     this.claiming.set(mission.mission_id);
 
-    this.api.claimMission(mission.mission_id).subscribe({
-      next: (res) => {
-        this.toast.fromMissionClaim(res);
-        if (res.newly_unlocked?.length) this.toast.fromAchievements(res.newly_unlocked);
-        this.claiming.set('');
-        this.loadMissions();
-        this.api.getProfile().subscribe({ next: (p) => this.playerState.profile.set(p) });
-      },
-      error: (err) => {
-        this.toast.show({
-          type: 'error',
-          icon: '❌',
-          title: 'Error',
-          message: err.error?.detail ?? 'Could not complete mission',
-        });
-        this.claiming.set('');
-      },
-    });
+    this.api
+      .claimMission(mission.mission_id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.toast.fromMissionClaim(res);
+          if (res.newly_unlocked?.length) this.toast.fromAchievements(res.newly_unlocked);
+          this.claiming.set('');
+          this.historyLoaded.set(false);
+          this.loadMissions();
+          this.api
+            .getProfile()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({ next: (p) => this.playerState.profile.set(p) });
+        },
+        error: (err) => {
+          this.toast.showError(
+            'Mission Claim Failed',
+            err,
+            'Could not claim mission. Please try again.',
+          );
+          this.claiming.set('');
+        },
+      });
   }
 
   // Function to enter delete confirmation state for a mission card
@@ -418,25 +463,29 @@ export class MissionsComponent implements OnInit {
   confirmDelete(m: MissionProgress): void {
     this.deleteConfirmId.set('');
     this.menuOpenId.set('');
-    this.api.deleteMission(m.mission_id).subscribe({
-      next: () => {
-        this.toast.show({
-          type: 'error',
-          icon: '🗑',
-          title: 'Mission Terminated',
-          message: 'Mission terminated!',
-        });
-        this.loadMissions();
-      },
-      error: (err) => {
-        this.toast.show({
-          type: 'error',
-          icon: '❌',
-          title: 'Error',
-          message: err.error?.detail ?? 'Could not delete mission',
-        });
-      },
-    });
+    this.api
+      .deleteMission(m.mission_id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.toast.show({
+            type: 'success',
+            icon: '',
+            ngIcon: 'phosphorTrashBold',
+            iconColor: 'text-red-400',
+            title: 'Mission Deleted',
+            message: '',
+          });
+          this.loadMissions();
+        },
+        error: (err) => {
+          this.toast.showError(
+            'Mission Delete Failed',
+            err,
+            'Could not delete mission. Please try again.',
+          );
+        },
+      });
   }
 
   // Function to enter edit mode for a mission card
@@ -484,57 +533,70 @@ export class MissionsComponent implements OnInit {
       threat_level: this.editForm.threat_level as 'MINOR' | 'MAJOR' | 'CRITICAL',
       checkpoints: this.editForm.category !== 'DAILY_GRIND' ? checkpoints : undefined,
     };
-    this.api.updateMission(this.editingId(), payload).subscribe({
-      next: () => {
-        this.savingEdit.set(false);
-        this.editingId.set('');
-        this.loadMissions();
-      },
-      error: (err) => {
-        this.toast.show({
-          type: 'error',
-          icon: '❌',
-          title: 'Error',
-          message: err.error?.detail ?? 'Could not save mission',
-        });
-        this.savingEdit.set(false);
-      },
-    });
+    this.api
+      .updateMission(this.editingId(), payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.savingEdit.set(false);
+          this.editingId.set('');
+          this.toast.show({
+            type: 'success',
+            icon: '',
+            ngIcon: 'phosphorCheckCircleBold',
+            title: 'Mission Updated',
+            message: 'Changes saved successfully',
+          });
+          this.loadMissions();
+        },
+        error: (err) => {
+          this.toast.showError(
+            'Mission Update Failed',
+            err,
+            'Could not update mission. Please try again.',
+          );
+          this.savingEdit.set(false);
+        },
+      });
   }
 
   // Function to toggle is_favorite on a daily mission; optimistically updates local data
   toggleFavorite(m: MissionProgress): void {
-    this.api.toggleFavorite(m.mission_id).subscribe({
-      next: (res) => {
-        const current = this.data();
-        if (current) {
-          this.data.set({
-            ...current,
-            missions: current.missions.map((mission) =>
-              mission.mission_id === m.mission_id
-                ? { ...mission, is_favorite: res.is_favorite }
-                : mission,
-            ),
-          });
-        }
-        if (res.is_favorite) {
-          this.toast.show({
-            type: 'claim',
-            icon: '🔥',
-            title: 'STREAK UNLOCKED',
-            message: 'Rewards grow the longer your streak holds',
-          });
-        }
-      },
-      error: () => {
-        this.toast.show({
-          type: 'error',
-          icon: '❌',
-          title: 'Error',
-          message: 'Could not update favorite',
-        });
-      },
-    });
+    this.api
+      .toggleFavorite(m.mission_id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const current = this.data();
+          if (current) {
+            this.data.set({
+              ...current,
+              missions: current.missions.map((mission) =>
+                mission.mission_id === m.mission_id
+                  ? { ...mission, is_favorite: res.is_favorite }
+                  : mission,
+              ),
+            });
+          }
+          if (res.is_favorite) {
+            this.toast.show({
+              type: 'success',
+              icon: '',
+              ngIcon: 'phosphorFlameBold',
+              iconColor: 'text-amber-400',
+              title: 'Streak Unlocked',
+              message: 'Rewards grow the longer your streak holds',
+            });
+          }
+        },
+        error: () => {
+          this.toast.showError(
+            'Mission Toggle Favorite Failed',
+            undefined,
+            'Could not toggle favorite',
+          );
+        },
+      });
   }
 
   // Function to return streak multiplier label for a daily mission
@@ -627,9 +689,13 @@ export class MissionsComponent implements OnInit {
     return RELIC_NAMES[code] ?? code;
   }
 
-  // Function to map an attribute code to its color class
-  attrColor(code: string): string {
-    return ATTR_COLORS[code] ?? 'text-forge-primary';
+  // Constants & utility functions
+  protected fmt = fmt;
+  protected attrColor = attrColor;
+
+  // Function to map a category to its color class
+  catColor(category: string): string {
+    return CATEGORY_COLORS[category] ?? 'text-forge-primary';
   }
 
   // Function to map an attribute code to its hex color
@@ -637,15 +703,9 @@ export class MissionsComponent implements OnInit {
     return ATTR_HEX[code] ?? '#f59e0b';
   }
 
-  // Function to map a threat level to its hex color
-  threatBarColor(level: string): string {
-    return THREAT_BAR[level] ?? '#fbbf24';
-  }
-
-  // Function to map an attribute code to its icon
-  getIcon(code: string): LucideIconData {
-    return ATTR_ICONS[code] ?? ATTR_ICONS['L'];
-  }
+  // Constants & utility functions
+  protected threatBarColor = threatBarColor;
+  protected attrIcon = attrIcon;
 
   // Function for building the border and hover-glow CSS for a mission card
   cardClass(m: MissionProgress): string {
@@ -659,10 +719,8 @@ export class MissionsComponent implements OnInit {
     return `${border} ${glow}`;
   }
 
-  // Function to map a threat level to its text color class
-  threatTextClass(level: string): string {
-    return THREAT_TEXT[level] ?? 'text-forge-muted';
-  }
+  // Constants & utility functions
+  protected threatTextClass = threatTextClass;
 
   // Function to build the active/inactive filter toggle button
   filterBtnClass(code: string): string {
@@ -679,10 +737,7 @@ export class MissionsComponent implements OnInit {
   }
 
   // Function to format a due_date ISO string as "Month Day" (e.g. "May 6")
-  formatDueDate(dueDate: string | null): string {
-    if (!dueDate) return '';
-    return new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
+  protected formatDueDate = formatDueDate;
 
   // Function to return the time remaining until local midnight (end of today's activity window)
   dailyTimeLeft(): string {

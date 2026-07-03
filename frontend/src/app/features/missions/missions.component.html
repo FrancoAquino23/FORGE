@@ -1,12 +1,12 @@
-<!-- ==================================================================
+﻿<!-- ==================================================================
      MISSIONS COMPONENT TEMPLATE
      ================================================================== -->
 
 <div class="max-w-4xl mx-auto px-4 py-8">
   <!-- HEADER -->
   <div class="mb-6">
-    <h2 class="text-xl font-black text-forge-primary tracking-widest">MISSION BOARD</h2>
-    <p class="text-forge-muted text-xs mt-0.5 tracking-wide uppercase">S.P.E.C.I.A.L. Operations</p>
+    <h2 class="forge-page-title">MISSION BOARD</h2>
+    <p class="forge-page-subtitle">S.P.E.C.I.A.L. Operations</p>
   </div>
 
   <!-- TABS -->
@@ -42,26 +42,26 @@
        ================================================================ -->
   @if (activeTab() === 'NEW_MISSION') {
     <div class="forge-card p-5">
-      <h3 class="text-forge-text font-bold text-sm uppercase tracking-widest mb-4">Mission Control</h3>
+      <h3 class="forge-section-title mb-4">Mission Control</h3>
       <div class="flex flex-col gap-3">
         <!-- ATTRIBUTE SELECTOR -->
         <div>
-          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Attribute</label>
+          <label class="forge-label">Attribute</label>
           <div class="relative">
             <button
               type="button"
               class="forge-input w-full flex items-center gap-2 text-left cursor-pointer"
               (click)="toggleAttrDropdown($event)"
             >
-              @if (logAttr) {
-                <lucide-icon [img]="getIcon(logAttr)" [size]="13" [class]="attrColor(logAttr)"></lucide-icon>
-                <span class="text-forge-text text-xs flex-1">{{ getAttrName(logAttr) }}</span>
+              @if (logAttr()) {
+                <ng-icon [name]="attrIcon(logAttr())" size="13" [class]="attrColor(logAttr())" />
+                <span class="text-forge-text text-xs flex-1">{{ getAttrName(logAttr()) }}</span>
               } @else {
-                <span class="text-forge-muted text-xs flex-1">— Select —</span>
+                <span class="text-forge-muted text-xs flex-1">Select Attribute</span>
               }
-              <span class="text-forge-muted text-[10px]">▾</span>
+              <ng-icon name="phosphorCaretDownBold" class="text-forge-muted text-[10px]" />
             </button>
-            @if (attrDropdownOpen) {
+            @if (attrDropdownOpen()) {
               <div
                 class="absolute z-20 w-full mt-0.5 bg-forge-surface border border-forge-border rounded-sm shadow-lg overflow-hidden"
                 (click)="$event.stopPropagation()"
@@ -71,10 +71,10 @@
                     <button
                       type="button"
                       class="w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-forge-card"
-                      [class.bg-forge-card]="logAttr === code"
+                      [class.bg-forge-card]="logAttr() === code"
                       (click)="selectAttr(code)"
                     >
-                      <lucide-icon [img]="getIcon(code)" [size]="13" [class]="attrColor(code)"></lucide-icon>
+                      <ng-icon [name]="attrIcon(code)" size="13" [class]="attrColor(code)" />
                       <span class="text-forge-text text-xs">{{ getAttrName(code) }}</span>
                     </button>
                   }
@@ -82,22 +82,25 @@
               </div>
             }
           </div>
+          @if (formSubmitted() && !logAttr()) {
+            <p class="forge-field-error">Attribute required</p>
+          }
         </div>
 
         <!-- QUEST CATEGORY -->
         <div>
-          <label class="block text-xs text-forge-muted mb-1.5 uppercase tracking-wider">Category</label>
+          <label class="forge-label">Category</label>
           <div class="flex gap-2">
             @for (cat of CATEGORIES; track cat.value) {
               <button
                 type="button"
                 class="flex-1 text-[11px] px-2 py-1.5 rounded-sm border font-bold tracking-wide transition-colors"
                 [class]="
-                  logCategory === cat.value
-                    ? 'bg-forge-primary/15 border-forge-primary text-forge-primary'
+                  logCategory() === cat.value
+                    ? catColor(cat.value) + ' bg-forge-surface/60 border-current'
                     : 'border-forge-border text-forge-muted hover:border-forge-primary/40 hover:text-forge-text'
                 "
-                (click)="logCategory = cat.value"
+                (click)="logCategory.set(cat.value)"
               >
                 {{ cat.label }}
               </button>
@@ -107,18 +110,18 @@
 
         <!-- PRIORITY -->
         <div>
-          <label class="block text-xs text-forge-muted mb-1.5 uppercase tracking-wider">Priority</label>
+          <label class="forge-label">Priority</label>
           <div class="flex gap-2">
-            @for (tl of DEPLOY_THREAT_LEVELS; track tl.value) {
+            @for (tl of THREAT_LEVELS; track tl.value) {
               <button
                 type="button"
                 class="flex-1 text-[11px] px-2 py-1.5 rounded-sm border font-bold tracking-wide transition-colors"
                 [class]="
-                  logThreatLevel === tl.value
+                  logThreatLevel() === tl.value
                     ? tl.color + ' bg-forge-surface/60 border-current'
                     : 'border-forge-border text-forge-muted hover:border-forge-primary/40 hover:text-forge-text'
                 "
-                (click)="logThreatLevel = tl.value"
+                (click)="logThreatLevel.set(tl.value)"
               >
                 {{ tl.label }}
               </button>
@@ -127,66 +130,75 @@
         </div>
 
         <!-- DUE DATE -->
-        @if (logCategory !== 'DAILY_GRIND') {
+        @if (logCategory() !== 'DAILY_GRIND') {
           <div>
-            <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Due Date</label>
-            <app-date-picker [(value)]="logDueDate" [min]="todayStr" />
+            <label class="forge-label">Due Date</label>
+            <app-date-picker [value]="logDueDate()" (valueChange)="logDueDate.set($event)" [min]="todayStr" />
+            @if (formSubmitted() && !logDueDate()) {
+              <p class="forge-field-error">Due date required</p>
+            }
           </div>
         }
 
         <!-- OBJECTIVE -->
         <div>
-          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">Objective</label>
+          <label class="forge-label">Objective</label>
           <textarea
             class="forge-input w-full resize-none text-xs leading-relaxed"
             rows="2"
             maxlength="500"
             placeholder="[ Define Mission Objective ]"
-            [(ngModel)]="logDesc"
+            [ngModel]="logDesc()"
+            (ngModelChange)="logDesc.set($event)"
           ></textarea>
+          @if (formSubmitted() && !logDesc().trim()) {
+            <p class="forge-field-error">Objective required</p>
+          }
         </div>
 
         <!-- DESCRIPTION -->
         <div>
-          <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">
+          <label class="forge-label">
             Description
-            <span class="normal-case text-forge-muted/50 font-normal">(optional)</span>
+            <span class="normal-case text-forge-text/40 font-normal">(optional)</span>
           </label>
           <textarea
             class="forge-input w-full resize-none text-xs leading-relaxed"
             rows="3"
             maxlength="1000"
             placeholder="[ Details or mission context ]"
-            [(ngModel)]="logDetail"
+            [ngModel]="logDetail()"
+            (ngModelChange)="logDetail.set($event)"
           ></textarea>
         </div>
 
         <!-- CHECKPOINTS -->
-        @if (logCategory !== 'DAILY_GRIND') {
+        @if (logCategory() !== 'DAILY_GRIND') {
           <div>
-            <label class="block text-xs text-forge-muted mb-1 uppercase tracking-wider">
+            <label class="forge-label">
               Steps to Completion
-              <span class="normal-case text-forge-muted/50 font-normal">(one per line)</span>
+              <span class="normal-case text-forge-text/40 font-normal">(one per line)</span>
             </label>
             <textarea
               class="forge-input w-full resize-none text-xs leading-relaxed"
               rows="4"
               placeholder="Step 1...&#10;Step 2...&#10;Step 3..."
-              [(ngModel)]="logSteps"
+              [ngModel]="logSteps()"
+              (ngModelChange)="logSteps.set($event)"
             ></textarea>
           </div>
         }
 
         <button
-          class="forge-btn-primary mt-1 uppercase tracking-widest text-xs font-black"
+          class="forge-btn-primary forge-btn-action mt-1 text-xs"
           [class.btn-action-ready]="
-            !deploying() && !!logAttr && !!logDesc.trim() && (logCategory === 'DAILY_GRIND' || !!logDueDate)
+            !deploying() && !!logAttr() && !!logDesc().trim() && (logCategory() === 'DAILY_GRIND' || !!logDueDate())
           "
           [class.btn-action-locked]="
-            !deploying() && (!logAttr || !logDesc.trim() || (logCategory !== 'DAILY_GRIND' && !logDueDate))
+            !deploying() && (!logAttr() || !logDesc().trim() || (logCategory() !== 'DAILY_GRIND' && !logDueDate()))
           "
           (click)="deployMission()"
-          [disabled]="deploying() || !logAttr || !logDesc.trim() || (logCategory !== 'DAILY_GRIND' && !logDueDate)"
+          [disabled]="deploying()"
         >
           @if (deploying()) {
             Dispatching...
@@ -208,7 +220,7 @@
         <div class="flex items-center gap-1.5 flex-wrap">
           <button
             type="button"
-            class="px-3 py-1 text-[10px] font-bold tracking-wider uppercase rounded-sm border transition-colors"
+            class="forge-btn-filter px-3 py-1 font-bold"
             [class]="
               attrFilter() === '' && threatFilter() === ''
                 ? 'border-forge-primary/60 text-forge-primary bg-forge-primary/10'
@@ -221,7 +233,7 @@
           @for (code of ATTRS; track code) {
             <button
               type="button"
-              class="px-3 py-1 text-[10px] font-black tracking-wider uppercase rounded-sm border transition-colors"
+              class="forge-btn-filter px-3 py-1 font-black"
               [class]="filterBtnClass(code)"
               (click)="attrFilter.set(attrFilter() === code ? '' : code)"
             >
@@ -233,7 +245,7 @@
           @for (level of THREAT_LEVELS; track level.value) {
             <button
               type="button"
-              class="px-3 py-1 text-[10px] font-black tracking-wider uppercase rounded-sm border transition-colors"
+              class="forge-btn-filter px-3 py-1 font-black"
               [class]="threatBtnClass(level.value)"
               (click)="threatFilter.set(threatFilter() === level.value ? '' : level.value)"
             >
@@ -242,7 +254,7 @@
           }
           <button
             type="button"
-            class="ml-2 px-4 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-sm border transition-colors"
+            class="forge-btn-filter ml-2 px-4 py-1.5 font-bold"
             [class]="
               sortByDate()
                 ? 'border-forge-primary/60 text-forge-primary bg-forge-primary/10'
@@ -250,7 +262,7 @@
             "
             (click)="sortByDate.set(!sortByDate())"
           >
-            ⏱ Due Date
+            Due Date
           </button>
         </div>
       </div>
@@ -259,18 +271,13 @@
       @if (filteredMissions().length) {
         <div class="flex flex-col gap-3">
           @for (m of filteredMissions(); track m.mission_id) {
-            <div
-              class="forge-card p-5 flex flex-col gap-3 border transition-shadow relative"
-              [class]="cardClass(m)"
-              (mouseenter)="hoverCardId.set(m.mission_id)"
-              (mouseleave)="hoverCardId.set('')"
-            >
+            <div class="forge-card p-5 flex flex-col gap-3 border transition-shadow relative" [class]="cardClass(m)">
               @if (editingId() === m.mission_id) {
                 <!-- INLINE EDIT FORM -->
                 <div class="flex flex-col gap-3">
-                  <p class="text-[10px] text-forge-muted uppercase tracking-widest">Editing mission</p>
+                  <p class="text-xs uppercase tracking-widest text-forge-text/70 font-bold">Editing mission</p>
                   <div>
-                    <label class="block text-[10px] text-forge-muted uppercase tracking-wider mb-1">Objective</label>
+                    <label class="forge-label">Objective</label>
                     <input
                       class="forge-input w-full text-xs"
                       [(ngModel)]="editForm.objective"
@@ -278,7 +285,7 @@
                     />
                   </div>
                   <div>
-                    <label class="block text-[10px] text-forge-muted uppercase tracking-wider mb-1">Description</label>
+                    <label class="forge-label">Description</label>
                     <textarea
                       class="forge-input w-full resize-none text-xs leading-relaxed"
                       rows="3"
@@ -289,29 +296,35 @@
 
                   <!-- PRIORITY (THREAT LEVEL) -->
                   <div>
-                    <label class="block text-[10px] text-forge-muted uppercase tracking-wider mb-1">Priority</label>
-                    <select class="forge-input w-full text-xs" [(ngModel)]="editForm.threat_level">
-                      <option value="MINOR">Minor — Routine</option>
-                      <option value="MAJOR">Major — Important</option>
-                      <option value="CRITICAL">Critical — Urgent</option>
-                    </select>
+                    <label class="forge-label">Priority</label>
+                    <div class="relative">
+                      <select
+                        class="forge-input w-full text-xs appearance-none pr-7"
+                        [(ngModel)]="editForm.threat_level"
+                      >
+                        <option value="MINOR">Minor — Routine</option>
+                        <option value="MAJOR">Major — Important</option>
+                        <option value="CRITICAL">Critical — Urgent</option>
+                      </select>
+                      <ng-icon
+                        name="phosphorCaretDownBold"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-forge-muted/60 pointer-events-none"
+                      />
+                    </div>
                   </div>
                   @if (editForm.category !== 'DAILY_GRIND') {
                     <div>
-                      <label class="block text-[10px] text-forge-muted uppercase tracking-wider mb-1">Due Date</label>
-                      <input type="date" class="forge-input w-full text-xs" [(ngModel)]="editForm.due_date" />
+                      <label class="forge-label">Due Date</label>
+                      <app-date-picker [(value)]="editForm.due_date" />
                     </div>
                   }
                   @if (editForm.category !== 'DAILY_GRIND') {
                     <div>
                       <div class="flex items-center justify-between mb-1">
-                        <label class="block text-[10px] text-forge-muted uppercase tracking-wider">Checkpoints</label>
-                        <button
-                          type="button"
-                          class="text-[9px] text-forge-primary/70 hover:text-forge-primary tracking-wider uppercase transition-colors"
-                          (click)="addEditCheckpoint()"
-                        >
-                          + Add
+                        <label class="block text-xs uppercase tracking-widest text-forge-text/70">Checkpoints</label>
+                        <button type="button" class="forge-btn-nav" (click)="addEditCheckpoint()">
+                          <ng-icon name="phosphorPlusBold" />
+                          Add
                         </button>
                       </div>
                       @if (editForm.checkpoints.length > 0) {
@@ -325,28 +338,22 @@
                               />
                               <button
                                 type="button"
-                                class="text-forge-muted/40 hover:text-red-400/80 transition-colors text-base leading-none px-0.5 flex-shrink-0"
+                                class="text-forge-muted/40 hover:text-red-400/80 transition-colors text-base px-0.5 flex-shrink-0 self-center flex items-center"
                                 (click)="removeEditCheckpoint(i)"
                               >
-                                ×
+                                <ng-icon name="phosphorXCircleBold" />
                               </button>
                             </div>
                           }
                         </div>
-                      } @else {
-                        <p class="text-[10px] text-forge-muted/40 italic">No checkpoints</p>
                       }
                     </div>
                   }
                   <div class="flex gap-2 justify-end pt-1">
+                    <button class="forge-btn-action text-[10px] py-1.5 px-3" (click)="cancelEdit()">Cancel</button>
                     <button
-                      class="forge-btn-ghost text-[10px] uppercase tracking-widest font-black py-1.5 px-3"
-                      (click)="cancelEdit()"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      class="forge-btn-primary text-[10px] uppercase tracking-widest font-black py-1.5 px-3"
+                      class="forge-btn-primary forge-btn-action text-[10px] py-1.5 px-3"
+                      [class.btn-action-ready]="!savingEdit()"
                       (click)="saveEdit()"
                       [disabled]="savingEdit()"
                     >
@@ -371,56 +378,52 @@
                           (click)="$event.stopPropagation(); toggleFavorite(m)"
                           title="Mark as recurring"
                         >
-                          <lucide-icon
-                            [img]="starIcon"
-                            [size]="13"
-                            [class]="m.is_favorite ? 'text-yellow-400 fill-yellow-400' : 'text-forge-muted/30'"
-                          ></lucide-icon>
+                          <ng-icon
+                            [name]="m.is_favorite ? 'phosphorStarFill' : 'phosphorStarBold'"
+                            class="text-[13px]"
+                            [class]="m.is_favorite ? 'text-yellow-400' : 'text-forge-muted/30'"
+                          />
                         </button>
                       }
                       <!-- TITLE -->
-                      <span class="font-black text-forge-text text-base leading-snug flex-1">
+                      <span class="font-bold text-forge-text text-sm uppercase tracking-widest leading-snug flex-1">
                         {{ m.objective_description }}
                       </span>
                     </div>
 
-                    <!-- METADATA (CATEGORY - ATTRIBUTE - THREAT LEVEL) -->
-                    <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                      <lucide-icon
-                        [img]="getIcon(m.attribute_code)"
-                        [size]="11"
-                        [class]="attrColor(m.attribute_code)"
-                      ></lucide-icon>
-                      <span class="text-[10px] text-forge-muted/70 uppercase tracking-wider font-medium">
+                    <!-- CATEGORY / ATTRIBUTE / THREAT LEVEL -->
+                    <div class="flex items-center gap-2.5 flex-wrap mt-0.5">
+                      <ng-icon [name]="attrIcon(m.attribute_code)" size="11" [class]="attrColor(m.attribute_code)" />
+                      <span class="text-[10px] text-forge-text/60 uppercase tracking-wider font-semibold">
                         {{ categoryLabel(m.category) }}
                       </span>
-                      <span class="text-[10px] text-forge-border">·</span>
+
                       <span [class]="attrColor(m.attribute_code) + ' text-[10px] tracking-wider font-medium'">
                         {{ m.attribute_name }}
                       </span>
-                      <span class="text-[10px] text-forge-border">·</span>
+
                       <span
                         [class]="threatTextClass(m.threat_level) + ' text-[10px] uppercase tracking-widest font-black'"
                       >
                         {{ m.threat_level }}
                       </span>
                       @if (m.is_favorite) {
-                        <span class="text-[10px] text-forge-border">·</span>
-                        <span class="text-[10px] text-yellow-400/70 font-bold">↺ Recurring</span>
-                      }
-                      @if (m.is_completable && !isPending(m)) {
-                        <span class="text-[10px] text-forge-border">·</span>
-                        <span class="text-[10px] text-green-400 font-bold">✓ Ready</span>
+                        <span class="text-[10px] text-yellow-400/70 font-bold flex items-center gap-1">
+                          <ng-icon name="phosphorRepeatBold" class="text-[11px]" />
+                          Recurring
+                        </span>
                       }
                     </div>
                   </div>
 
-                  <!-- STREAK INDICATOR (daily only) -->
+                  <!-- STREAK INDICATOR -->
                   @if (m.category === 'DAILY_GRIND' && m.is_favorite && m.current_streak > 0) {
                     <div
                       class="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-sm bg-amber-500/10 border border-amber-500/20"
                     >
-                      <span class="text-[10px] text-amber-400 font-bold">{{ streakMultLabel(m.current_streak) }}</span>
+                      <span class="text-[10px] text-amber-400 font-bold tabular-nums">
+                        {{ streakMultLabel(m.current_streak) }}
+                      </span>
                     </div>
                   }
 
@@ -428,10 +431,9 @@
                   <div class="relative flex-shrink-0" (click)="stopPropagation($event)">
                     <button
                       class="p-1 rounded transition-opacity text-forge-muted/50 hover:text-forge-muted"
-                      [class.invisible]="hoverCardId() !== m.mission_id && menuOpenId() !== m.mission_id"
                       (click)="toggleMenu(m.mission_id, $event)"
                     >
-                      <lucide-icon [img]="moreVerticalIcon" [size]="14"></lucide-icon>
+                      <ng-icon name="phosphorDotsThreeVerticalBold" class="text-[14px]" />
                     </button>
                     @if (menuOpenId() === m.mission_id) {
                       <div
@@ -458,12 +460,7 @@
                             </button>
                           </div>
                         } @else {
-                          <button
-                            class="w-full px-3 py-2 text-xs text-left text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
-                            (click)="startEdit(m)"
-                          >
-                            Edit
-                          </button>
+                          <button class="forge-menu-item" (click)="startEdit(m)">Edit</button>
                           <button
                             class="w-full px-3 py-2 text-xs text-left text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-wide"
                             (click)="requestDeleteConfirm(m)"
@@ -478,7 +475,7 @@
 
                 <!-- DESCRIPTION -->
                 @if (m.description) {
-                  <p class="text-[11px] text-forge-muted leading-relaxed">{{ m.description }}</p>
+                  <p class="text-[11px] text-forge-text/60 leading-relaxed">{{ m.description }}</p>
                 }
 
                 <!-- CHECKPOINT LIST -->
@@ -510,7 +507,7 @@
                   <div>
                     <div class="flex justify-between text-[10px] text-forge-muted mb-1.5">
                       <span class="uppercase tracking-wider">Progress</span>
-                      <span class="text-forge-text font-bold">{{ checkpointSummary(m) }}</span>
+                      <span class="text-forge-text font-bold tabular-nums">{{ checkpointSummary(m) }}</span>
                     </div>
                     <div class="progress-bar">
                       <div
@@ -525,7 +522,9 @@
                   <div>
                     <div class="flex justify-between text-[10px] text-forge-muted mb-1.5">
                       <span class="uppercase tracking-wider">Progress</span>
-                      <span class="text-forge-text font-bold">{{ m.current_progress }} / {{ m.objective_target }}</span>
+                      <span class="text-forge-text font-bold tabular-nums">
+                        {{ fmt(m.current_progress) }} / {{ fmt(m.objective_target) }}
+                      </span>
                     </div>
                     <div class="progress-bar">
                       <div
@@ -548,32 +547,36 @@
                 <!-- REWARDS + ACTION -->
                 <div class="flex items-center justify-between flex-wrap gap-3">
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[10px] text-forge-muted uppercase tracking-widest">Rewards</span>
-                    <div class="flex items-center gap-3 text-xs text-forge-muted">
+                    <span class="text-[10px] text-forge-text/60 uppercase tracking-widest font-semibold">Rewards</span>
+                    <div class="flex items-center gap-3 text-xs text-forge-text/60">
                       @if (isAttrMaxed(m.attribute_code)) {
                         <span class="text-forge-primary font-black tracking-widest text-[9px]">XP MAX</span>
                       } @else {
-                        <span>
-                          ⚡
-                          <b [class]="attrColor(m.attribute_code)">+{{ m.reward_xp }}</b>
+                        <span class="forge-reward-inline">
+                          <ng-icon name="phosphorFlaskBold" size="11" class="text-violet-400" />
+                          <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ fmt(m.reward_xp) }}</b>
                           XP
                         </span>
                       }
-                      <span>
-                        🔩
-                        <b [class]="attrColor(m.attribute_code)">+{{ m.reward_material_qty }}</b>
+                      <span class="forge-reward-inline">
+                        <ng-icon name="phosphorNutBold" size="11" class="text-stone-400" />
+                        <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ m.reward_material_qty }}</b>
                         mat
                       </span>
                     </div>
                   </div>
                   <div class="flex items-center gap-2.5">
                     @if (m.category === 'DAILY_GRIND' || m.status === 'ACTIVE') {
-                      <span class="text-[10px] text-forge-muted/50">Expires in: {{ dailyTimeLeft() }}</span>
+                      <span class="text-[10px] text-forge-text/60 font-semibold">
+                        Expires in: {{ dailyTimeLeft() }}
+                      </span>
                     } @else if (m.due_date) {
-                      <span class="text-[10px] text-forge-muted/50">Due: {{ formatDueDate(m.due_date) }}</span>
+                      <span class="text-[10px] text-forge-text/60 font-semibold">
+                        Due: {{ formatDueDate(m.due_date) }}
+                      </span>
                     }
                     <button
-                      class="forge-btn-primary text-[10px] uppercase tracking-widest font-black"
+                      class="forge-btn-primary forge-btn-action text-[10px]"
                       [class.btn-action-ready]="canFinish(m) && claiming() !== m.mission_id"
                       [class.btn-action-locked]="!canFinish(m)"
                       (click)="claim(m)"
@@ -582,7 +585,7 @@
                       @if (claiming() === m.mission_id) {
                         Processing...
                       } @else if (isPending(m)) {
-                        ✓ Finish
+                        Finish
                       } @else if (m.is_completable) {
                         Claim
                       } @else {
@@ -597,16 +600,17 @@
         </div>
       } @else {
         <!-- EMPTY STATE -->
-        <div class="forge-card p-10 text-center">
-          <p class="text-forge-muted text-sm">
+        <div class="forge-card p-10 flex flex-col items-center justify-center gap-3 text-center">
+          <ng-icon name="phosphorCompassBold" size="32" class="forge-empty-icon" />
+          <p class="forge-empty-text">
             @if (threatFilter()) {
               No
-              <span [class]="threatTextClass(threatFilter())" class="font-bold">{{ threatFilter() }}</span>
-              missions in this category.
+              <span [class]="threatTextClass(threatFilter())">{{ threatFilter() }}</span>
+              missions found.
             } @else if (attrFilter()) {
               No
-              <span [class]="attrColor(attrFilter())" class="font-bold">{{ attrFilter() }}</span>
-              missions in this category.
+              <span [class]="attrColor(attrFilter())">{{ getAttrName(attrFilter()) }}</span>
+              missions found.
             } @else {
               No missions in this category.
             }
@@ -615,9 +619,15 @@
       }
       <!-- LOADING STATE -->
     } @else if (loadError()) {
-      <div class="forge-card p-6 text-red-400 text-sm">{{ loadError() }}</div>
+      <div class="forge-state-wrap">
+        <ng-icon name="phosphorPlugsBold" size="40" class="forge-state-error-icon" />
+        <span class="forge-state-error-text">Error loading Missions</span>
+      </div>
     } @else {
-      <div class="text-forge-muted text-sm animate-pulse">Loading missions...</div>
+      <div class="forge-state-wrap">
+        <ng-icon name="phosphorSpinnerBold" size="40" class="forge-state-loading-icon" />
+        <span class="forge-state-loading-text">Loading Missions...</span>
+      </div>
     }
   }
 
@@ -625,92 +635,81 @@
        TAB: HISTORY
        ================================================================ -->
   @if (activeTab() === 'HISTORY') {
-    @if (!historyLoaded()) {
-      <div class="text-forge-muted text-sm animate-pulse">Loading history...</div>
+    <!-- PAGINATION -->
+    @if (historyTotalPages() > 1) {
+      <div class="flex items-center justify-end gap-2 mb-5">
+        <button class="forge-btn-nav" [disabled]="historyPage() <= 1" (click)="historyPrev()">
+          <ng-icon name="phosphorCaretCircleLeftBold" />
+          Prev
+        </button>
+        <span class="text-[11px] font-black text-forge-text tabular-nums tracking-wide">
+          <span class="tabular-nums">{{ historyPage() }} / {{ historyTotalPages() }}</span>
+        </span>
+        <button class="forge-btn-nav" [disabled]="historyPage() >= historyTotalPages()" (click)="historyNext()">
+          Next
+          <ng-icon name="phosphorCaretCircleRightBold" />
+        </button>
+      </div>
+    }
+
+    @if (historyLoadError()) {
+      <div class="forge-state-wrap">
+        <ng-icon name="phosphorPlugsBold" size="40" class="forge-state-error-icon" />
+        <span class="forge-state-error-text">Error loading History</span>
+      </div>
+    } @else if (!historyLoaded()) {
+      <div class="forge-state-wrap">
+        <ng-icon name="phosphorSpinnerBold" size="40" class="forge-state-loading-icon" />
+        <span class="forge-state-loading-text">Loading History...</span>
+      </div>
     } @else if (historyData().length === 0) {
-      <div class="forge-card p-10 text-center">
-        <p class="text-forge-muted text-sm">No completed missions yet.</p>
+      <div class="forge-card forge-state-wrap">
+        <ng-icon name="phosphorScrollBold" size="32" class="forge-empty-icon" />
+        <span class="forge-empty-text">No completed missions yet.</span>
       </div>
     } @else {
       <div class="flex flex-col gap-3">
         @for (m of historyData(); track m.mission_id) {
-          <div class="forge-card p-4 flex items-center justify-between gap-4 border border-forge-border/40">
-            <div class="flex-1 min-w-0">
-              <p class="font-black text-forge-text text-sm leading-snug truncate">{{ m.objective_description }}</p>
-              <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                <lucide-icon
-                  [img]="getIcon(m.attribute_code)"
-                  [size]="11"
-                  [class]="attrColor(m.attribute_code)"
-                ></lucide-icon>
-                <span class="text-[10px] text-forge-muted/70 uppercase tracking-wider">
-                  {{ categoryLabel(m.category) }}
-                </span>
-                <span class="text-[10px] text-forge-border">·</span>
-                <span [class]="attrColor(m.attribute_code) + ' text-[10px] tracking-wider'">
-                  {{ m.attribute_name }}
-                </span>
-                <span class="text-[10px] text-forge-border">·</span>
-                <span [class]="threatTextClass(m.threat_level) + ' text-[10px] uppercase tracking-widest font-black'">
-                  {{ m.threat_level }}
+          @if (!threatFilter() || m.threat_level === threatFilter()) {
+            <div class="forge-card p-4 flex items-center justify-between gap-4 border border-forge-border/40">
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-forge-text text-sm uppercase tracking-widest leading-snug truncate">
+                  {{ m.objective_description }}
+                </p>
+                <div class="flex items-center gap-2.5 flex-wrap mt-0.5">
+                  <ng-icon [name]="attrIcon(m.attribute_code)" size="11" [class]="attrColor(m.attribute_code)" />
+                  <span class="text-[10px] text-forge-text/60 uppercase tracking-wider font-semibold">
+                    {{ categoryLabel(m.category) }}
+                  </span>
+
+                  <span [class]="attrColor(m.attribute_code) + ' text-[10px] tracking-wider'">
+                    {{ m.attribute_name }}
+                  </span>
+
+                  <span [class]="threatTextClass(m.threat_level) + ' text-[10px] uppercase tracking-widest font-black'">
+                    {{ m.threat_level }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                <div class="flex items-center gap-3 text-xs text-forge-text/60">
+                  <span class="forge-reward-inline">
+                    <ng-icon name="phosphorFlaskBold" size="11" class="text-violet-400" />
+                    <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ fmt(m.reward_xp) }}</b>
+                  </span>
+                  <span class="forge-reward-inline">
+                    <ng-icon name="phosphorNutBold" size="11" class="text-stone-400" />
+                    <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ m.reward_material_qty }}</b>
+                  </span>
+                </div>
+                <span class="text-[10px] text-forge-text/60 font-semibold tracking-wider">
+                  {{ formatCompletedAt(m.completed_at) }}
                 </span>
               </div>
             </div>
-            <div class="flex flex-col items-end gap-1 flex-shrink-0">
-              <div class="flex items-center gap-3 text-xs text-forge-muted">
-                <span>
-                  ⚡
-                  <b [class]="attrColor(m.attribute_code)">+{{ m.reward_xp }}</b>
-                </span>
-                <span>
-                  🔩
-                  <b [class]="attrColor(m.attribute_code)">+{{ m.reward_material_qty }}</b>
-                </span>
-              </div>
-              <span class="text-[9px] text-forge-muted/50 tracking-wider">{{ formatCompletedAt(m.completed_at) }}</span>
-            </div>
-          </div>
+          }
         }
       </div>
-
-      <!-- PAGINATION -->
-      @if (historyTotalPages() > 1) {
-        <div class="flex items-center justify-between mt-4">
-          <button
-            type="button"
-            class="px-4 py-1.5 text-[10px] font-bold tracking-widest uppercase border rounded-sm transition-colors"
-            [class]="
-              historyPage() > 1
-                ? 'border-forge-border text-forge-muted hover:border-forge-primary/50 hover:text-forge-text'
-                : 'border-forge-border/20 text-forge-muted/30 cursor-not-allowed'
-            "
-            [disabled]="historyPage() <= 1"
-            (click)="historyPrev()"
-          >
-            ← Prev
-          </button>
-          <span class="text-[10px] text-forge-muted tracking-wider">
-            Page
-            <b class="text-forge-text">{{ historyPage() }}</b>
-            of
-            <b class="text-forge-text">{{ historyTotalPages() }}</b>
-            <span class="text-forge-muted/50 ml-2">({{ historyTotal() }} total)</span>
-          </span>
-          <button
-            type="button"
-            class="px-4 py-1.5 text-[10px] font-bold tracking-widest uppercase border rounded-sm transition-colors"
-            [class]="
-              historyPage() < historyTotalPages()
-                ? 'border-forge-border text-forge-muted hover:border-forge-primary/50 hover:text-forge-text'
-                : 'border-forge-border/20 text-forge-muted/30 cursor-not-allowed'
-            "
-            [disabled]="historyPage() >= historyTotalPages()"
-            (click)="historyNext()"
-          >
-            Next →
-          </button>
-        </div>
-      }
     }
   }
 </div>
