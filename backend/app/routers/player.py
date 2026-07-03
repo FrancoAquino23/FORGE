@@ -2,12 +2,12 @@
 # PLAYER ROUTES
 # ==================================================================
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_player
 from app.database import get_db
 from app.models.player import PlayerProfile
-from app.schemas.player import PlayerProfileResponse, PlayerStatsResponse
+from app.schemas.player import PlayerMetricsResponse, PlayerProfileResponse, PlayerStatsResponse
 from app.services.achievement_service import AchievementService
 from app.services.player_service import PlayerService
 
@@ -42,3 +42,14 @@ async def get_achievements(
 ) -> list[dict]:
 
     return await AchievementService(session).get_all(player)
+
+# Endpoint (GET /player/metrics) to retrieve weekly metrics
+@router.get("/metrics", response_model=PlayerMetricsResponse)
+async def get_metrics(
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+    week_offset: int = Query(default=0, le=0),
+) -> PlayerMetricsResponse:
+
+    service = PlayerService(session)
+    return await service.get_metrics(player, week_offset)

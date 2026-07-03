@@ -29,7 +29,7 @@ async def get_active_missions(
     session: AsyncSession = Depends(get_db),
 ) -> MissionListResponse:
     service = MissionService(session)
-    return await service.get_active_with_progress(player.id)
+    return await service.get_active_with_progress(player)
 
 # Endpoint (GET /missions/history) — Returns completed missions paginated
 @router.get("/history", response_model=MissionHistoryResponse)
@@ -70,7 +70,7 @@ async def claim_mission(
     session: AsyncSession = Depends(get_db),
 ) -> MissionClaimResponse:
     service = MissionService(session)
-    return await service.claim(player.id, mission_id)
+    return await service.claim(player, mission_id)
 
 # Endpoint (POST /missions/{mission_id}/favorite) — Toggle the is_favorite flag
 @router.post("/{mission_id}/favorite")

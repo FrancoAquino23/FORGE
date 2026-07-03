@@ -14,6 +14,7 @@ class SkillNodeInfo(BaseModel):
     current_level: int
     max_level: int
     cost_to_upgrade: int | None
+    locked_by_choice: bool
     bonus_at_current: float
     bonus_at_next: float | None
     current_effect: str
