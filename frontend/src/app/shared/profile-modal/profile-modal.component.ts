@@ -5,17 +5,30 @@
 import { DatePipe } from '@angular/common';
 import {
   Component,
+  DestroyRef,
   EventEmitter,
   HostListener,
   Input,
   OnChanges,
   Output,
+  SimpleChanges,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgIconComponent, provideIcons } from '@ng-icons/core';
+import {
+  phosphorFireBold,
+  phosphorLockKeyBold,
+  phosphorPlugsBold,
+  phosphorSignOutBold,
+  phosphorSpinnerBold,
+  phosphorTrophyBold,
+  phosphorXCircleBold,
+} from '@ng-icons/phosphor-icons/bold';
 import { ApiService, PlayerAchievement, PlayerProfile, PlayerStats } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
-import { ATTR_COLORS, ATTR_HEX } from '../attr-constants';
+import { ATTR_COLORS, ATTR_HEX, fmt, attrColor } from '../ui-constants';
 
 // Visual Prestige tiers
 const VISUAL_TIERS = [
@@ -70,12 +83,24 @@ const SEGMENTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 @Component({
   selector: 'app-profile-modal',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, NgIconComponent],
+  viewProviders: [
+    provideIcons({
+      phosphorFireBold,
+      phosphorTrophyBold,
+      phosphorLockKeyBold,
+      phosphorSignOutBold,
+      phosphorSpinnerBold,
+      phosphorPlugsBold,
+      phosphorXCircleBold,
+    }),
+  ],
   templateUrl: './profile-modal.component.html',
   styleUrl: './profile-modal.component.scss',
 })
 export class ProfileModalComponent implements OnChanges {
   private api = inject(ApiService);
+  private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
 
   @Input() open = false;
@@ -84,16 +109,27 @@ export class ProfileModalComponent implements OnChanges {
   profile = signal<PlayerProfile | null>(null);
   stats = signal<PlayerStats | null>(null);
   achievements = signal<PlayerAchievement[] | null>(null);
+  loadError = signal(false);
   confirmingLogout = signal(false);
 
   readonly SEGMENTS = SEGMENTS;
 
-  // Load data when modal is opened
-  ngOnChanges(): void {
-    if (this.open && !this.profile()) {
-      this.api.getProfile().subscribe({ next: (p) => this.profile.set(p) });
-      this.api.getPlayerStats().subscribe({ next: (s) => this.stats.set(s) });
-      this.api.getAchievements().subscribe({ next: (a) => this.achievements.set(a) });
+  // Load data when modal is opened — always reload on open to avoid stale data
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['open']?.currentValue === true) {
+      this.loadError.set(false);
+      this.api
+        .getProfile()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({ next: (p) => this.profile.set(p), error: () => this.loadError.set(true) });
+      this.api
+        .getPlayerStats()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({ next: (s) => this.stats.set(s) });
+      this.api
+        .getAchievements()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({ next: (a) => this.achievements.set(a) });
     }
   }
 
@@ -155,10 +191,8 @@ export class ProfileModalComponent implements OnChanges {
     return this.prestigeTier(count).name;
   }
 
-  // Get attribute text color class
-  attrColor(code: string): string {
-    return ATTR_COLORS[code] ?? 'text-forge-primary';
-  }
+  // Constants & utility functions
+  protected attrColor = attrColor;
 
   // Get attribute hex color
   attrHex(code: string): string {
@@ -170,8 +204,6 @@ export class ProfileModalComponent implements OnChanges {
     return level >= seg ? 'opacity-100' : 'opacity-10 bg-forge-border';
   }
 
-  // Format large numbers with comma separator
-  formatNumber(n: number): string {
-    return n.toLocaleString('en-US');
-  }
+  // Constants & utility functions
+  protected fmt = fmt;
 }

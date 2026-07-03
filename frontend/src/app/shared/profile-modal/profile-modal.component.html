@@ -1,5 +1,5 @@
 <!-- ==================================================================
-     PROFILE TEMPLATE
+     PROFILE COMPONENT TEMPLATE
      ================================================================== -->
 
 @if (open) {
@@ -12,13 +12,12 @@
   >
     <!-- CLOSE BUTTON -->
     <button
-      class="absolute top-3 right-3 p-1.5 text-forge-muted/50 hover:text-forge-text transition-colors"
+      class="absolute top-3 right-3 p-1.5 text-forge-muted/50 hover:text-red-400 transition-colors"
       (click)="close()"
     >
-      ✕
+      <ng-icon name="phosphorXCircleBold" size="20" />
     </button>
 
-    <!-- SCROLLABLE CONTENT -->
     <div class="flex-1 overflow-y-auto forge-scroll-thin flex flex-col gap-4 p-5 pt-10">
       <!-- IDENTITY -->
       <div class="forge-card p-4 flex flex-col items-center gap-3">
@@ -40,7 +39,7 @@
           </div>
           <!-- PRESTIGE GEM + TIER -->
           <div class="flex flex-col items-center gap-1">
-            <p class="text-[9px] font-black tracking-[0.2em] text-forge-muted uppercase">Prestige</p>
+            <p class="text-[10px] uppercase tracking-widest text-forge-text/70">Prestige</p>
             <div [style.filter]="prestigeGemGlow(profile()!.prestige_count)">
               <div
                 class="hex-gem-border"
@@ -58,21 +57,28 @@
               </div>
             </div>
             <p
-              class="text-[8px] tracking-[0.15em] uppercase"
+              class="text-[11px] font-black uppercase tracking-widest drop-shadow-[0_0_6px_currentColor]"
               [style.color]="prestigeGemColor(profile()!.prestige_count)"
             >
               {{ prestigeTierName(profile()!.prestige_count) }}
             </p>
           </div>
+        } @else if (loadError()) {
+          <div class="flex flex-col items-center justify-center gap-3 py-4">
+            <ng-icon name="phosphorPlugsBold" size="32" class="forge-state-error-icon" />
+            <span class="forge-state-error-text">Error loading Profile</span>
+          </div>
         } @else {
-          <div class="w-14 h-14 rounded-full bg-forge-card animate-pulse"></div>
-          <div class="h-4 w-24 bg-forge-card rounded animate-pulse"></div>
+          <div class="flex flex-col items-center justify-center gap-3 py-4">
+            <ng-icon name="phosphorSpinnerBold" size="32" class="forge-state-loading-icon" />
+            <span class="forge-state-loading-text">Loading Profile...</span>
+          </div>
         }
       </div>
 
       <!--S.P.E.C.I.A.L. -->
       <div class="forge-card p-4 flex flex-col gap-1">
-        <p class="text-[10px] uppercase tracking-widest text-forge-muted mb-2">S.P.E.C.I.A.L.</p>
+        <p class="forge-section-title mb-2">S.P.E.C.I.A.L.</p>
         @if (profile()) {
           @for (attr of profile()!.attributes; track attr.code) {
             <div class="flex items-center gap-2">
@@ -88,7 +94,9 @@
                   ></div>
                 }
               </div>
-              <span class="text-[9px] text-forge-muted w-10 text-right tabular-nums">Lv.{{ attr.level }}</span>
+              <span class="text-xs text-forge-text/60 font-black w-10 text-right tabular-nums">
+                Lv.{{ attr.level }}
+              </span>
             </div>
           }
         } @else {
@@ -100,58 +108,45 @@
 
       <!-- STATS -->
       <div class="forge-card p-4 flex flex-col gap-2">
-        <p class="text-[10px] uppercase tracking-widest text-forge-muted mb-1">Stats</p>
+        <p class="forge-section-title mb-1">Stats</p>
         @if (stats()) {
           <div class="flex justify-between items-baseline">
-            <span class="text-[11px] text-forge-muted">Missions completed</span>
-            <span class="text-[11px] text-forge-text font-black tabular-nums">
-              {{ formatNumber(stats()!.total_missions_completed) }}
+            <span class="forge-stat-label">Missions completed</span>
+            <span class="forge-stat-value">
+              {{ fmt(stats()!.total_missions_completed) }}
             </span>
           </div>
-          <div class="flex flex-col gap-0.5 pl-3 border-l border-forge-border/40">
-            <div class="flex justify-between items-baseline">
-              <span class="text-[10px] text-forge-muted/60">Main Quest</span>
-              <span class="text-[10px] text-forge-muted tabular-nums">
-                {{ formatNumber(stats()!.main_quest_completed) }}
-              </span>
-            </div>
-            <div class="flex justify-between items-baseline">
-              <span class="text-[10px] text-forge-muted/60">Side Quest</span>
-              <span class="text-[10px] text-forge-muted tabular-nums">
-                {{ formatNumber(stats()!.side_quest_completed) }}
-              </span>
-            </div>
-            <div class="flex justify-between items-baseline">
-              <span class="text-[10px] text-forge-muted/60">Daily Grind</span>
-              <span class="text-[10px] text-forge-muted tabular-nums">
-                {{ formatNumber(stats()!.daily_grind_completed) }}
-              </span>
-            </div>
-          </div>
-          <div class="border-t border-forge-border/30 my-0.5"></div>
+          <div class="forge-stat-divider"></div>
           <div class="flex justify-between items-baseline">
-            <span class="text-[11px] text-forge-muted">Best streak</span>
+            <span class="forge-stat-label">Best streak</span>
             <span
-              class="text-[11px] font-black tabular-nums"
-              [class]="stats()!.best_streak > 0 ? 'text-amber-400' : 'text-forge-muted'"
+              class="text-xs font-black tabular-nums"
+              [class]="
+                stats()!.best_streak > 0
+                  ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]'
+                  : 'text-forge-muted'
+              "
             >
               @if (stats()!.best_streak > 0) {
-                🔥 {{ stats()!.best_streak }}d
+                <ng-icon name="phosphorFireBold" class="text-[13px] leading-none" />
+                {{ stats()!.best_streak }}d
               } @else {
                 —
               }
             </span>
           </div>
+          <div class="forge-stat-divider"></div>
           <div class="flex justify-between items-baseline">
-            <span class="text-[11px] text-forge-muted">Total XP earned</span>
-            <span class="text-[11px] text-forge-primary font-black tabular-nums">
-              {{ formatNumber(stats()!.total_xp_earned) }}
+            <span class="forge-stat-label">Total XP earned</span>
+            <span class="forge-stat-value">
+              {{ fmt(stats()!.total_xp_earned) }}
             </span>
           </div>
+          <div class="forge-stat-divider"></div>
           <div class="flex justify-between items-baseline">
-            <span class="text-[11px] text-forge-muted">Total materials</span>
-            <span class="text-[11px] text-forge-primary font-black tabular-nums">
-              {{ formatNumber(stats()!.total_materials_earned) }}
+            <span class="forge-stat-label">Total materials</span>
+            <span class="forge-stat-value">
+              {{ fmt(stats()!.total_materials_earned) }}
             </span>
           </div>
         } @else {
@@ -165,24 +160,26 @@
 
       <!-- ACHIEVEMENTS -->
       <div class="forge-card p-4 flex flex-col gap-2">
-        <p class="text-[10px] uppercase tracking-widest text-forge-muted mb-1">Achievements</p>
+        <p class="forge-section-title mb-1">Achievements</p>
         @if (achievements()) {
           @for (a of achievements()!; track a.code) {
             <div
               class="flex items-start gap-2.5 py-1.5 border-b border-forge-border/20 last:border-0"
               [class.opacity-35]="!a.unlocked"
             >
-              <span class="text-base leading-none flex-shrink-0 mt-0.5">
-                {{ a.unlocked ? '🏆' : '🔒' }}
-              </span>
+              <ng-icon
+                [name]="a.unlocked ? 'phosphorTrophyBold' : 'phosphorLockKeyBold'"
+                class="text-base leading-none flex-shrink-0 mt-0.5"
+                [class]="a.unlocked ? 'text-amber-400' : 'text-yellow-400/70'"
+              />
               <div class="flex flex-col gap-0.5 min-w-0">
                 <span
-                  class="text-[11px] font-black tracking-wide"
-                  [class]="a.unlocked ? 'text-forge-primary' : 'text-forge-muted'"
+                  class="text-xs font-bold uppercase tracking-widest"
+                  [class]="a.unlocked ? 'text-forge-text' : 'text-forge-text/40'"
                 >
                   {{ a.title }}
                 </span>
-                <span class="text-[10px] text-forge-muted/70">{{ a.description }}</span>
+                <span class="text-xs text-forge-text/50">{{ a.description }}</span>
                 @if (a.unlocked) {
                   <span class="text-[9px] text-forge-muted/40 italic leading-snug">{{ a.flavor }}</span>
                 }
@@ -206,10 +203,11 @@
     <div class="border-t border-forge-border p-4 flex flex-col gap-2 flex-shrink-0">
       @if (!confirmingLogout()) {
         <button
-          class="w-full flex items-center gap-2.5 px-3 py-2 rounded-sm text-xs text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-wide"
+          class="w-full flex items-center gap-2.5 px-3 py-2 rounded-sm text-xs text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-widest uppercase font-bold"
           (click)="requestLogout()"
         >
-          🚪 Logout
+          <ng-icon name="phosphorSignOutBold" class="text-sm leading-none flex-shrink-0" />
+          Logout
         </button>
       } @else {
         <div class="flex gap-2">
