@@ -117,6 +117,7 @@ class MissionService:
             expires_at=datetime.now(timezone.utc) + timedelta(days=30),
             due_date=request.due_date,
             threat_level=_THREAT_VALUE.get(request.threat_level, 1),
+            cycle_started_at=datetime.now(timezone.utc),
         )
         self._db.add(mission)
         await self._db.flush()
@@ -599,6 +600,7 @@ class MissionService:
             m.status = "PENDING" if m.objective_type == "MANUAL" else "ACTIVE"
             m.completed_at = None
             m.issued_at = today_start_utc
+            m.cycle_started_at = today_start_utc
             m.expires_at = today_start_utc + timedelta(hours=24)
             if m.last_streak_date is not None and m.last_streak_date < yesterday:
                 m.current_streak = 0

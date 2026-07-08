@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import case, extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from app.core.exceptions import UnauthorizedError
 from app.models.catalog import Attribute
 from app.models.mission import Mission
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
@@ -30,6 +31,8 @@ class PlayerService:
     # Function (get_profile) to retrieve the player's profile & inventory
     async def get_profile(self, player: PlayerProfile) -> PlayerProfileResponse:
         user = await self._db.scalar(select(User).where(User.id == player.user_id))
+        if not user:
+            raise UnauthorizedError("Account no longer exists")
 
         # Retrieve (Player Attributes & Inventory)
         attr_rows = (
@@ -123,7 +126,7 @@ class PlayerService:
         ]
 
         _elapsed_hours = extract("epoch", Mission.completed_at - Mission.issued_at) / 3600.0
-        _elapsed_hours_rec = extract("epoch", Mission.last_completed_at - Mission.issued_at) / 3600.0
+        _elapsed_hours_rec = extract("epoch", Mission.last_completed_at - Mission.cycle_started_at) / 3600.0
 
         # Query 1: All aggregates for COMPLETED missions this week (category + threat + avg resolution)
         std_row = (
