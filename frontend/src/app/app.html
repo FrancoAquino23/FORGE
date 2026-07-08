@@ -9,15 +9,24 @@
       class="sticky top-0 z-40 border-b border-forge-border bg-forge-surface/90 backdrop-blur px-6 py-3 flex items-center justify-between"
     >
       <!-- NAVIGATION BAR -->
-      <a
-        routerLink="/dashboard"
-        class="text-forge-primary font-black tracking-widest text-base uppercase hover:text-amber-400 transition-colors"
-      >
-        <span class="flex items-center gap-2">
-          <ng-icon name="phosphorRobot" size="36" />
-          THE FORGE
-        </span>
-      </a>
+      <div class="flex items-center gap-2">
+        <a
+          routerLink="/dashboard"
+          class="text-forge-primary font-black tracking-widest text-base uppercase hover:text-amber-400 transition-colors"
+        >
+          <span class="flex items-center gap-2">
+            <ng-icon name="phosphorRobot" size="36" />
+            THE FORGE
+          </span>
+        </a>
+        <button
+          class="text-forge-muted/60 hover:text-forge-primary transition-colors p-1 flex items-center"
+          title="Operator Manual"
+          (click)="tutorialOpen.set(true)"
+        >
+          <ng-icon name="phosphorQuestionBold" size="20" />
+        </button>
+      </div>
       <div class="flex items-center gap-6 text-xs uppercase tracking-wider">
         <a routerLink="/dashboard" routerLinkActive="text-forge-primary" class="forge-nav-link">Dashboard</a>
         <a routerLink="/missions" routerLinkActive="text-forge-primary" class="forge-nav-link">Missions</a>
@@ -37,7 +46,10 @@
           }
         </a>
         <a routerLink="/skill-tree" routerLinkActive="text-forge-primary" class="forge-nav-link">Perks</a>
-        <button class="forge-nav-link cursor-pointer uppercase tracking-wider text-xs" (click)="profileOpen.set(true)">
+        <button
+          class="forge-nav-link cursor-pointer uppercase tracking-wider text-xs"
+          (click)="uiState.profileOpen.set(true)"
+        >
           Profile
         </button>
       </div>
@@ -48,4 +60,5 @@
 </div>
 
 <app-toast />
-<app-profile-modal [open]="profileOpen()" (closed)="profileOpen.set(false)" />
+<app-profile-modal [open]="uiState.profileOpen()" (closed)="uiState.profileOpen.set(false)" />
+<app-tutorial-modal [open]="tutorialOpen()" (closed)="tutorialOpen.set(false)" />
