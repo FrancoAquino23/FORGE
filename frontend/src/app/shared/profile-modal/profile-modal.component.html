@@ -20,7 +20,7 @@
 
     <div class="flex-1 overflow-y-auto forge-scroll-thin flex flex-col gap-4 p-5 pt-10">
       <!-- IDENTITY -->
-      <div class="forge-card p-4 flex flex-col items-center gap-3">
+      <div class="profile-identity forge-card p-4 flex flex-col items-center gap-3">
         <!-- AVATAR -->
         @if (profile()) {
           <div
@@ -77,7 +77,7 @@
       </div>
 
       <!--S.P.E.C.I.A.L. -->
-      <div class="forge-card p-4 flex flex-col gap-1">
+      <div class="profile-special forge-card p-4 flex flex-col gap-1">
         <p class="forge-section-title mb-2">S.P.E.C.I.A.L.</p>
         @if (profile()) {
           @for (attr of profile()!.attributes; track attr.code) {
@@ -107,7 +107,7 @@
       </div>
 
       <!-- STATS -->
-      <div class="forge-card p-4 flex flex-col gap-2">
+      <div class="profile-stats forge-card p-4 flex flex-col gap-2">
         <p class="forge-section-title mb-1">Stats</p>
         @if (stats()) {
           <div class="flex justify-between items-baseline">
@@ -159,7 +159,7 @@
       </div>
 
       <!-- ACHIEVEMENTS -->
-      <div class="forge-card p-4 flex flex-col gap-2">
+      <div class="profile-achievements forge-card p-4 flex flex-col gap-2">
         <p class="forge-section-title mb-1">Achievements</p>
         @if (achievements()) {
           @for (a of achievements()!; track a.code) {
@@ -201,7 +201,7 @@
 
     <!-- FOOTER -->
     <div class="border-t border-forge-border p-4 flex flex-col gap-2 flex-shrink-0">
-      @if (!confirmingLogout()) {
+      @if (!confirmingLogout() && !confirmingDelete()) {
         <button
           class="w-full flex items-center gap-2.5 px-3 py-2 rounded-sm text-xs text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-widest uppercase font-bold"
           (click)="requestLogout()"
@@ -209,7 +209,16 @@
           <ng-icon name="phosphorSignOutBold" class="text-sm leading-none flex-shrink-0" />
           Logout
         </button>
-      } @else {
+        <button
+          class="w-full flex items-center gap-2.5 px-3 py-2 rounded-sm text-xs text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-widest uppercase font-bold"
+          (click)="requestDelete()"
+        >
+          <ng-icon name="phosphorTrashBold" class="text-sm leading-none flex-shrink-0" />
+          Delete Account
+        </button>
+
+        <!-- LOGOUT -->
+      } @else if (confirmingLogout()) {
         <div class="flex gap-2">
           <button
             class="flex-1 px-3 py-2 rounded-sm text-xs text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors tracking-wide font-black uppercase"
@@ -223,6 +232,46 @@
           >
             Cancel
           </button>
+        </div>
+
+        <!-- DELETE ACCOUNT -->
+      } @else if (confirmingDelete()) {
+        <div class="flex flex-col gap-2">
+          <p class="text-[10px] text-red-400/80 uppercase tracking-widest font-bold">Permanent deletion</p>
+          <p class="text-[10px] text-forge-muted leading-relaxed">
+            This will permanently delete your account and all progress. This action cannot be undone.
+          </p>
+          <input
+            type="password"
+            class="forge-input w-full text-xs"
+            placeholder="Confirm your password"
+            [ngModel]="deletePassword()"
+            (ngModelChange)="deletePassword.set($event)"
+            (keydown.enter)="confirmDelete()"
+          />
+          @if (deleteError()) {
+            <p class="forge-field-error">{{ deleteError() }}</p>
+          }
+          <div class="flex gap-2 mt-1">
+            <button
+              class="flex-1 px-3 py-2 rounded-sm text-xs text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors tracking-wide font-black uppercase disabled:opacity-30 disabled:cursor-not-allowed"
+              [disabled]="!deletePassword() || deleting()"
+              (click)="confirmDelete()"
+            >
+              @if (deleting()) {
+                <ng-icon name="phosphorSpinnerBold" class="animate-spin" />
+              } @else {
+                Delete
+              }
+            </button>
+            <button
+              class="flex-1 px-3 py-2 rounded-sm text-xs text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
+              [disabled]="deleting()"
+              (click)="cancelDelete()"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       }
     </div>

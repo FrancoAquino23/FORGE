@@ -16,6 +16,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
   phosphorFireBold,
@@ -23,12 +24,13 @@ import {
   phosphorPlugsBold,
   phosphorSignOutBold,
   phosphorSpinnerBold,
+  phosphorTrashBold,
   phosphorTrophyBold,
   phosphorXCircleBold,
 } from '@ng-icons/phosphor-icons/bold';
 import { ApiService, PlayerAchievement, PlayerProfile, PlayerStats } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
-import { ATTR_COLORS, ATTR_HEX, fmt, attrColor } from '../ui-constants';
+import { ATTR_HEX, fmt, attrColor } from '../ui-constants';
 
 // Visual Prestige tiers
 const VISUAL_TIERS = [
@@ -83,7 +85,7 @@ const SEGMENTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 @Component({
   selector: 'app-profile-modal',
   standalone: true,
-  imports: [DatePipe, NgIconComponent],
+  imports: [DatePipe, NgIconComponent, FormsModule],
   viewProviders: [
     provideIcons({
       phosphorFireBold,
@@ -93,6 +95,7 @@ const SEGMENTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
       phosphorSpinnerBold,
       phosphorPlugsBold,
       phosphorXCircleBold,
+      phosphorTrashBold,
     }),
   ],
   templateUrl: './profile-modal.component.html',
@@ -111,6 +114,10 @@ export class ProfileModalComponent implements OnChanges {
   achievements = signal<PlayerAchievement[] | null>(null);
   loadError = signal(false);
   confirmingLogout = signal(false);
+  confirmingDelete = signal(false);
+  deletePassword = signal('');
+  deleteError = signal('');
+  deleting = signal(false);
 
   readonly SEGMENTS = SEGMENTS;
 
@@ -142,11 +149,15 @@ export class ProfileModalComponent implements OnChanges {
   // Close modal
   close(): void {
     this.confirmingLogout.set(false);
+    this.confirmingDelete.set(false);
+    this.deletePassword.set('');
+    this.deleteError.set('');
     this.closed.emit();
   }
 
   // Logout (inline confirm pattern)
   requestLogout(): void {
+    this.confirmingDelete.set(false);
     this.confirmingLogout.set(true);
   }
 
@@ -159,6 +170,38 @@ export class ProfileModalComponent implements OnChanges {
   // Cancel logout action
   cancelLogout(): void {
     this.confirmingLogout.set(false);
+  }
+
+  // Delete account
+  requestDelete(): void {
+    this.confirmingLogout.set(false);
+    this.confirmingDelete.set(true);
+  }
+
+  // Confirm delete account action
+  confirmDelete(): void {
+    if (!this.deletePassword() || this.deleting()) return;
+    this.deleting.set(true);
+    this.deleteError.set('');
+    this.api
+      .deleteAccount(this.deletePassword())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.auth.logout();
+        },
+        error: () => {
+          this.deleteError.set('Incorrect password. Please try again.');
+          this.deleting.set(false);
+        },
+      });
+  }
+
+  // Cancel delete account action
+  cancelDelete(): void {
+    this.confirmingDelete.set(false);
+    this.deletePassword.set('');
+    this.deleteError.set('');
   }
 
   // Get initials from username
