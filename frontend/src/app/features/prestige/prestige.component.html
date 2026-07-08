@@ -18,7 +18,7 @@
         </div>
 
         <!-- HONEYCOMB -->
-        <div class="flex flex-col items-start">
+        <div class="prestige-honeycomb flex flex-col items-start">
           <div class="flex gap-4 ml-[58px]">
             @for (attr of hexRow1(); track attr.code) {
               <div
@@ -66,7 +66,7 @@
         </div>
 
         <!-- ASCEND BUTTON -->
-        <div class="mt-0 w-72">
+        <div class="prestige-ascend-btn mt-0 w-72">
           <p class="text-[9px] text-forge-text/60 tracking-widest text-center uppercase mb-3">
             Next prestige requires
             <span class="font-black tabular-nums text-forge-text forge-glow-text">{{ status()!.material_cost }}</span>
@@ -91,7 +91,7 @@
       </div>
 
       <!-- MATERIAL RESERVES -->
-      <div class="w-full lg:w-72 flex-shrink-0">
+      <div class="prestige-material-reserves w-full lg:w-72 flex-shrink-0">
         <h3 class="forge-section-title mb-3">Material Reserves</h3>
         <div class="forge-card p-5 flex flex-col divide-y divide-forge-border/30">
           @for (attr of sortedAttributes(); track attr.code) {

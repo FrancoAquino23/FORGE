@@ -10,10 +10,11 @@
   </div>
 
   <!-- TABS -->
-  <div class="flex border-b border-forge-border/40 mb-5">
+  <div class="missions-tab-bar flex border-b border-forge-border/40 mb-5">
     @for (tab of TABS; track tab.value) {
       <button
         type="button"
+        [attr.data-tab]="tab.value"
         class="relative px-4 py-2.5 text-[11px] font-black tracking-widest uppercase whitespace-nowrap transition-colors border-b-2 -mb-px"
         [class]="
           activeTab() === tab.value
@@ -88,7 +89,7 @@
         </div>
 
         <!-- QUEST CATEGORY -->
-        <div>
+        <div class="missions-form-category">
           <label class="forge-label">Category</label>
           <div class="flex gap-2">
             @for (cat of CATEGORIES; track cat.value) {
@@ -109,7 +110,7 @@
         </div>
 
         <!-- PRIORITY -->
-        <div>
+        <div class="missions-form-threat">
           <label class="forge-label">Priority</label>
           <div class="flex gap-2">
             @for (tl of THREAT_LEVELS; track tl.value) {

@@ -26,7 +26,7 @@
     @if (profile()) {
       <div class="grid lg:grid-cols-[1fr_360px] gap-5">
         <!-- MATERIALS PANEL -->
-        <div class="forge-card p-5 flex flex-col">
+        <div class="forge-material-grid forge-card p-5 flex flex-col">
           <div class="flex flex-col flex-1 justify-evenly">
             @for (attr of ordinary(); track attr.code) {
               <div
@@ -74,7 +74,7 @@
         <!-- CONTROLS -->
         <div class="flex flex-col gap-4">
           <!-- STARDUST BALANCE -->
-          <div class="forge-card p-5 flex items-center justify-between">
+          <div class="forge-stardust-balance forge-card p-5 flex items-center justify-between">
             <div>
               <p class="forge-section-title mb-1.5">Stardust Balance</p>
               <p class="text-3xl font-black text-orange-400 tabular-nums leading-none">
@@ -87,7 +87,7 @@
           </div>
 
           <!-- BATCH + FORGE ACTION -->
-          <div class="forge-card p-5 flex flex-col gap-5">
+          <div class="forge-transmute-panel forge-card p-5 flex flex-col gap-5">
             <div class="flex items-center justify-between">
               <h2 class="text-xs uppercase tracking-widest text-forge-text/70 font-bold">Batch Size</h2>
               <span class="text-forge-primary font-black text-base tabular-nums leading-none">

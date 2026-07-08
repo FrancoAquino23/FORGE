@@ -11,7 +11,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
       @for (r of relics(); track r.attribute_code) {
         <div
-          class="bg-forge-surface border rounded-sm p-3 flex flex-col gap-2.5 transition-colors"
+          class="relic-card bg-forge-surface border rounded-sm p-3 flex flex-col gap-2.5 transition-colors"
           [class]="borderClass(r.attribute_code)"
           [style]="glowStyle(r.attribute_code)"
           (mouseenter)="hoveredRelic.set(r.attribute_code)"
@@ -55,7 +55,7 @@
             </div>
           } @else {
             <button
-              class="forge-btn-primary forge-btn-action text-[9px] w-full py-1.5"
+              class="relic-upgrade-btn forge-btn-primary forge-btn-action text-[9px] w-full py-1.5"
               [class.btn-action-ready]="r.can_upgrade && upgrading() !== r.attribute_code"
               [class.btn-action-locked]="upgrading() === r.attribute_code"
               [disabled]="!r.can_upgrade || upgrading() === r.attribute_code"

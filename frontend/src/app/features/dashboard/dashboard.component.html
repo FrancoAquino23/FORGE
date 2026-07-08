@@ -25,7 +25,7 @@
   <!-- S.P.E.C.I.A.L. ATTRIBUTE GRID -->
   @if (profile()) {
     <h3 class="forge-section-title mb-3">S.P.E.C.I.A.L. Attributes</h3>
-    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
+    <div class="dashboard-special-grid grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
       @for (attr of profile()!.attributes; track attr.code) {
         <div class="forge-card p-4 flex flex-col gap-3">
           <div class="flex items-start justify-between">
@@ -65,7 +65,7 @@
     <!-- METRICS + ACTIVE MISSIONS -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
       <app-metrics />
-      <div class="forge-card p-5 flex flex-col gap-4 min-h-52">
+      <div class="dashboard-active-missions forge-card p-5 flex flex-col gap-4 min-h-52">
         <div class="flex items-center justify-between gap-2 flex-shrink-0">
           <h3 class="forge-section-title">Active Missions</h3>
           @if (urgentMissions().length > MISSIONS_PER_PAGE) {

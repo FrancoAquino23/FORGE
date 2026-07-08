@@ -4,7 +4,7 @@
 
 <div class="forge-card p-5 flex flex-col gap-4 min-h-52">
   <!-- HEADER -->
-  <div class="flex items-center justify-between gap-2 flex-shrink-0">
+  <div class="dashboard-week-nav flex items-center justify-between gap-2 flex-shrink-0">
     <h3 class="forge-section-title">Weekly Report</h3>
     <div class="flex items-center gap-2">
       <button class="forge-btn-nav" (click)="prevWeek()" [disabled]="!metrics()?.has_previous || loading()">
@@ -56,7 +56,7 @@
   @if (!loading() && metrics() && metrics()!.category_breakdown.total > 0) {
     <div class="grid grid-cols-2 gap-3 flex-1 min-h-0">
       <!-- COMPLETED MISSIONS BY CATEGORY -->
-      <div class="bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
+      <div class="dashboard-category-breakdown bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
         <p class="text-[9px] uppercase tracking-widest text-forge-text/70 flex-shrink-0">
           Completed missions by category
         </p>
@@ -116,7 +116,7 @@
       </div>
 
       <!-- THREAT DISTRIBUTION -->
-      <div class="bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
+      <div class="dashboard-threat-breakdown bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
         <p class="text-[9px] uppercase tracking-widest text-forge-text/70 flex-shrink-0">Missions by threat level</p>
         <div class="flex flex-col gap-1.5 flex-1">
           <div class="flex flex-col gap-0.5">
@@ -168,7 +168,7 @@
       </div>
 
       <!-- COMPLETED MISSIONS BY ATTRIBUTE -->
-      <div class="bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
+      <div class="dashboard-attribute-breakdown bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
         <p class="text-[9px] uppercase tracking-widest text-forge-text/70 flex-shrink-0">
           Completed missions by attribute
         </p>
@@ -205,7 +205,7 @@
       </div>
 
       <!-- AVERAGE RESOLUTION TIME -->
-      <div class="bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
+      <div class="dashboard-resolution-time bg-forge-surface rounded-sm p-3 flex flex-col gap-2 overflow-hidden">
         <p class="text-[9px] uppercase tracking-widest text-forge-text/70 flex-shrink-0">Average resolution time</p>
         <div class="flex flex-col gap-2 flex-1 justify-around">
           <div class="flex justify-between items-center">

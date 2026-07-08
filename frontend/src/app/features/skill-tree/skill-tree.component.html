@@ -67,7 +67,7 @@
                 <div class="card-nodes">
                   <div class="path-nodes">
                     @for (node of group.nodes; track node.node_id; let i = $index; let last = $last) {
-                      <div class="node-wrapper" (mouseenter)="hoverNode.set(node.node_id)">
+                      <div class="skill-tree-node node-wrapper" (mouseenter)="hoverNode.set(node.node_id)">
                         <div [class]="nodeHexClass(node)">
                           <div class="node-hex-inner">
                             <ng-icon name="phosphorGraphBold" class="node-symbol"></ng-icon>
@@ -86,7 +86,7 @@
               <!-- CHOOSE ONE -->
               <p class="choose-one-notice">Choose one node per path — reset tree to change your selection</p>
 
-              <div class="carousel-dots">
+              <div class="skill-tree-path-tabs carousel-dots">
                 @for (p of paths(); track p.path; let i = $index) {
                   <button
                     class="carousel-dot"
@@ -117,7 +117,7 @@
         <div class="tree-sidebar">
           <!-- POINTS + RESET -->
           @if (tree(); as t) {
-            <div class="text-right">
+            <div class="skill-tree-pp-display text-right">
               <div class="forge-section-title">Prestige Points</div>
               <div class="flex items-baseline gap-1 justify-end mt-1">
                 <span class="text-forge-text font-black text-2xl tabular-nums forge-glow-text">
@@ -152,7 +152,7 @@
                   <button
                     (click)="requestReset()"
                     [disabled]="resetting() || t.pp_available === t.pp_total"
-                    class="forge-btn-primary forge-btn-action px-3 py-1.5 text-[10px] flex items-center gap-1.5"
+                    class="skill-tree-reset-btn forge-btn-primary forge-btn-action px-3 py-1.5 text-[10px] flex items-center gap-1.5"
                     [class.btn-action-ready]="!resetting() && t.pp_available < t.pp_total"
                     [class.btn-action-locked]="resetting() || t.pp_available === t.pp_total"
                   >
