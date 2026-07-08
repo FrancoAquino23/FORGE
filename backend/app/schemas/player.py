@@ -2,7 +2,7 @@
 # PLAYER PROFILE SCHEMAS
 # ==================================================================
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # Model AttributeProfile (Data)
 class AttributeProfile(BaseModel):
@@ -65,3 +65,7 @@ class PlayerMetricsResponse(BaseModel):
     threat_breakdown: ThreatBreakdown
     attribute_breakdown: list[AttributeMetric]
     avg_resolution_hours: AvgResolutionTime
+
+# Model DeleteAccountRequest (Endpoint Response - Password confirmation)
+class DeleteAccountRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=128)

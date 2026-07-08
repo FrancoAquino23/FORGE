@@ -3,11 +3,15 @@
 # ==================================================================
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_player
+from app.core.exceptions import UnauthorizedError
+from app.core.security import verify_password
 from app.database import get_db
 from app.models.player import PlayerProfile
-from app.schemas.player import PlayerMetricsResponse, PlayerProfileResponse, PlayerStatsResponse
+from app.models.player import User
+from app.schemas.player import DeleteAccountRequest, PlayerMetricsResponse, PlayerProfileResponse, PlayerStatsResponse
 from app.services.achievement_service import AchievementService
 from app.services.player_service import PlayerService
 
@@ -53,3 +57,16 @@ async def get_metrics(
 
     service = PlayerService(session)
     return await service.get_metrics(player, week_offset)
+
+# Endpoint (DELETE /player/account) permanently delete account
+@router.delete("/account", status_code=204)
+async def delete_account(
+    body: DeleteAccountRequest,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> None:
+    user = await session.scalar(select(User).where(User.id == player.user_id))
+    if not user or not verify_password(body.password, user.password_hash):
+        raise UnauthorizedError("Invalid password")
+    await session.delete(user)
+    await session.commit()

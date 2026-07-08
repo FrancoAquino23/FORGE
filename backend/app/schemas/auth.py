@@ -15,3 +15,7 @@ class RegisterRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+# Model TimezoneUpdateRequest (Timezone Update)
+class TimezoneUpdateRequest(BaseModel):
+    timezone: str = Field(default="UTC", max_length=64)

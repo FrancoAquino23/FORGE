@@ -7,13 +7,14 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.deps import get_current_player
 from app.core.exceptions import ConflictError, UnauthorizedError
 from app.core.security import create_access_token, hash_password, verify_password
 from app.database import get_db
 from app.models.artifact import Artifact
 from app.models.catalog import Attribute
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
-from app.schemas.auth import RegisterRequest, TokenResponse
+from app.schemas.auth import RegisterRequest, TimezoneUpdateRequest, TokenResponse
 
 # Router for authentication-related endpoints (registration, login)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -76,3 +77,13 @@ async def login(
         raise UnauthorizedError("Invalid email or password")
 
     return TokenResponse(access_token=create_access_token(str(user.id)))
+
+# Endpoint (PATCH /auth/timezone) update player timezone after login
+@router.patch("/timezone", status_code=204)
+async def update_timezone(
+    body: TimezoneUpdateRequest,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> None:
+    player.timezone = body.timezone
+    await session.commit()
