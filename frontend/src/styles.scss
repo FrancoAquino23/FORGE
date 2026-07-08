@@ -147,7 +147,7 @@ $forge-muted: #64748b;
     @apply text-forge-muted hover:text-forge-text transition-colors font-black;
   }
 }
-/* =========== (S.P.E.C.I.A.L.)=========== */
+/* =========== (S.P.E.C.I.A.L.) =========== */
 @keyframes rainbowShift {
   0% {
     background-position: 0% 50%;
@@ -275,6 +275,119 @@ $forge-muted: #64748b;
 
   &:hover:not(:checked) {
     border-color: rgba(245, 158, 11, 0.3);
+  }
+}
+
+/* =========== TUTORIALS =========== */
+.forge-driver-popover {
+  background: #0f1318 !important;
+  border: 1px solid #1e2a35 !important;
+  border-radius: 10px !important;
+  font-family: "JetBrains Mono", "Fira Code", Consolas, monospace !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6) !important;
+
+  .driver-popover-title {
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.12em !important;
+    color: #f59e0b !important;
+    margin-bottom: 6px !important;
+  }
+
+  .driver-popover-description {
+    font-size: 10px !important;
+    color: #e2e8f0 !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.05em !important;
+    line-height: 1.6 !important;
+  }
+
+  .driver-popover-progress-text {
+    font-size: 0.65rem !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.18em !important;
+    color: rgba(226, 232, 240, 0.5) !important;
+    font-variant-numeric: tabular-nums !important;
+  }
+
+  .driver-popover-close-btn {
+    all: unset !important;
+    cursor: pointer !important;
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    width: 20px !important;
+    height: 20px !important;
+    color: rgba(226, 232, 240, 0.3) !important;
+    transition: color 0.15s ease !important;
+    font-size: 0 !important;
+
+    &::after {
+      content: "" !important;
+      display: block !important;
+      width: 20px !important;
+      height: 20px !important;
+      background: currentColor !important;
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='currentColor'%3E%3Cpath d='M168.49,104.49,145,128l23.52,23.51a12,12,0,0,1-17,17L128,145l-23.51,23.52a12,12,0,0,1-17-17L111,128,87.51,104.49a12,12,0,0,1,17-17L128,111l23.51-23.52a12,12,0,0,1,17,17ZM236,128A108,108,0,1,1,128,20,108.12,108.12,0,0,1,236,128Zm-24,0a84,84,0,1,0-84,84A84.09,84.09,0,0,0,212,128Z'%3E%3C/path%3E%3C/svg%3E") !important;
+      mask-size: contain !important;
+      mask-repeat: no-repeat !important;
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='currentColor'%3E%3Cpath d='M168.49,104.49,145,128l23.52,23.51a12,12,0,0,1-17,17L128,145l-23.51,23.52a12,12,0,0,1-17-17L111,128,87.51,104.49a12,12,0,0,1,17-17L128,111l23.51-23.52a12,12,0,0,1,17,17ZM236,128A108,108,0,1,1,128,20,108.12,108.12,0,0,1,236,128Zm-24,0a84,84,0,1,0-84,84A84.09,84.09,0,0,0,212,128Z'%3E%3C/path%3E%3C/svg%3E") !important;
+      -webkit-mask-size: contain !important;
+      -webkit-mask-repeat: no-repeat !important;
+    }
+
+    &:hover {
+      color: #ef4444 !important;
+    }
+  }
+
+  .driver-popover-navigation-btns {
+    gap: 8px !important;
+  }
+
+  .driver-popover-navigation-btns button + button {
+    margin-left: 0 !important;
+  }
+
+  .driver-popover-footer button {
+    all: unset !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    background: transparent !important;
+    border: 1px solid rgba(245, 158, 11, 0.5) !important;
+    color: #f59e0b !important;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    border-radius: 2px !important;
+    padding: 4px 12px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    box-sizing: border-box !important;
+
+    &:hover {
+      border-color: #f59e0b !important;
+      background: rgba(245, 158, 11, 0.05) !important;
+      box-shadow: 0 0 10px rgba(251, 146, 60, 0.4) !important;
+    }
+  }
+
+  .driver-popover-arrow-side-left .driver-popover-arrow {
+    border-right-color: #1e2a35 !important;
+  }
+  .driver-popover-arrow-side-right .driver-popover-arrow {
+    border-left-color: #1e2a35 !important;
+  }
+  .driver-popover-arrow-side-top .driver-popover-arrow {
+    border-bottom-color: #1e2a35 !important;
+  }
+  .driver-popover-arrow-side-bottom .driver-popover-arrow {
+    border-top-color: #1e2a35 !important;
   }
 }
 
