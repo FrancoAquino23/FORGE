@@ -420,4 +420,11 @@ export class ApiService {
       batch_size: batchSize,
     });
   }
+
+  // Method (Delete Account)
+  deleteAccount(password: string): Observable<void> {
+    return this.http.delete<void>(`${this.BASE}/player/account`, {
+      body: { password },
+    });
+  }
 }

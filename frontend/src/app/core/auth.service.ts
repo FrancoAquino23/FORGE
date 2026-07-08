@@ -5,7 +5,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { tap } from 'rxjs';
+import { switchMap, tap } from 'rxjs';
 
 // Interface for the token response from the backend
 interface TokenResponse {
@@ -22,11 +22,19 @@ export class AuthService {
   // Method (Login - Get Token from API and Store in Local Storage)
   login(email: string, password: string) {
     const body = new URLSearchParams({ username: email, password });
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
     return this.http
       .post<TokenResponse>(`${this.BASE}/auth/login`, body.toString(), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
-      .pipe(tap((res) => localStorage.setItem('forge_token', res.access_token)));
+      .pipe(
+        tap((res) => localStorage.setItem('forge_token', res.access_token)),
+        switchMap(() =>
+          this.http.patch(`${this.BASE}/auth/timezone`, { timezone }, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('forge_token')}` },
+          })
+        ),
+      );
   }
 
   // Method (Register - Get Token from API and Store in Local Storage)
