@@ -79,6 +79,7 @@ class Mission(Base):
     mat_awarded: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
     last_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     times_completed: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    cycle_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     target_attribute: Mapped["Attribute"] = relationship()  # type: ignore[name-defined]
     checkpoints: Mapped[list["Checkpoint"]] = relationship(
         "Checkpoint",
