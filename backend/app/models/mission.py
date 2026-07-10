@@ -9,6 +9,32 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
+# Model DailyCompletion (Log of each recurring daily claim for Weekly Report)
+class DailyCompletion(Base):
+    __tablename__ = "daily_completions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    mission_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("missions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    player_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("player_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    target_attribute_id: Mapped[int] = mapped_column(
+        SmallInteger, ForeignKey("attributes.id"), nullable=False
+    )
+    threat_level: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    cycle_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    xp_awarded: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    mat_awarded: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
 # Model Checkpoint (Sub-task step for Main Quest / Side Quest missions)
 class Checkpoint(Base):
     __tablename__ = "checkpoints"

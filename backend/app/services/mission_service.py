@@ -17,7 +17,7 @@ from app.constants import (
 )
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models.catalog import Attribute
-from app.models.mission import Checkpoint, Mission
+from app.models.mission import Checkpoint, DailyCompletion, Mission
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
 from app.models.relic import Relic
 from app.schemas.mission import (
@@ -185,6 +185,15 @@ class MissionService:
             else:
                 mission.current_streak = 1
             mission.last_streak_date = today
+            daily_completion = DailyCompletion(
+                mission_id=mission.id,
+                player_id=player.id,
+                target_attribute_id=mission.target_attribute_id,
+                threat_level=mission.threat_level,
+                completed_at=now,
+                cycle_started_at=mission.cycle_started_at or now,
+            )
+            self._db.add(daily_completion)
 
         # Apply rewards at claim time using current relic & prestige state
         attr_code = mission.target_attribute.code
@@ -271,6 +280,9 @@ class MissionService:
         # Persist actual awarded values for lifetime stats
         mission.xp_awarded = xp_earned
         mission.mat_awarded = mat_earned
+        if mission.is_favorite and mission.category == "DAILY_GRIND":
+            daily_completion.xp_awarded = xp_earned
+            daily_completion.mat_awarded = mat_earned
 
         # Update lifetime stats and streak on player profile
         profile = await self._db.scalar(

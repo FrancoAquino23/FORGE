@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.core.exceptions import UnauthorizedError
 from app.models.catalog import Attribute
-from app.models.mission import Mission
+from app.models.mission import DailyCompletion, Mission
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
 from app.schemas.player import (
     AttributeMetric,
@@ -109,24 +109,22 @@ class PlayerService:
             f" – {end_day.strftime('%b')} {end_day.day}"
         )
 
-        # Completed missions this week
+        # Completed missions this week (Excludes Favorite Dailies)
         base_filter = [
             Mission.player_id == player.id,
             Mission.status == "COMPLETED",
             Mission.completed_at >= week_start_utc,
             Mission.completed_at < week_end_utc,
+            ~((Mission.category == "DAILY_GRIND") & (Mission.is_favorite == True)),
         ]
         recurring_filter = [
-            Mission.player_id == player.id,
-            Mission.is_favorite == True,  # noqa: E712
-            Mission.category == "DAILY_GRIND",
-            Mission.status != "COMPLETED",
-            Mission.last_completed_at >= week_start_utc,
-            Mission.last_completed_at < week_end_utc,
+            DailyCompletion.player_id == player.id,
+            DailyCompletion.completed_at >= week_start_utc,
+            DailyCompletion.completed_at < week_end_utc,
         ]
 
         _elapsed_hours = extract("epoch", Mission.completed_at - Mission.issued_at) / 3600.0
-        _elapsed_hours_rec = extract("epoch", Mission.last_completed_at - Mission.cycle_started_at) / 3600.0
+        _elapsed_hours_rec = extract("epoch", DailyCompletion.completed_at - DailyCompletion.cycle_started_at) / 3600.0
 
         # Query 1: All aggregates for COMPLETED missions this week (category + threat + avg resolution)
         std_row = (
@@ -151,9 +149,9 @@ class PlayerService:
             await self._db.execute(
                 select(
                     func.count().label("total"),
-                    func.count(case((Mission.threat_level == 0, 1))).label("minor"),
-                    func.count(case((Mission.threat_level == 1, 1))).label("major"),
-                    func.count(case((Mission.threat_level == 2, 1))).label("critical"),
+                    func.count(case((DailyCompletion.threat_level == 0, 1))).label("minor"),
+                    func.count(case((DailyCompletion.threat_level == 1, 1))).label("major"),
+                    func.count(case((DailyCompletion.threat_level == 2, 1))).label("critical"),
                     func.avg(_elapsed_hours_rec).label("daily_avg"),
                 ).where(*recurring_filter)
             )
@@ -171,12 +169,12 @@ class PlayerService:
         )
         rec_attr_q = (
             select(
-                Mission.target_attribute_id,
+                DailyCompletion.target_attribute_id,
                 func.count().label("missions"),
-                func.coalesce(func.sum(Mission.xp_awarded), 0).label("xp"),
+                func.coalesce(func.sum(DailyCompletion.xp_awarded), 0).label("xp"),
             )
             .where(*recurring_filter)
-            .group_by(Mission.target_attribute_id)
+            .group_by(DailyCompletion.target_attribute_id)
         )
         all_attr_rows = (await self._db.execute(std_attr_q.union_all(rec_attr_q))).all()
 
