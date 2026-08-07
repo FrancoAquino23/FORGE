@@ -9,7 +9,7 @@ from app.schemas.mission import AchievementUnlocked
 class PrestigeStatusResponse(BaseModel):
     prestige_count: int
     threshold_level: int
-    material_cost: int
+    stardust_cost: int
     prestige_points_total: int = 0
     prestige_points_available: int = 0
 

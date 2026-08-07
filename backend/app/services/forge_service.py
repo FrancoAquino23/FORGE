@@ -14,7 +14,7 @@ from app.constants import ORDINARY_CODES_ORDERED as _ORDINARY_CODES
 from app.services.skill_tree_service import get_node_level, node_bonus
 
 # Materials consumed per attribute 
-_TRANSMUTE_COST_PER_UNIT = 10
+_TRANSMUTE_COST_PER_UNIT = 150
 
 # Service ForgeService (Business Logic for "The Forge")
 class ForgeService:
@@ -67,7 +67,7 @@ class ForgeService:
         for code in _ORDINARY_CODES:
             inv_by_code[code].quantity -= per_mat
 
-        stardust_gained = random.randint(batch_size, 3 * batch_size)
+        stardust_gained = random.randint(batch_size * 20, batch_size * 30)
 
         # Apply double_transmute_chance skill node after generating the base value
         double_level = await get_node_level(self._db, player_id, "double_transmute_chance")

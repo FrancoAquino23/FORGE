@@ -12,6 +12,7 @@ from app.constants import (
     CATEGORY_LABELS as _CATEGORY_LABELS,
     CATEGORY_REWARDS as _CATEGORY_REWARDS,
     THREAT_LABEL as _THREAT_LABEL,
+    THREAT_MULTIPLIER as _THREAT_MULTIPLIER,
     THREAT_ORDER as _TL_ORDER,
     THREAT_VALUE as _THREAT_VALUE,
 )
@@ -36,19 +37,19 @@ from app.schemas.mission import (
 )
 from app.services.achievement_service import AchievementService
 from app.services.luck_sync import sync_luck_level
-from app.services.reward_service import RewardService
+from app.services.reward_service import RewardService, prestige_bonus, xp_scale_factor
 from app.services.skill_tree_service import get_node_level, node_bonus
 from app.utils import local_now as _local_now
 
 
 # Reward multiplier based on streak
 def _streak_multiplier(streak: int) -> float:
-    if streak >= 14:
+    if streak >= 21:
         return 2.0
     if streak >= 7:
-        return 1.6
+        return 1.5
     if streak >= 3:
-        return 1.3
+        return 1.25
     return 1.0
 
 # Service for managing missions (fetching, generating, claiming)
@@ -122,6 +123,7 @@ class MissionService:
 
         objective = request.description.strip() or f"{label}: {attr.name}"
 
+        threat_mult = _THREAT_MULTIPLIER.get(request.threat_level, 1.0)
         now = datetime.now(timezone.utc)
         is_draft = request.is_draft and request.category != "DAILY_GRIND"
         mission = Mission(
@@ -132,8 +134,8 @@ class MissionService:
             target_attribute_id=attr.id,
             objective_type="MANUAL",
             objective_target=0,
-            reward_xp=base["reward_xp"],
-            reward_material_qty=base["reward_mat"],
+            reward_xp=max(1, round(base["reward_xp"] * threat_mult)),
+            reward_material_qty=max(1, round(base["reward_mat"] * threat_mult)),
             status="DRAFT" if is_draft else "PENDING",
             category=request.category,
             expires_at=now + timedelta(days=30),
@@ -295,6 +297,11 @@ class MissionService:
                 xp_earned = max(1, round(xp_earned * (1.0 + bonus)))
                 mat_earned = max(1, round(mat_earned * (1.0 + bonus)))
 
+        # Apply permanent prestige bonus multiplier
+        prestige_mult = prestige_bonus(player.prestige_count)
+        xp_earned = max(1, round(xp_earned * prestige_mult))
+        mat_earned = max(1, round(mat_earned * prestige_mult))
+
         player_attr = (
             await self._db.execute(
                 select(PlayerAttribute)
@@ -309,7 +316,8 @@ class MissionService:
         null_cycle_level = await get_node_level(self._db, player.id, "early_start_boost")
         xp_discount = node_bonus(null_cycle_level) if null_cycle_level > 0 else 0.0
         new_xp, new_level, new_xp_to_next, leveled_up = RewardService.apply_xp_to_attribute(
-            player_attr.xp_current, player_attr.level, xp_earned, xp_discount
+            player_attr.xp_current, player_attr.level, xp_earned, xp_discount,
+            prestige_factor=xp_scale_factor(player.prestige_count),
         )
         player_attr.xp_current = new_xp
         player_attr.level = new_level

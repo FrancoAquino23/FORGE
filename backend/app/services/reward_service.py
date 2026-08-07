@@ -4,33 +4,50 @@
 
 from app.constants import MAX_ATTRIBUTE_LEVEL as _MAX_LEVEL
 
-# Table of XP required to upgrade a level (Data)
+# Table of XP required to level up each attribute level
 _XP_TABLE: dict[int, int] = {
-    1:  500,
-    2:  1_500,
-    3:  2_500,
-    4:  3_500,
-    5:  4_500,
-    6:  5_500,
-    7:  6_500,
-    8:  7_500,
-    9:  10_000,
+    1:  2_000,
+    2:  4_000,
+    3:  6_000,
+    4:  9_000,
+    5:  12_000,
+    6:  15_000,
+    7:  20_000,
+    8:  25_000,
+    9:  30_000,
     10: 0,
 }
 
-# Table of material to upgrade a relic level (Data)
+# Table of materials required to upgrade a relic level
 _RELIC_UPGRADE_TABLE: dict[int, int] = {
-    1:  500,
+    1:  1_000,
     2:  1_500,
-    3:  2_500,
-    4:  3_500,
-    5:  4_500,
-    6:  5_500,
-    7:  6_500,
+    3:  2_000,
+    4:  2_500,
+    5:  3_500,
+    6:  4_500,
+    7:  6_000,
     8:  7_500,
-    9:  10_000,
-    10: 0,
+    9:  9_000,
+    10: 12_000,
 }
+
+
+# XP scale factor based on prestige_count
+def xp_scale_factor(prestige_count: int) -> float:
+    p = prestige_count
+    if p <= 10: return 1.0 + p * 0.10
+    if p <= 25: return 2.0 + (p - 10) * 0.15
+    if p <= 40: return 4.25 + (p - 25) * 0.20
+    return 7.25 + (p - 40) * 0.25
+
+# Permanent prestige bonus multiplier (never resets)
+def prestige_bonus(prestige_count: int) -> float:
+    p = prestige_count
+    if p <= 10: return 1.0 + p * 0.01
+    if p <= 25: return 1.10 + (p - 10) * 0.02
+    if p <= 40: return 1.40 + (p - 25) * 0.03
+    return min(2.15, 1.85 + (p - 40) * 0.03)
 
 
 # Model RewardService (Data)
@@ -68,6 +85,7 @@ class RewardService:
         current_level: int,
         xp_earned: int,
         xp_discount: float = 0.0,
+        prestige_factor: float = 1.0,
     ) -> tuple[int, int, int, bool]:
         if current_level >= _MAX_LEVEL:
             return 0, _MAX_LEVEL, 0, False
@@ -77,7 +95,7 @@ class RewardService:
         leveled_up = False
 
         while level < _MAX_LEVEL:
-            needed = max(1, round(_XP_TABLE.get(level, 0) * (1.0 - xp_discount)))
+            needed = max(1, round(_XP_TABLE.get(level, 0) * prestige_factor * (1.0 - xp_discount)))
             if xp < needed:
                 break
             xp -= needed
@@ -87,5 +105,5 @@ class RewardService:
         if level >= _MAX_LEVEL:
             return 0, _MAX_LEVEL, 0, leveled_up
 
-        xp_to_next = max(1, round(_XP_TABLE.get(level, 0) * (1.0 - xp_discount)))
+        xp_to_next = max(1, round(_XP_TABLE.get(level, 0) * prestige_factor * (1.0 - xp_discount)))
         return xp, level, xp_to_next, leveled_up

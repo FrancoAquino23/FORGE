@@ -15,42 +15,25 @@ from app.models.skill_tree import PlayerSkillNode
 from app.schemas.prestige import PrestigeStatusResponse, PrestigeUpResponse
 from app.constants import ORDINARY_CODES as _ORDINARY_CODES
 from app.services.achievement_service import AchievementService
-from app.services.reward_service import RewardService
+from app.services.reward_service import RewardService, xp_scale_factor
 from app.services.skill_tree_service import get_node_level, node_bonus, pp_node_bonus, total_pp_for_level
 
 # Prestige threshold — all attributes must reach this level to prestige
 _DEFAULT_THRESHOLD = 10
 
-# Function to compute material cost for next prestige level
-def prestige_material_cost(current_prestige: int) -> int:
-    """Return the per-material cost to advance from current_prestige to current_prestige+1."""
+# Function to compute Stardust cost for next prestige level
+def prestige_stardust_cost(current_prestige: int) -> int:
     target = current_prestige + 1
-    if target == 50:
-        return 500_000
-    if target <= 2:
-        return target * 100
-    if target <= 5:
-        return 500 + (target - 3) * 200
-    if target <= 9:
-        return 1_500 + (target - 6) * 500
-    if target <= 19:
-        return 4_000 + (target - 10) * 1_000
-    if target <= 34:
-        return 16_000 + (target - 20) * 2_500
-    if target <= 49:
-        return 60_000 + (target - 35) * 10_000
-    return 500_000
+    if target <= 10: return 1_000 + (target - 1) * 500
+    if target <= 25: return 10_000 + (target - 11) * 1_000
+    if target <= 40: return 35_000 + (target - 26) * 2_000
+    return 75_000 + (target - 41) * 2_500
 
 # Function to compute points per prestige level
 def prestige_points_for_prestige(prestige_number: int) -> int:
-    """PP awarded for completing the given prestige number (1-indexed)."""
-    if prestige_number <= 9:
-        return 2
-    if prestige_number <= 19:
-        return 3
-    if prestige_number <= 34:
-        return 4
-    return 5
+    if prestige_number <= 25: return 2
+    if prestige_number <= 40: return 3
+    return 4
 
 
 # Model PrestigeService (Business Logic for Prestige Sacrifice)
@@ -65,7 +48,7 @@ class PrestigeService:
         return PrestigeStatusResponse(
             prestige_count=player.prestige_count,
             threshold_level=threshold,
-            material_cost=prestige_material_cost(player.prestige_count),
+            stardust_cost=prestige_stardust_cost(player.prestige_count),
             prestige_points_total=player.prestige_points_total,
             prestige_points_available=player.prestige_points_available,
         )
@@ -97,13 +80,34 @@ class PrestigeService:
         relic_head_start_level = await get_node_level(self._db, player.id, "relic_head_start")
         pp_bonus_level = await get_node_level(self._db, player.id, "pp_bonus")
 
-        # Verify and lock ordinary-material inventories for the material gate
-        raw_material_cost = prestige_material_cost(player.prestige_count)
+        # Compute Stardust cost (material_compression discount applies)
+        raw_stardust_cost = prestige_stardust_cost(player.prestige_count)
         if material_compression_level > 0:
             discount = node_bonus(material_compression_level)
-            material_cost = max(1, round(raw_material_cost * (1.0 - discount)))
+            stardust_cost = max(1, round(raw_stardust_cost * (1.0 - discount)))
         else:
-            material_cost = raw_material_cost
+            stardust_cost = raw_stardust_cost
+
+        # Lock and verify Stardust inventory
+        luck_attr = next((a for a in all_attrs if a.code == "L"), None)
+        if not luck_attr:
+            raise PrestigeNotAvailableError(threshold)
+        stardust_inv = (
+            await self._db.execute(
+                select(PlayerInventory)
+                .where(
+                    PlayerInventory.player_id == player.id,
+                    PlayerInventory.attribute_id == luck_attr.id,
+                )
+                .with_for_update()
+            )
+        ).scalar_one()
+        if stardust_inv.quantity < stardust_cost:
+            raise InsufficientMaterialsError(
+                f"Need {stardust_cost} Stardust to prestige"
+            )
+
+        # Lock ordinary inventories for reset
         ordinary_attr_ids = [a.id for a in all_attrs if a.code in _ORDINARY_CODES]
         ordinary_inventories = (
             await self._db.execute(
@@ -116,15 +120,12 @@ class PrestigeService:
             )
         ).scalars().all()
 
-        for inv in ordinary_inventories:
-            if inv.quantity < material_cost:
-                raise InsufficientMaterialsError(
-                    f"Need {material_cost} of each ordinary material to prestige"
-                )
-
-        # Reset ALL attributes to level 1
+        # Reset ALL attributes to level 1 (XP threshold scales with new prestige count)
+        prestige_number = player.prestige_count + 1
         xp_discount = node_bonus(null_cycle_level) if null_cycle_level > 0 else 0.0
-        xp_to_next_l1 = max(1, round(RewardService.xp_for_level(1) * (1.0 - xp_discount)))
+        xp_to_next_l1 = max(1, round(
+            RewardService.xp_for_level(1) * xp_scale_factor(prestige_number) * (1.0 - xp_discount)
+        ))
         reset_codes: list[str] = []
         for a in all_attrs:
             pa = pa_by_attr_id.get(a.id)
@@ -134,9 +135,10 @@ class PrestigeService:
                 pa.xp_to_next = xp_to_next_l1
                 reset_codes.append(a.code)
 
-        # Consume ordinary materials
+        # Deduct Stardust and reset all ordinary material inventories to 0
+        stardust_inv.quantity -= stardust_cost
         for inv in ordinary_inventories:
-            inv.quantity -= material_cost
+            inv.quantity = 0
 
         # Delete ALL relics (Fresh Start Reset)
         all_relics = (
@@ -171,7 +173,6 @@ class PrestigeService:
         for n in all_nodes:
             n.current_level = 0
 
-        prestige_number = player.prestige_count + 1
         self._db.add(
             PrestigeHistory(
                 player_id=player.id,

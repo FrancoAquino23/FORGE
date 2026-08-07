@@ -9,11 +9,18 @@ ORDINARY_CODES_ORDERED: tuple[str, ...] = ("S", "P", "E", "C", "I", "A")
 # Maximum level for attributes and relics
 MAX_ATTRIBUTE_LEVEL: int = 10
 
-# Mission category rewards (Base XP & materials)
+# Mission category rewards — base values for MINOR threat level
 CATEGORY_REWARDS: dict[str, dict] = {
-    "MAIN_QUEST":  {"reward_xp": 100, "reward_mat": 50},
-    "SIDE_QUEST":  {"reward_xp": 50,  "reward_mat": 25},
-    "DAILY_GRIND": {"reward_xp": 30,  "reward_mat": 15},
+    "MAIN_QUEST":  {"reward_xp": 600, "reward_mat": 300},
+    "SIDE_QUEST":  {"reward_xp": 300, "reward_mat": 150},
+    "DAILY_GRIND": {"reward_xp": 200, "reward_mat": 100},
+}
+
+# Threat level reward multipliers (applied at mission creation)
+THREAT_MULTIPLIER: dict[str, float] = {
+    "MINOR":    1.0,
+    "MAJOR":    1.5,
+    "CRITICAL": 2.0,
 }
 
 # Mission category labels
