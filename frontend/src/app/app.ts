@@ -12,6 +12,7 @@ import { PlayerStateService } from './core/player-state.service';
 import { UiStateService } from './core/ui-state.service';
 import { ToastComponent } from './shared/toast/toast.component';
 import { ProfileModalComponent } from './shared/profile-modal/profile-modal.component';
+import { SettingsPanelComponent } from './shared/settings-panel/settings-panel.component';
 import { TutorialModalComponent } from './shared/tutorial-modal/tutorial-modal.component';
 
 @Component({
@@ -22,6 +23,7 @@ import { TutorialModalComponent } from './shared/tutorial-modal/tutorial-modal.c
     RouterLinkActive,
     ToastComponent,
     ProfileModalComponent,
+    SettingsPanelComponent,
     TutorialModalComponent,
     NgIconComponent,
   ],
@@ -34,4 +36,10 @@ export class App {
   playerState = inject(PlayerStateService);
   uiState = inject(UiStateService);
   tutorialOpen = signal(false);
+
+  // Close all modals and panels
+  closeAll(): void {
+    this.uiState.profileOpen.set(false);
+    this.uiState.settingsOpen.set(false);
+  }
 }

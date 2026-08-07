@@ -17,6 +17,7 @@ import {
 } from '@ng-icons/phosphor-icons/bold';
 import { ApiService, RelicInfo } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
+import { SoundService } from '../../core/sound.service';
 import { ATTR_COLORS, ATTR_HEX, RELIC_NAMES, fmt, attrColor } from '../../shared/ui-constants';
 
 // Constants for relic icons
@@ -61,6 +62,7 @@ const BORDER_COLORS: Record<string, string> = {
 export class RelicWorkshopComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private sound = inject(SoundService);
   private destroyRef = inject(DestroyRef);
 
   relics = signal<RelicInfo[]>([]);
@@ -98,6 +100,7 @@ export class RelicWorkshopComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
+          this.sound.playUpgrade();
           this.upgrading.set('');
           this.toast.fromRelicUpgrade(res);
           this.load();

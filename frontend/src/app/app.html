@@ -60,5 +60,13 @@
 </div>
 
 <app-toast />
-<app-profile-modal [open]="uiState.profileOpen()" (closed)="uiState.profileOpen.set(false)" />
+<app-settings-panel
+  [open]="uiState.settingsOpen()"
+  (closed)="closeAll()"
+/>
+<app-profile-modal
+  [open]="uiState.profileOpen()"
+  (closed)="closeAll()"
+  (settingsRequested)="uiState.settingsOpen.set(true)"
+/>
 <app-tutorial-modal [open]="tutorialOpen()" (closed)="tutorialOpen.set(false)" />

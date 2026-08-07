@@ -1,0 +1,285 @@
+<!-- ==================================================================
+     SETTINGS PANEL TEMPLATE
+     ================================================================== -->
+
+@if (open) {
+  <!-- CARD WRAPPER -->
+  <div class="fixed inset-y-0 left-0 right-80 z-[60] flex items-center justify-center pointer-events-none">
+    <div
+      class="pointer-events-auto w-[600px] max-h-[90vh] bg-forge-surface border border-forge-border rounded-lg flex flex-col shadow-2xl overflow-hidden"
+    >
+      <!-- HEADER -->
+      <div class="flex items-center gap-2.5 px-5 py-4 border-b border-forge-border flex-shrink-0">
+        <ng-icon name="phosphorGearBold" size="16" class="text-forge-primary" />
+        <span class="forge-section-title">Settings</span>
+      </div>
+
+      <div class="flex-1 overflow-y-auto forge-scroll-thin p-5 flex flex-col gap-4">
+        <!-- ============================================================
+           ACCOUNT
+           ============================================================ -->
+        <div class="forge-card p-4 flex flex-col gap-4">
+          <p class="text-[10px] font-black uppercase tracking-widest text-forge-muted">Account</p>
+
+          <!-- CHANGE USERNAME -->
+          <div class="flex flex-col gap-2">
+            <label class="text-[10px] text-forge-muted tracking-wide uppercase">Change Username</label>
+            @if (profile()) {
+              <p class="text-[10px] text-forge-muted -mt-1">
+                Current:
+                <span class="text-forge-text font-semibold">{{ profile()!.username }}</span>
+              </p>
+            }
+            <div class="flex gap-2">
+              <input
+                type="text"
+                class="forge-input flex-1 text-xs"
+                placeholder="New username"
+                [ngModel]="newUsername()"
+                (ngModelChange)="newUsername.set($event)"
+              />
+              <input
+                type="password"
+                class="forge-input flex-1 text-xs"
+                placeholder="Confirm password"
+                [ngModel]="usernamePassword()"
+                (ngModelChange)="usernamePassword.set($event)"
+                (keydown.enter)="saveUsername()"
+              />
+            </div>
+            @if (usernameError()) {
+              <p class="forge-field-error">{{ usernameError() }}</p>
+            }
+            <div class="flex justify-end">
+              <button
+                class="forge-btn forge-btn-primary text-xs"
+                [class.opacity-30]="!newUsername().trim() || !usernamePassword() || usernameSaving()"
+                [disabled]="!newUsername().trim() || !usernamePassword() || usernameSaving()"
+                (click)="saveUsername()"
+              >
+                @if (usernameSaving()) {
+                  <ng-icon name="phosphorSpinnerBold" class="animate-spin" />
+                } @else {
+                  Save
+                }
+              </button>
+            </div>
+          </div>
+
+          <div class="forge-stat-divider"></div>
+
+          <!-- CHANGE PASSWORD -->
+          <div class="flex flex-col gap-2">
+            <label class="text-[10px] text-forge-muted tracking-wide uppercase">Change Password</label>
+            <div class="flex gap-2">
+              <input
+                type="password"
+                class="forge-input flex-1 text-xs"
+                placeholder="Current password"
+                [ngModel]="currentPassword()"
+                (ngModelChange)="currentPassword.set($event); passwordSuccess.set(false)"
+              />
+              <input
+                type="password"
+                class="forge-input flex-1 text-xs"
+                placeholder="New password (min 8 chars)"
+                [ngModel]="newPassword()"
+                (ngModelChange)="newPassword.set($event)"
+                (keydown.enter)="savePassword()"
+              />
+            </div>
+            @if (passwordError()) {
+              <p class="forge-field-error">{{ passwordError() }}</p>
+            }
+            @if (passwordSuccess()) {
+              <p class="text-[10px] text-green-400 font-semibold flex items-center gap-1">
+                <ng-icon name="phosphorCheckBold" size="11" />
+                Password updated.
+              </p>
+            }
+            <div class="flex justify-end">
+              <button
+                class="forge-btn forge-btn-primary text-xs"
+                [class.opacity-30]="!currentPassword() || newPassword().length < 8 || passwordSaving()"
+                [disabled]="!currentPassword() || newPassword().length < 8 || passwordSaving()"
+                (click)="savePassword()"
+              >
+                @if (passwordSaving()) {
+                  <ng-icon name="phosphorSpinnerBold" class="animate-spin" />
+                } @else {
+                  Save
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================
+           AVATAR
+           ============================================================ -->
+        <div class="forge-card p-4 flex flex-col gap-4">
+          <p class="text-[10px] font-black uppercase tracking-widest text-forge-muted">Avatar</p>
+
+          <!-- PREVIEW -->
+          <div class="flex items-center gap-3">
+            <div
+              class="w-12 h-12 rounded-full flex items-center justify-center border-2 flex-shrink-0 transition-all"
+              [style.background]="(selectedColor() ?? '#475569') + '33'"
+              [style.border-color]="selectedColor() ?? '#475569'"
+            >
+              @if (selectedIcon()) {
+                <ng-icon [name]="selectedIcon()!" size="22" [style.color]="selectedColor() ?? '#94a3b8'" />
+              } @else {
+                <ng-icon name="phosphorUserBold" size="22" class="text-forge-muted" />
+              }
+            </div>
+            <span class="forge-stat-label">Preview — select a color and icon below</span>
+          </div>
+
+          <!-- COLOR + ICON -->
+          <div class="flex gap-5">
+            <!-- COLOR PICKER -->
+            <div class="flex flex-col gap-2 flex-shrink-0">
+              <label class="text-[10px] text-forge-muted tracking-wide uppercase">Color</label>
+              <div class="grid grid-cols-5 gap-1.5">
+                @for (color of AVATAR_COLORS; track color) {
+                  <button
+                    class="w-7 h-7 rounded-full border-2 transition-all hover:scale-110"
+                    [style.background]="color"
+                    [class]="
+                      selectedColor() === color
+                        ? 'ring-2 ring-forge-primary ring-offset-1 ring-offset-forge-surface scale-110 border-white/20'
+                        : 'border-transparent'
+                    "
+                    (click)="selectedColor.set(color)"
+                  ></button>
+                }
+              </div>
+            </div>
+
+            <!-- ICON PICKER -->
+            <div class="flex flex-col gap-2 flex-1">
+              <label class="text-[10px] text-forge-muted tracking-wide uppercase">Icon</label>
+              <div class="grid grid-cols-8 gap-1.5">
+                @for (icon of AVATAR_ICONS; track icon) {
+                  <button
+                    class="w-8 h-8 rounded-sm border flex items-center justify-center transition-all hover:border-forge-primary/50"
+                    [class]="
+                      selectedIcon() === icon
+                        ? 'border-forge-primary bg-forge-primary/15'
+                        : 'border-forge-border bg-forge-bg'
+                    "
+                    (click)="selectedIcon.set(icon)"
+                  >
+                    <ng-icon
+                      [name]="icon"
+                      size="15"
+                      [style.color]="selectedIcon() === icon ? (selectedColor() ?? '#f59e0b') : ''"
+                      class="text-forge-muted"
+                    />
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- SAVE ROW -->
+          <div class="flex items-center justify-end gap-3">
+            <button class="forge-btn forge-btn-primary text-xs" [disabled]="avatarSaving()" (click)="saveAvatar()">
+              @if (avatarSaving()) {
+                <ng-icon name="phosphorSpinnerBold" class="animate-spin" />
+              } @else {
+                Save
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================
+           PREFERENCES
+           ============================================================ -->
+        <div class="forge-card p-4 flex flex-col gap-3">
+          <p class="text-[10px] font-black uppercase tracking-widest text-forge-muted">Preferences</p>
+
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5">
+              <p class="forge-stat-label">Sound Effects</p>
+              <p class="text-[10px] text-forge-muted">8-bit feedback sounds on actions</p>
+            </div>
+            <button
+              type="button"
+              class="relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0"
+              [class]="sound.soundEnabled() ? 'bg-forge-primary' : 'bg-forge-border'"
+              (click)="sound.toggleSound()"
+            >
+              <span
+                class="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200"
+                [style.left]="sound.soundEnabled() ? '18px' : '2px'"
+              ></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================
+           DANGER ZONE
+           ============================================================ -->
+        <div class="forge-card p-4 flex flex-col gap-3 border-red-500/20">
+          <p class="text-[10px] font-black uppercase tracking-widest text-red-400/70">Danger Zone</p>
+
+          @if (!confirmingDelete()) {
+            <div class="flex items-center justify-between gap-4">
+              <div class="flex flex-col gap-0.5">
+                <p class="forge-stat-label">Delete Account</p>
+                <p class="text-[10px] text-forge-muted">Permanently deletes your account and all progress.</p>
+              </div>
+              <button
+                class="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-sm text-xs text-red-400/70 hover:text-red-400 hover:bg-forge-surface transition-colors tracking-widest uppercase font-bold border border-red-400/20 cursor-pointer"
+                (click)="requestDelete()"
+              >
+                <ng-icon name="phosphorTrashBold" size="12" />
+                Delete
+              </button>
+            </div>
+          } @else {
+            <div class="flex flex-col gap-2">
+              <p class="text-[10px] text-red-400/80 leading-relaxed">
+                This cannot be undone. Enter your password to confirm.
+              </p>
+              <div class="flex gap-2">
+                <input
+                  type="password"
+                  class="forge-input flex-1 text-xs"
+                  placeholder="Confirm your password"
+                  [ngModel]="deletePassword()"
+                  (ngModelChange)="deletePassword.set($event)"
+                  (keydown.enter)="confirmDelete()"
+                />
+                <button
+                  class="px-3 py-2 rounded-sm text-xs text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors font-black uppercase tracking-widest cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  [disabled]="!deletePassword() || deleting()"
+                  (click)="confirmDelete()"
+                >
+                  @if (deleting()) {
+                    <ng-icon name="phosphorSpinnerBold" class="animate-spin" />
+                  } @else {
+                    Delete
+                  }
+                </button>
+                <button
+                  class="px-3 py-2 rounded-sm text-xs text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide cursor-pointer"
+                  [disabled]="deleting()"
+                  (click)="cancelDelete()"
+                >
+                  Cancel
+                </button>
+              </div>
+              @if (deleteError()) {
+                <p class="forge-field-error">{{ deleteError() }}</p>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}

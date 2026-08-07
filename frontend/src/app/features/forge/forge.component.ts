@@ -27,6 +27,7 @@ import {
 import { ApiService, PlayerProfile } from '../../core/api.service';
 import { RelicWorkshopComponent } from '../relic-workshop/relic-workshop.component';
 import { ToastService } from '../../core/toast.service';
+import { SoundService } from '../../core/sound.service';
 
 // Size steps available on the slider
 const BATCH_STEPS = [1, 5, 10, 25, 50, 100];
@@ -61,6 +62,7 @@ const ROW_NEUTRAL_BORDER = 'border-forge-border';
 export class ForgeComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private sound = inject(SoundService);
   private destroyRef = inject(DestroyRef);
 
   profile = signal<PlayerProfile | null>(null);
@@ -126,6 +128,7 @@ export class ForgeComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
+          this.sound.playStardust();
           this.transmuting.set(false);
           this.toast.fromTransmute(res);
           this.load();

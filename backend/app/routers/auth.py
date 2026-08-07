@@ -14,7 +14,14 @@ from app.database import get_db
 from app.models.artifact import Artifact
 from app.models.catalog import Attribute
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
-from app.schemas.auth import RegisterRequest, TimezoneUpdateRequest, TokenResponse
+from app.schemas.auth import (
+    AvatarUpdateRequest,
+    PasswordUpdateRequest,
+    RegisterRequest,
+    TimezoneUpdateRequest,
+    TokenResponse,
+    UsernameUpdateRequest,
+)
 
 # Router for authentication-related endpoints (registration, login)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -86,4 +93,44 @@ async def update_timezone(
     session: AsyncSession = Depends(get_db),
 ) -> None:
     player.timezone = body.timezone
+    await session.commit()
+
+# Endpoint (PATCH /auth/username) update username — requires password confirmation
+@router.patch("/username", status_code=204)
+async def update_username(
+    body: UsernameUpdateRequest,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> None:
+    user = await session.get(User, player.user_id)
+    if not user or not verify_password(body.password, user.password_hash):
+        raise UnauthorizedError("Incorrect password")
+    existing = await session.scalar(select(User).where(User.username == body.new_username))
+    if existing:
+        raise ConflictError("Username already taken")
+    user.username = body.new_username
+    await session.commit()
+
+# Endpoint (PATCH /auth/password) update password — requires current password
+@router.patch("/password", status_code=204)
+async def update_password(
+    body: PasswordUpdateRequest,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> None:
+    user = await session.get(User, player.user_id)
+    if not user or not verify_password(body.current_password, user.password_hash):
+        raise UnauthorizedError("Incorrect current password")
+    user.password_hash = hash_password(body.new_password)
+    await session.commit()
+
+# Endpoint (PATCH /auth/avatar) update avatar color and icon
+@router.patch("/avatar", status_code=204)
+async def update_avatar(
+    body: AvatarUpdateRequest,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> None:
+    player.avatar_color = body.avatar_color
+    player.avatar_icon = body.avatar_icon
     await session.commit()

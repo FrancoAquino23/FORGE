@@ -19,6 +19,7 @@ import {
 import { ApiService, PrestigeStatusResponse, PrestigeUpResponse } from '../../core/api.service';
 import { PlayerStateService } from '../../core/player-state.service';
 import { ToastService } from '../../core/toast.service';
+import { SoundService } from '../../core/sound.service';
 import {
   ATTR_COLORS,
   ATTR_HEX,
@@ -58,6 +59,7 @@ const PRESTIGE_MATERIAL_CODES = new Set(['S', 'P', 'E', 'C', 'I', 'A', 'L']);
 export class PrestigeComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private sound = inject(SoundService);
   private playerState = inject(PlayerStateService);
   private destroyRef = inject(DestroyRef);
 
@@ -161,6 +163,7 @@ export class PrestigeComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res: PrestigeUpResponse) => {
+          this.sound.playPrestige();
           this.prestiging.set(false);
           this.playerState.prestigeCount.set(res.prestige_number);
           this.toast.show(
