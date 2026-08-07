@@ -190,7 +190,7 @@ export interface RelicUpgradeResponse {
 export interface PrestigeStatusResponse {
   prestige_count: number;
   threshold_level: number;
-  material_cost: number;
+  stardust_cost: number;
   prestige_points_total: number;
   prestige_points_available: number;
 }

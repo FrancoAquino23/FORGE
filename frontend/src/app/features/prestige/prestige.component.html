@@ -67,11 +67,6 @@
 
         <!-- ASCEND BUTTON -->
         <div class="prestige-ascend-btn mt-0 w-72">
-          <p class="text-[9px] text-forge-text/60 tracking-widest text-center uppercase mb-3">
-            Next prestige requires
-            <span class="font-black tabular-nums text-forge-text forge-glow-text">{{ status()!.material_cost }}</span>
-            of each material
-          </p>
           <button
             class="forge-btn-primary forge-btn-action w-full py-3 text-xs"
             [class.btn-action-ready]="canPrestigeUp() && !prestiging()"
@@ -90,27 +85,42 @@
         </div>
       </div>
 
-      <!-- MATERIAL RESERVES -->
-      <div class="prestige-material-reserves w-full lg:w-72 flex-shrink-0">
-        <h3 class="forge-section-title mb-3">Material Reserves</h3>
-        <div class="forge-card p-5 flex flex-col divide-y divide-forge-border/30">
-          @for (attr of sortedAttributes(); track attr.code) {
-            <div class="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-              <div class="flex items-center gap-2">
-                <ng-icon [name]="attrIcon(attr.code)" size="13" [class]="attrColor(attr.code)" />
-                <div class="flex flex-col">
-                  <span class="text-xs font-black tracking-widest uppercase" [style.color]="attrHex(attr.code)">
-                    {{ attr.code }}
-                  </span>
-                  <span class="text-[10px] text-forge-text/60 tracking-widest font-medium">
-                    {{ materialName(attr.code) }}
-                  </span>
-                </div>
-              </div>
-              <span class="font-black tabular-nums text-base leading-none" [style.color]="attrHex(attr.code)">
-                {{ fmt(attr.material_balance) }}
-              </span>
-            </div>
+      <!-- STARDUST -->
+      <div class="prestige-stardust-panel w-full lg:w-80 flex-shrink-0">
+        <h3 class="forge-section-title mb-3">Stardust</h3>
+        <div class="forge-card p-5 flex flex-col gap-5">
+          <!-- BALANCE -->
+          <div class="flex items-end justify-between">
+            <span class="text-[9px] uppercase tracking-widest text-forge-text/60">Balance</span>
+            <span
+              class="text-3xl font-black tabular-nums leading-none"
+              [class.text-orange-400]="stardustInfo().sufficient"
+              [class.text-red-400]="!stardustInfo().sufficient"
+            >
+              {{ fmt(stardustInfo().balance) }}
+            </span>
+          </div>
+          <!-- PROGRESS BAR -->
+          <div class="w-full h-1.5 bg-forge-border/30 rounded-full overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-500"
+              [class.bg-orange-400]="stardustInfo().sufficient"
+              [class.bg-red-400]="!stardustInfo().sufficient"
+              [style.width.%]="stardustInfo().fillPct"
+            ></div>
+          </div>
+          <!-- NEXT PRESTIGE COST -->
+          <div class="flex items-end justify-between border-t border-forge-border/20 pt-4">
+            <span class="text-[9px] uppercase tracking-widest text-forge-text/60">Next prestige requires</span>
+            <span class="text-xl font-black tabular-nums leading-none text-forge-text">
+              {{ fmt(stardustInfo().cost) }}
+            </span>
+          </div>
+
+          @if (!stardustInfo().sufficient) {
+            <p class="text-[9px] uppercase tracking-widest text-center font-black text-red-400">
+              {{ fmt(stardustInfo().cost - stardustInfo().balance) }} more needed
+            </p>
           }
         </div>
       </div>

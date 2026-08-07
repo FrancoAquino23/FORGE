@@ -25,7 +25,6 @@ import {
   ATTR_HEX,
   ATTR_ICONS,
   ATTR_NAMES,
-  MATERIAL_NAMES,
   fmt,
   attrColor,
   attrIcon,
@@ -33,9 +32,6 @@ import {
 
 // Canonical S.P.E.C.I.A.L. order
 const SPECIAL_ORDER = ['S', 'P', 'E', 'C', 'I', 'A', 'L'] as const;
-
-// Material codes
-const PRESTIGE_MATERIAL_CODES = new Set(['S', 'P', 'E', 'C', 'I', 'A', 'L']);
 
 @Component({
   selector: 'app-prestige',
@@ -115,19 +111,14 @@ export class PrestigeComponent implements OnInit {
     });
   });
 
-  // Material shortfalls for prestige upgrade
+  // Stardust shortfall for prestige upgrade
   readonly materialShortfalls = computed(() => {
-    const cost = this.status()?.material_cost ?? 0;
+    const cost = this.status()?.stardust_cost ?? 0;
     if (cost === 0) return [];
-    return (this.profile()?.attributes ?? [])
-      .filter((a) => PRESTIGE_MATERIAL_CODES.has(a.code))
-      .map((a) => ({
-        code: a.code,
-        name: MATERIAL_NAMES[a.code] ?? a.code,
-        balance: a.material_balance,
-        shortfall: Math.max(0, cost - a.material_balance),
-      }))
-      .filter((a) => a.shortfall > 0);
+    const stardust = (this.profile()?.attributes ?? []).find((a) => a.code === 'L');
+    const balance = stardust?.material_balance ?? 0;
+    if (balance >= cost) return [];
+    return [{ code: 'L', name: 'Stardust', balance, shortfall: cost - balance }];
   });
 
   // Prestige upgrade eligibility
@@ -138,12 +129,14 @@ export class PrestigeComponent implements OnInit {
   // Count of attributes at threshold (Ready for PrestigeUp)
   readonly readyCount = computed(() => this.hexAttrs().filter((s) => s.ready).length);
 
-  // Attributes sorted in S.P.E.C.I.A.L. order
-  readonly sortedAttributes = computed(() => {
-    const attrs = this.profile()?.attributes ?? [];
-    return SPECIAL_ORDER.map((code) => attrs.find((a) => a.code === code)).filter(
-      Boolean,
-    ) as typeof attrs;
+  // Stardust info for prestige panel
+  readonly stardustInfo = computed(() => {
+    const cost = this.status()?.stardust_cost ?? 0;
+    const stardust = (this.profile()?.attributes ?? []).find((a) => a.code === 'L');
+    const balance = stardust?.material_balance ?? 0;
+    const sufficient = balance >= cost;
+    const fillPct = cost > 0 ? Math.min(100, Math.round((balance / cost) * 100)) : 100;
+    return { balance, cost, sufficient, fillPct };
   });
 
   // Next prestige number
@@ -190,11 +183,6 @@ export class PrestigeComponent implements OnInit {
           );
         },
       });
-  }
-
-  // Material name lookup
-  materialName(code: string): string {
-    return MATERIAL_NAMES[code] ?? code;
   }
 
   // Constant & utility functions

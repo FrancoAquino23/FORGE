@@ -76,9 +76,9 @@ export class ForgeComponent implements OnInit {
   readonly StardustIcon = ATTR_ICONS['L'];
 
   batchSize = computed(() => BATCH_STEPS[this.sliderIndex()]);
-  costEach = computed(() => this.batchSize() * 10);
-  minReward = computed(() => this.batchSize());
-  maxReward = computed(() => this.batchSize() * 3);
+  costEach = computed(() => this.batchSize() * 150);
+  minReward = computed(() => this.batchSize() * 20);
+  maxReward = computed(() => this.batchSize() * 30);
   sliderPct = computed(() => (this.sliderIndex() / (BATCH_STEPS.length - 1)) * 100);
 
   ordinary = computed(() =>

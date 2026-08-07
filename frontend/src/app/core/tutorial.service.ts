@@ -38,7 +38,7 @@ const STEPS: Record<TutorialId, DriveStep[]> = {
       popover: {
         title: 'Forge',
         description:
-          'Your experimental lab. Transform raw materials into Stardust to upgrade Relics.',
+          'Your experimental lab. Transform raw materials into Stardust the key resource for upgrading the Luck Relic & unlocking Prestige.',
       },
     },
     {
@@ -208,7 +208,7 @@ const STEPS: Record<TutorialId, DriveStep[]> = {
       popover: {
         title: 'Objective & Identity',
         description:
-          'The mission title at the top is what you committed to doing. Below it: the attribute it develops, the category it belongs to, and the threat level (difficulty).',
+          'The mission title at the top is what you committed to doing. Below it: the attribute it develops, the category it belongs to & the threat level (difficulty).',
         side: 'bottom',
       },
     },
@@ -226,7 +226,7 @@ const STEPS: Record<TutorialId, DriveStep[]> = {
       popover: {
         title: 'Rewards',
         description:
-          'XP for the linked attribute and raw material units earned on completion. Relics and skill nodes can increase both values.',
+          'XP for the linked attribute & raw material units earned on completion. Relics & skill nodes can increase both values.',
         side: 'top',
       },
     },
@@ -281,7 +281,7 @@ const STEPS: Record<TutorialId, DriveStep[]> = {
       element: '.forge-stardust-balance',
       popover: {
         title: 'Stardust Balance',
-        description: 'Your current Stardust reserve. A key resource tied to your progression.',
+        description: 'Your current Stardust reserve. Used to upgrade the Luck Relic & to Prestige.',
         side: 'left',
       },
     },
@@ -334,11 +334,11 @@ const STEPS: Record<TutorialId, DriveStep[]> = {
       },
     },
     {
-      element: '.prestige-material-reserves',
+      element: '.prestige-stardust-panel',
       popover: {
-        title: 'Material Reserves',
+        title: 'Stardust Required',
         description:
-          'Ascending also costs a fixed amount of each material. Make sure your reserves are stocked. Cost increases with each cycle.',
+          'Ascending costs Stardust. The bar shows how close you are. Cost scales with each cycle.',
         side: 'left',
       },
     },
