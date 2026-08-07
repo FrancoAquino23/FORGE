@@ -23,6 +23,9 @@ export interface PlayerProfile {
   prestige_count: number;
   prestige_points_total: number;
   prestige_points_available: number;
+  timezone: string;
+  avatar_color: string | null;
+  avatar_icon: string | null;
   attributes: AttributeProfile[];
 }
 
@@ -48,7 +51,7 @@ export interface MissionProgress {
   reward_material_qty: number;
   expires_at: string;
   is_completable: boolean;
-  status: 'PENDING' | 'ACTIVE' | 'COMPLETED';
+  status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'DRAFT';
   category: 'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND' | null;
   due_date: string | null;
   description: string | null;
@@ -91,6 +94,14 @@ export interface DeployMissionRequest {
   due_date?: string;
   steps?: string[];
   threat_level?: 'MINOR' | 'MAJOR' | 'CRITICAL';
+  is_draft?: boolean;
+}
+
+// Interface (Activate Mission Response - Data)
+export interface ActivateMissionResponse {
+  mission_id: string;
+  title: string;
+  category: string;
 }
 
 // Interface (Toggle Checkpoint Response - Data)
@@ -345,6 +356,14 @@ export class ApiService {
     return this.http.post<DeployMissionResponse>(`${this.BASE}/missions/deploy`, payload);
   }
 
+  // Method (Activate Draft Mission)
+  activateMission(missionId: string): Observable<ActivateMissionResponse> {
+    return this.http.post<ActivateMissionResponse>(
+      `${this.BASE}/missions/${missionId}/activate`,
+      {},
+    );
+  }
+
   // Method (Claim Mission)
   claimMission(missionId: string): Observable<MissionClaimResponse> {
     return this.http.post<MissionClaimResponse>(`${this.BASE}/missions/${missionId}/claim`, {});
@@ -426,5 +445,25 @@ export class ApiService {
     return this.http.delete<void>(`${this.BASE}/player/account`, {
       body: { password },
     });
+  }
+
+  // Method (Update Username)
+  updateUsername(newUsername: string, password: string): Observable<void> {
+    return this.http.patch<void>(`${this.BASE}/auth/username`, { new_username: newUsername, password });
+  }
+
+  // Method (Update Password)
+  updatePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.patch<void>(`${this.BASE}/auth/password`, { current_password: currentPassword, new_password: newPassword });
+  }
+
+  // Method (Update Avatar)
+  updateAvatar(avatarColor: string | null, avatarIcon: string | null): Observable<void> {
+    return this.http.patch<void>(`${this.BASE}/auth/avatar`, { avatar_color: avatarColor, avatar_icon: avatarIcon });
+  }
+
+  // Method (Update Timezone)
+  updateTimezone(timezone: string): Observable<void> {
+    return this.http.patch<void>(`${this.BASE}/auth/timezone`, { timezone });
   }
 }

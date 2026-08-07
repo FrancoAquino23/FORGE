@@ -19,6 +19,7 @@ import {
   phosphorProhibitBold,
   phosphorCaretCircleLeftBold,
   phosphorCaretCircleRightBold,
+  phosphorCrownBold,
 } from '@ng-icons/phosphor-icons/bold';
 import {
   ApiService,
@@ -28,6 +29,7 @@ import {
 } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
 import { PlayerStateService } from '../../core/player-state.service';
+import { SoundService } from '../../core/sound.service';
 
 type PathGroup = { path: string; nodes: SkillNodeInfo[] };
 
@@ -38,6 +40,7 @@ const PATH_ICONS: Record<string, string> = {
   'Cycle Mastery': 'phosphorTimerBold',
   'Operative Mastery': 'phosphorBiohazardBold',
   'Prestige Mastery': 'phosphorMedalBold',
+  'Royal Mastery': 'phosphorCrownBold',
 };
 
 // Unified color for all paths (slate white — distinct from all S.P.E.C.I.A.L. attribute colors)
@@ -47,6 +50,7 @@ const PATH_COLORS: Record<string, string> = {
   'Cycle Mastery': '#e2e8f0',
   'Operative Mastery': '#e2e8f0',
   'Prestige Mastery': '#e2e8f0',
+  'Royal Mastery': '#e2e8f0',
 };
 
 // Desired order of paths displayed (UI)
@@ -56,6 +60,7 @@ const PATH_ORDER = [
   'Cycle Mastery',
   'Operative Mastery',
   'Prestige Mastery',
+  'Royal Mastery',
 ];
 
 @Component({
@@ -77,6 +82,7 @@ const PATH_ORDER = [
       phosphorProhibitBold,
       phosphorCaretCircleLeftBold,
       phosphorCaretCircleRightBold,
+      phosphorCrownBold,
     }),
   ],
   templateUrl: './skill-tree.component.html',
@@ -87,6 +93,7 @@ export class SkillTreeComponent implements OnInit {
   private toast = inject(ToastService);
   private destroyRef = inject(DestroyRef);
   private playerState = inject(PlayerStateService);
+  private sound = inject(SoundService);
 
   readonly prestigeCount = this.playerState.prestigeCount;
 
@@ -247,6 +254,8 @@ export class SkillTreeComponent implements OnInit {
           this.upgradingNode.set(null);
           const isMaxed = res.new_level >= node.max_level;
           const isFirstChoice = node.current_level === 0;
+          if (isFirstChoice && !isMaxed) this.sound.playPath();
+          else this.sound.playUpgrade();
           const medalColor = isMaxed
             ? 'text-yellow-400'
             : res.new_level === 1
@@ -306,6 +315,7 @@ export class SkillTreeComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
+          this.sound.playPerkReset();
           this.resetting.set(false);
           this.toast.show({
             type: 'success',

@@ -67,6 +67,7 @@ class RewardService:
         current_xp: int,
         current_level: int,
         xp_earned: int,
+        xp_discount: float = 0.0,
     ) -> tuple[int, int, int, bool]:
         if current_level >= _MAX_LEVEL:
             return 0, _MAX_LEVEL, 0, False
@@ -76,7 +77,7 @@ class RewardService:
         leveled_up = False
 
         while level < _MAX_LEVEL:
-            needed = _XP_TABLE.get(level, 0)
+            needed = max(1, round(_XP_TABLE.get(level, 0) * (1.0 - xp_discount)))
             if xp < needed:
                 break
             xp -= needed
@@ -86,4 +87,5 @@ class RewardService:
         if level >= _MAX_LEVEL:
             return 0, _MAX_LEVEL, 0, leveled_up
 
-        return xp, level, _XP_TABLE.get(level, 0), leveled_up
+        xp_to_next = max(1, round(_XP_TABLE.get(level, 0) * (1.0 - xp_discount)))
+        return xp, level, xp_to_next, leveled_up

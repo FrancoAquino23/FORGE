@@ -165,3 +165,25 @@ export function formatDueDate(due: string | null): string {
   if (!due) return '';
   return new Date(due).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
+
+// Returns true if due date is in the past
+export function isExpired(due: string | null): boolean {
+  if (!due) return false;
+  return Math.ceil((new Date(due).getTime() - Date.now()) / 86400000) < 0;
+}
+
+// Returns true if due date is within 3 days (inclusive of today)
+export function isDueSoon(due: string | null): boolean {
+  if (!due) return false;
+  const days = Math.ceil((new Date(due).getTime() - Date.now()) / 86400000);
+  return days >= 0 && days <= 3;
+}
+
+// Returns warning label if due soon
+export function dueDateLabel(due: string | null): string {
+  if (!due) return '';
+  const days = Math.ceil((new Date(due).getTime() - Date.now()) / 86400000);
+  if (days < 0) return 'Expired';
+  if (days <= 3) return days === 0 ? 'Expires today' : `Expires in ${days}d`;
+  return `Due: ${new Date(due).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+}

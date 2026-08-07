@@ -4,8 +4,8 @@
 
 import math
 import uuid
-from datetime import date, datetime, timedelta, timezone
-from sqlalchemy import func, nullslast, select
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import nullslast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.constants import (
@@ -22,6 +22,7 @@ from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
 from app.models.relic import Relic
 from app.schemas.mission import (
     AchievementUnlocked,
+    ActivateMissionResponse,
     CheckpointSchema,
     DeployMissionRequest,
     DeployMissionResponse,
@@ -32,7 +33,6 @@ from app.schemas.mission import (
     MissionProgress,
     ToggleCheckpointResponse,
     UpdateMissionRequest,
-    CheckpointUpdateItem,
 )
 from app.services.achievement_service import AchievementService
 from app.services.luck_sync import sync_luck_level
@@ -56,14 +56,33 @@ class MissionService:
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
 
+    # Helper to delete missions that have passed their expiry date
+    async def _delete_expired_missions(self, player_id: uuid.UUID) -> None:
+        now = datetime.now(timezone.utc)
+        expired = (
+            await self._db.scalars(
+                select(Mission).where(
+                    Mission.player_id == player_id,
+                    Mission.status.in_(["PENDING", "ACTIVE", "DRAFT"]),
+                    Mission.expires_at <= now,
+                )
+            )
+        ).all()
+        if expired:
+            for mission in expired:
+                await self._db.delete(mission)
+            await self._db.commit()
+
     # Helper to get active missions with progress for a player
     async def get_active_with_progress(
         self, player: PlayerProfile
     ) -> MissionListResponse:
+        await self._delete_expired_missions(player.id)
         await self._reset_completed_favorite_dailies(player.id, player.timezone)
 
         pending = await self._load_pending_missions(player.id)
         active = await self._load_active_missions(player.id)
+        drafts = await self._load_draft_missions(player.id)
 
         relic_rows = (
             await self._db.scalars(select(Relic).where(Relic.player_id == player.id))
@@ -73,6 +92,7 @@ class MissionService:
         progress_list = (
             [await self._build_progress(m, player.id, relic_levels) for m in pending]
             + [await self._build_progress(m, player.id, relic_levels) for m in active]
+            + [await self._build_progress(m, player.id, relic_levels) for m in drafts]
         )
 
         far_future = datetime(9999, 12, 31, tzinfo=timezone.utc)
@@ -102,6 +122,8 @@ class MissionService:
 
         objective = request.description.strip() or f"{label}: {attr.name}"
 
+        now = datetime.now(timezone.utc)
+        is_draft = request.is_draft and request.category != "DAILY_GRIND"
         mission = Mission(
             player_id=player_id,
             title=f"{label}: {attr.name}",
@@ -112,12 +134,13 @@ class MissionService:
             objective_target=0,
             reward_xp=base["reward_xp"],
             reward_material_qty=base["reward_mat"],
-            status="PENDING",
+            status="DRAFT" if is_draft else "PENDING",
             category=request.category,
-            expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+            expires_at=now + timedelta(days=30),
             due_date=request.due_date,
             threat_level=_THREAT_VALUE.get(request.threat_level, 1),
-            cycle_started_at=datetime.now(timezone.utc),
+            issued_at=None if is_draft else now,
+            cycle_started_at=None if is_draft else now,
         )
         self._db.add(mission)
         await self._db.flush()
@@ -161,6 +184,32 @@ class MissionService:
             threat_level=_THREAT_LABEL.get(mission.threat_level, "MAJOR"),
         )
 
+    # Helper to activate a DRAFT mission
+    async def activate(
+        self, player_id: uuid.UUID, mission_id: uuid.UUID
+    ) -> ActivateMissionResponse:
+        mission = await self._db.scalar(
+            select(Mission).where(Mission.id == mission_id)
+        )
+        if not mission:
+            raise NotFoundError("Mission")
+        if mission.player_id != player_id:
+            raise ForbiddenError("Mission does not belong to this player")
+        if mission.status != "DRAFT":
+            raise ConflictError(f"Mission is not a draft (status: '{mission.status}')")
+
+        now = datetime.now(timezone.utc)
+        mission.status = "PENDING"
+        mission.issued_at = now
+        mission.cycle_started_at = now
+        await self._db.commit()
+
+        return ActivateMissionResponse(
+            mission_id=mission.id,
+            title=mission.title,
+            category=mission.category or "",
+        )
+
     # Helper to claim a completed mission and receive rewards
     async def claim(
         self, player: PlayerProfile, mission_id: uuid.UUID
@@ -174,6 +223,7 @@ class MissionService:
         now = datetime.now(timezone.utc)
         mission.status = "COMPLETED"
         mission.completed_at = now
+        daily_completion: DailyCompletion | None = None
         if mission.is_favorite and mission.category == "DAILY_GRIND":
             mission.last_completed_at = now
             mission.times_completed += 1
@@ -229,8 +279,8 @@ class MissionService:
             if mat_buff_level > 0:
                 mat_earned = max(1, round(mat_earned * (1.0 + node_bonus(mat_buff_level))))
 
-        # Apply critical_surge skill node (CRITICAL threat level missions)
-        if mission.threat_level == 2:
+        # Apply critical_surge skill node (Main Quests — all threat levels)
+        if mission.category == "MAIN_QUEST":
             critical_level = await get_node_level(self._db, player.id, "critical_surge")
             if critical_level > 0:
                 bonus = node_bonus(critical_level)
@@ -256,8 +306,10 @@ class MissionService:
             )
         ).scalar_one()
 
+        null_cycle_level = await get_node_level(self._db, player.id, "early_start_boost")
+        xp_discount = node_bonus(null_cycle_level) if null_cycle_level > 0 else 0.0
         new_xp, new_level, new_xp_to_next, leveled_up = RewardService.apply_xp_to_attribute(
-            player_attr.xp_current, player_attr.level, xp_earned
+            player_attr.xp_current, player_attr.level, xp_earned, xp_discount
         )
         player_attr.xp_current = new_xp
         player_attr.level = new_level
@@ -280,7 +332,7 @@ class MissionService:
         # Persist actual awarded values for lifetime stats
         mission.xp_awarded = xp_earned
         mission.mat_awarded = mat_earned
-        if mission.is_favorite and mission.category == "DAILY_GRIND":
+        if daily_completion is not None:
             daily_completion.xp_awarded = xp_earned
             daily_completion.mat_awarded = mat_earned
 
@@ -377,7 +429,7 @@ class MissionService:
                     threat_level=_THREAT_LABEL.get(m.threat_level, "MAJOR"),
                     reward_xp=m.reward_xp,
                     reward_material_qty=m.reward_material_qty,
-                    completed_at=m.completed_at or m.last_completed_at,
+                    completed_at=m.completed_at or m.last_completed_at,  # type: ignore[arg-type]
                 )
                 for m in page_missions
             ],
@@ -396,7 +448,7 @@ class MissionService:
             raise NotFoundError("Mission")
         if mission.player_id != player_id:
             raise ForbiddenError("Mission does not belong to this player")
-        if mission.status not in ("ACTIVE", "PENDING"):
+        if mission.status not in ("ACTIVE", "PENDING", "DRAFT"):
             raise ConflictError(f"Cannot delete a mission with status '{mission.status}'")
         await self._db.delete(mission)
         await self._db.commit()
@@ -414,7 +466,7 @@ class MissionService:
             raise NotFoundError("Mission")
         if mission.player_id != player_id:
             raise ForbiddenError("Mission does not belong to this player")
-        if mission.status not in ("ACTIVE", "PENDING"):
+        if mission.status not in ("ACTIVE", "PENDING", "DRAFT"):
             raise ConflictError(f"Cannot edit a mission with status '{mission.status}'")
         if request.objective_description:
             mission.objective_description = request.objective_description.strip()
@@ -483,7 +535,7 @@ class MissionService:
     # Helper to load active missions for a player
     async def _load_active_missions(self, player_id: uuid.UUID) -> list[Mission]:
         now = datetime.now(timezone.utc)
-        return (
+        return list(
             await self._db.scalars(
                 select(Mission)
                 .where(
@@ -497,12 +549,29 @@ class MissionService:
                 )
                 .order_by(Mission.threat_level.desc(), nullslast(Mission.due_date.asc()))
             )
-        ).all()
+        )
+
+    # Helper to load draft missions for a player
+    async def _load_draft_missions(self, player_id: uuid.UUID) -> list[Mission]:
+        return list(
+            await self._db.scalars(
+                select(Mission)
+                .where(
+                    Mission.player_id == player_id,
+                    Mission.status == "DRAFT",
+                )
+                .options(
+                    selectinload(Mission.target_attribute),
+                    selectinload(Mission.checkpoints),
+                )
+                .order_by(Mission.threat_level.desc(), nullslast(Mission.due_date.asc()))
+            )
+        )
 
     # Helper to load pending missions for a player
     async def _load_pending_missions(self, player_id: uuid.UUID) -> list[Mission]:
         now = datetime.now(timezone.utc)
-        return (
+        return list(
             await self._db.scalars(
                 select(Mission)
                 .where(
@@ -516,7 +585,7 @@ class MissionService:
                 )
                 .order_by(Mission.threat_level.desc(), nullslast(Mission.due_date.asc()))
             )
-        ).all()
+        )
 
     # Helper to build mission progress details for a mission and player
     async def _build_progress(
@@ -541,6 +610,31 @@ class MissionService:
         ]
 
         threat = _THREAT_LABEL.get(mission.threat_level, "MAJOR")
+
+        if mission.status == "DRAFT":
+            has_steps = len(checkpoints) > 0
+            return MissionProgress(
+                mission_id=mission.id,
+                title=mission.title,
+                objective_description=mission.objective_description,
+                objective_type="MANUAL",
+                objective_target=len(checkpoints) if has_steps else 1,
+                current_progress=0,
+                attribute_code=mission.target_attribute.code,
+                attribute_name=mission.target_attribute.name,
+                reward_xp=reward_xp,
+                reward_material_qty=reward_mat,
+                expires_at=mission.expires_at,
+                is_completable=False,
+                status="DRAFT",
+                category=mission.category,
+                due_date=mission.due_date,
+                description=mission.description,
+                is_favorite=False,
+                checkpoints=checkpoints,
+                threat_level=threat,
+                current_streak=0,
+            )
 
         if mission.status == "PENDING":
             has_steps = len(checkpoints) > 0

@@ -39,6 +39,7 @@ class RelicService:
         }
 
         discount_level = await get_node_level(self._db, player_id, "relic_cost_discount")
+        luck_discount_level = await get_node_level(self._db, player_id, "luck_cost_reduction")
 
         result: list[RelicInfo] = []
 
@@ -48,6 +49,8 @@ class RelicService:
             cost = RewardService.upgrade_cost(relic.level) if relic.level < _MAX_LEVEL else None
             if cost is not None and discount_level > 0:
                 cost = max(1, round(cost * (1.0 - node_bonus(discount_level))))
+            if cost is not None and code == "L" and luck_discount_level > 0:
+                cost = max(1, round(cost * (1.0 - node_bonus(luck_discount_level))))
             can_upgrade = cost is not None and balance >= cost
 
             result.append(
@@ -89,6 +92,10 @@ class RelicService:
         base_cost = RewardService.upgrade_cost(relic.level)
         discount_level = await get_node_level(self._db, player_id, "relic_cost_discount")
         cost = max(1, round(base_cost * (1.0 - node_bonus(discount_level)))) if discount_level > 0 else base_cost
+        if attribute_code == "L":
+            luck_discount_level = await get_node_level(self._db, player_id, "luck_cost_reduction")
+            if luck_discount_level > 0:
+                cost = max(1, round(cost * (1.0 - node_bonus(luck_discount_level))))
 
         attr = await self._db.scalar(
             select(Attribute).where(Attribute.code == attribute_code)

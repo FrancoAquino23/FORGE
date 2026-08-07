@@ -18,15 +18,15 @@ from app.schemas.skill_tree import (
 )
 
 # Points per prestige cost to advance a level
-_NODE_COSTS: tuple[int, ...] = (0, 1, 2, 3)
+_NODE_COSTS: tuple[int, ...] = (0, 1, 4, 10)
 
-# Additive bonus fraction at each level (3% / 5% / 10%)
-_NODE_BONUSES: tuple[float, ...] = (0.0, 0.03, 0.05, 0.10)
+# Additive bonus fraction at each level (5% / 10% / 20%)
+_NODE_BONUSES: tuple[float, ...] = (0.0, 0.05, 0.10, 0.20)
+
+# Extra PP granted per prestige by the pp_bonus node (0 / +1 / +2 / +3)
+_PP_BONUS_VALUES: tuple[int, ...] = (0, 1, 2, 3)
 
 _MAX_NODE_LEVEL = 3
-
-# Static display labels for the early_start_boost node
-_EARLY_START_LABELS = ("Off", "1 attr → Lv 2", "2 attrs → Lv 2", "3 attrs → Lv 3")
 
 # Static display labels for the "relic_head_start" node
 _RELIC_HEAD_START_LABELS = ("Off", "1 relic → Lv 1", "2 relics → Lv 1", "3 relics → Lv 2")
@@ -61,13 +61,13 @@ _NODES: dict[str, tuple[str, str, str]] = {
     ),
     "early_start_boost": (
         "Cycle Mastery",
-        "Phantom Reset",
-        "Carries random attributes into a higher level after prestige.",
+        "Null Cycle",
+        "Reduces XP required to level up all attributes.",
     ),
     "critical_surge": (
         "Operative Mastery",
         "Crimson Protocol",
-        "Bonus rewards on CRITICAL threat level missions.",
+        "Bonus XP and materials on all Main Quests.",
     ),
     "streak_amplifier": (
         "Operative Mastery",
@@ -84,11 +84,25 @@ _NODES: dict[str, tuple[str, str, str]] = {
         "Relic Echo",
         "Carries random relics into a higher level after prestige.",
     ),
+    "luck_cost_reduction": (
+        "Royal Mastery",
+        "Fortune's Grace",
+        "Reduces the cost to upgrade the Luck relic.",
+    ),
+    "pp_bonus": (
+        "Royal Mastery",
+        "Noble Legacy",
+        "Grants bonus Prestige Points for each prestige completed.",
+    ),
 }
 
 # Function to calculate the additive bonus
 def node_bonus(level: int) -> float:
     return _NODE_BONUSES[min(level, _MAX_NODE_LEVEL)]
+
+# Function to calculate extra PP granted by the pp_bonus node
+def pp_node_bonus(level: int) -> int:
+    return _PP_BONUS_VALUES[min(level, _MAX_NODE_LEVEL)]
 
 # Function to calculate total points per prestige invested
 def total_pp_for_level(level: int) -> int:
@@ -97,12 +111,19 @@ def total_pp_for_level(level: int) -> int:
 # Function to get display label for current/next effect
 def _effect_label(node_id: str, level: int) -> str:
     if node_id == "early_start_boost":
-        return _EARLY_START_LABELS[level]
+        pct = round(_NODE_BONUSES[level] * 100)
+        return f"-{pct}% XP req." if pct > 0 else "0%"
     if node_id == "relic_head_start":
         return _RELIC_HEAD_START_LABELS[level]
     if node_id == "material_compression":
         pct = round(_NODE_BONUSES[level] * 100)
         return f"-{pct}% cost" if pct > 0 else "0%"
+    if node_id == "luck_cost_reduction":
+        pct = round(_NODE_BONUSES[level] * 100)
+        return f"-{pct}% cost" if pct > 0 else "0%"
+    if node_id == "pp_bonus":
+        b = _PP_BONUS_VALUES[min(level, _MAX_NODE_LEVEL)]
+        return f"+{b} PP" if b > 0 else "0 PP"
     pct = round(_NODE_BONUSES[level] * 100)
     return f"+{pct}%" if pct > 0 else "0%"
 
