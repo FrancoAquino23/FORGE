@@ -115,8 +115,8 @@
                       @if (m.category === 'DAILY_GRIND') {
                         <span class="text-[10px] font-semibold text-forge-text/60">Daily</span>
                       } @else if (m.due_date) {
-                        <span class="text-[10px] font-semibold text-forge-text/60">
-                          Due {{ formatDueDate(m.due_date) }}
+                        <span class="text-[10px] font-semibold" [class]="isDueSoon(m.due_date) ? 'text-red-400' : 'text-forge-text/60'">
+                          {{ dueDateLabel(m.due_date) }}
                         </span>
                       }
                     </div>

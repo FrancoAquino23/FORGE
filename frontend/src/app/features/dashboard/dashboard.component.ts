@@ -36,6 +36,8 @@ import {
   threatBarColor,
   threatTextClass,
   formatDueDate,
+  isDueSoon,
+  dueDateLabel,
 } from '../../shared/ui-constants';
 
 // Number of segments in each attribute bar before reaching prestige
@@ -79,7 +81,7 @@ export class DashboardComponent implements OnInit {
 
   // All active missions sorted by priority:
   urgentMissions = computed<MissionProgress[]>(() => {
-    const all = this.missions();
+    const all = this.missions().filter((m) => m.status !== 'DRAFT');
     const threatOrder: Record<string, number> = { CRITICAL: 0, MAJOR: 1, MINOR: 2 };
     return [...all].sort((a, b) => {
       const aIsDaily = a.category === 'DAILY_GRIND';
@@ -158,6 +160,8 @@ export class DashboardComponent implements OnInit {
   protected threatTextClass = threatTextClass;
   protected fmt = fmt;
   protected formatDueDate = formatDueDate;
+  protected isDueSoon = isDueSoon;
+  protected dueDateLabel = dueDateLabel;
 
   // Mission helper (Checkpoint completion count)
   completedCount(m: MissionProgress): number {

@@ -2,7 +2,7 @@
    FORGE - (TUTORIAL SERVICE)
    ================================================================== */
 
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { driver, DriveStep } from 'driver.js';
 
@@ -156,7 +156,7 @@ const STEPS: Record<TutorialId, DriveStep[]> = {
       popover: {
         title: 'Missions',
         description:
-          'Your active mission board. Three categories: Main Quest (big goals), Side Quest (secondary tasks) & Daily Grind (recurring habits).',
+          'Your active mission board. Three categories: Main Quest (big goals), Side Quest (secondary tasks) & Daily Grind (recurring habits). You can also stage missions as Drafts before starting the timer.',
         align: 'center',
       },
     },
@@ -165,7 +165,7 @@ const STEPS: Record<TutorialId, DriveStep[]> = {
       popover: {
         title: 'Tab Navigation',
         description:
-          'Switch between your active missions by category, deploy new ones or review completed work.',
+          'Switch between your active missions by category, deploy new ones, review staged drafts or browse completed work.',
         side: 'bottom',
       },
     },
@@ -185,6 +185,58 @@ const STEPS: Record<TutorialId, DriveStep[]> = {
         description:
           '<strong>Minor</strong> = routine.<br><strong>Major</strong> = challenging.<br><strong>Critical</strong> = high-stakes.<br>Higher threat = more XP & materials on completion.',
         side: 'bottom',
+      },
+    },
+    {
+      element: '[data-tab="DRAFTS"]',
+      popover: {
+        title: 'Drafts',
+        description:
+          'Stage a Main Quest or Side Quest as a Draft to plan it without starting the timer. The resolution clock only starts when you activate it.',
+        side: 'bottom',
+      },
+    },
+    {
+      popover: {
+        title: 'Reading a Mission Card',
+        description: "Let's walk through what each field on a mission card means.",
+        align: 'center',
+      },
+    },
+    {
+      element: '.tutorial-mission-header',
+      popover: {
+        title: 'Objective & Identity',
+        description:
+          'The mission title at the top is what you committed to doing. Below it: the attribute it develops, the category it belongs to, and the threat level (difficulty).',
+        side: 'bottom',
+      },
+    },
+    {
+      element: '.tutorial-mission-progress',
+      popover: {
+        title: 'Progress',
+        description:
+          'Tracks how close you are to completion. For manual missions it fills when all checkpoints are done. A full bar means the mission is ready to claim.',
+        side: 'bottom',
+      },
+    },
+    {
+      element: '.tutorial-mission-rewards',
+      popover: {
+        title: 'Rewards',
+        description:
+          'XP for the linked attribute and raw material units earned on completion. Relics and skill nodes can increase both values.',
+        side: 'top',
+      },
+    },
+    {
+      element: '.tutorial-mission-action',
+      popover: {
+        title: 'Due Date & Action',
+        description:
+          'The deadline keeps you accountable. The action button activates when all conditions are met click it to claim your rewards.',
+        side: 'top',
       },
     },
     {
@@ -354,6 +406,8 @@ const STEPS: Record<TutorialId, DriveStep[]> = {
 export class TutorialService {
   private router = inject(Router);
 
+  readonly showDemoMission = signal(false);
+
   private _driver = driver({
     animate: true,
     smoothScroll: true,
@@ -396,14 +450,25 @@ export class TutorialService {
         ...step,
         onHighlightStarted: () => {
           if (i === 4) {
-            const tab = document.querySelector<HTMLElement>('[data-tab="DAILY_GRIND"]');
+            const tab = document.querySelector<HTMLElement>('[data-tab="DRAFTS"]');
             tab?.click();
           }
           if (i === 5) {
+            const tab = document.querySelector<HTMLElement>('[data-tab="MAIN_QUEST"]');
+            tab?.click();
+            setTimeout(() => this.showDemoMission.set(true), 50);
+          }
+          if (i === 10) {
+            this.showDemoMission.set(false);
+            const tab = document.querySelector<HTMLElement>('[data-tab="DAILY_GRIND"]');
+            tab?.click();
+          }
+          if (i === 11) {
             const tab = document.querySelector<HTMLElement>('[data-tab="HISTORY"]');
             tab?.click();
           }
         },
+        onDeselected: i === 11 ? () => this.showDemoMission.set(false) : undefined,
       }));
     }
 
