@@ -2,7 +2,7 @@
    FORGE - (TOAST SERVICE)
    ================================================================== */
 
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import {
   AchievementUnlocked,
   MissionClaimResponse,
@@ -10,6 +10,7 @@ import {
   TransmuteResponse,
 } from './api.service';
 import { ATTR_COLORS, ATTR_ICONS, ATTR_NAMES, RELIC_NAMES } from '../shared/ui-constants';
+import { SoundService } from './sound.service';
 
 // Types (Toast - For Notifications)
 export type ToastType =
@@ -18,7 +19,8 @@ export type ToastType =
   | 'loot'
   | 'error'
   | 'node'
-  | 'prestige';
+  | 'prestige'
+  | 'expired';
 
 // Interface (Toast - Data for Each Toast Notification)
 export interface Toast {
@@ -35,6 +37,7 @@ export interface Toast {
 // Service (ToastService - Manages Toast Notifications)
 @Injectable({ providedIn: 'root' })
 export class ToastService {
+  private sound = inject(SoundService);
   readonly toasts = signal<Toast[]>([]);
   private counter = 0;
 
@@ -55,6 +58,7 @@ export class ToastService {
 
   // Method (Show Error Toast)
   showError(title: string, err?: { error?: { detail?: string } }, fallback = 'An error occurred.'): void {
+    this.sound.playError();
     this.show({
       type: 'error',
       icon: '',
@@ -107,6 +111,7 @@ export class ToastService {
   fromAchievements(unlocked: AchievementUnlocked[]): void {
     unlocked.forEach((a, i) => {
       setTimeout(() => {
+        this.sound.playAchievement();
         this.show(
           {
             type: 'loot',
@@ -122,6 +127,18 @@ export class ToastService {
     });
   }
 
+  // Method (Show Expired Mission — mission dismissed without rewards)
+  showExpired(): void {
+    this.sound.playError();
+    this.show({
+      type: 'expired',
+      icon: '',
+      ngIcon: 'phosphorCalendarXBold',
+      title: 'Mission Failed',
+      message: 'HR has been notified.',
+    });
+  }
+
   // Method (Show Transmutation Result — Stardust gained and new balance)
   fromTransmute(res: TransmuteResponse): void {
     this.show({
@@ -130,7 +147,7 @@ export class ToastService {
       ngIcon: 'phosphorSparkleBold',
       iconColor: ATTR_COLORS['L'],
       title: 'Stardust Forged',
-      message: `+${res.stardust_gained}`,
+      message: `+${res.stardust_gained} Stardust gained`,
       attrCode: 'L',
     });
   }

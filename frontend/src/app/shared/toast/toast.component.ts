@@ -10,14 +10,21 @@ import {
   phosphorArrowFatLinesUpBold,
   phosphorCheckCircleBold,
   phosphorClipboardTextBold,
+  phosphorDnaBold,
+  phosphorEyeBold,
   phosphorFlagBold,
   phosphorFlameBold,
+  phosphorLightningBold,
   phosphorMedalBold,
+  phosphorShieldBold,
+  phosphorSketchLogoBold,
   phosphorSparkleBold,
+  phosphorSwordBold,
   phosphorTrashBold,
   phosphorTrophyBold,
   phosphorWarningBold,
   phosphorXCircleBold,
+  phosphorCalendarXBold,
 } from '@ng-icons/phosphor-icons/bold';
 import { Toast, ToastService, ToastType } from '../../core/toast.service';
 
@@ -29,6 +36,7 @@ const TYPE_ICON_COLOR: Record<ToastType, string> = {
   error: 'text-red-400',
   node: 'text-amber-300',
   prestige: 'text-white',
+  expired: 'text-red-400',
 };
 
 // Border color mappings for different toast types
@@ -39,6 +47,7 @@ const TYPE_BORDER: Record<ToastType, string> = {
   error: 'border-red-500/60 text-red-400',
   node: 'border-amber-400/60 text-amber-300',
   prestige: 'border-transparent toast-prestige',
+  expired: 'border-red-500/60 text-red-400',
 };
 
 // Attribute-specific border/text colors for level-up toasts
@@ -63,14 +72,21 @@ const ATTR_TOAST_COLORS: Record<string, string> = {
       phosphorArrowFatLinesUpBold,
       phosphorCheckCircleBold,
       phosphorClipboardTextBold,
+      phosphorDnaBold,
+      phosphorEyeBold,
       phosphorFlagBold,
       phosphorFlameBold,
+      phosphorLightningBold,
       phosphorMedalBold,
+      phosphorShieldBold,
+      phosphorSketchLogoBold,
       phosphorSparkleBold,
+      phosphorSwordBold,
       phosphorTrashBold,
       phosphorTrophyBold,
       phosphorWarningBold,
       phosphorXCircleBold,
+      phosphorCalendarXBold,
     }),
   ],
   templateUrl: './toast.component.html',
