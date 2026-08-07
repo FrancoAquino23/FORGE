@@ -19,17 +19,50 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
+  phosphorAnchorBold,
+  phosphorBrainBold,
+  phosphorCrownBold,
+  phosphorDiamondBold,
+  phosphorDnaBold,
+  phosphorEyeBold,
   phosphorFireBold,
+  phosphorFlaskBold,
+  phosphorGearBold,
+  phosphorGlobeBold,
+  phosphorHeartBold,
+  phosphorHexagonBold,
+  phosphorInfinityBold,
+  phosphorLeafBold,
+  phosphorLightningBold,
   phosphorLockKeyBold,
+  phosphorMoonBold,
   phosphorPlugsBold,
+  phosphorRocketBold,
+  phosphorShieldBold,
   phosphorSignOutBold,
+  phosphorSketchLogoBold,
+  phosphorSparkleBold,
   phosphorSpinnerBold,
-  phosphorTrashBold,
+  phosphorStarBold,
+  phosphorSunBold,
+  phosphorSwordBold,
   phosphorTrophyBold,
-  phosphorXCircleBold,
+  phosphorUserBold,
+  phosphorSkullBold,
+  phosphorCastleTurretBold,
+  phosphorHorseBold,
+  phosphorRadioactiveBold,
+  phosphorRobotBold,
+  phosphorPlanetBold,
+  phosphorAlienBold,
+  phosphorGhostBold,
+  phosphorPizzaBold,
+  phosphorCatBold,
+  phosphorDogBold,
 } from '@ng-icons/phosphor-icons/bold';
-import { ApiService, PlayerAchievement, PlayerProfile, PlayerStats } from '../../core/api.service';
+import { ApiService, PlayerAchievement, PlayerStats } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { PlayerStateService } from '../../core/player-state.service';
 import { ATTR_HEX, fmt, attrColor } from '../ui-constants';
 
 // Visual Prestige tiers
@@ -88,14 +121,46 @@ const SEGMENTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   imports: [DatePipe, NgIconComponent, FormsModule],
   viewProviders: [
     provideIcons({
+      phosphorAnchorBold,
+      phosphorBrainBold,
+      phosphorCrownBold,
+      phosphorDiamondBold,
+      phosphorDnaBold,
+      phosphorEyeBold,
       phosphorFireBold,
-      phosphorTrophyBold,
+      phosphorFlaskBold,
+      phosphorGearBold,
+      phosphorGlobeBold,
+      phosphorHeartBold,
+      phosphorHexagonBold,
+      phosphorInfinityBold,
+      phosphorLeafBold,
+      phosphorLightningBold,
       phosphorLockKeyBold,
-      phosphorSignOutBold,
-      phosphorSpinnerBold,
+      phosphorMoonBold,
       phosphorPlugsBold,
-      phosphorXCircleBold,
-      phosphorTrashBold,
+      phosphorRocketBold,
+      phosphorShieldBold,
+      phosphorSignOutBold,
+      phosphorSketchLogoBold,
+      phosphorSparkleBold,
+      phosphorSpinnerBold,
+      phosphorStarBold,
+      phosphorSunBold,
+      phosphorSwordBold,
+      phosphorTrophyBold,
+      phosphorUserBold,
+      phosphorSkullBold,
+      phosphorCastleTurretBold,
+      phosphorHorseBold,
+      phosphorRadioactiveBold,
+      phosphorRobotBold,
+      phosphorPlanetBold,
+      phosphorAlienBold,
+      phosphorGhostBold,
+      phosphorPizzaBold,
+      phosphorCatBold,
+      phosphorDogBold,
     }),
   ],
   templateUrl: './profile-modal.component.html',
@@ -105,19 +170,17 @@ export class ProfileModalComponent implements OnChanges {
   private api = inject(ApiService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
+  private playerState = inject(PlayerStateService);
 
   @Input() open = false;
   @Output() closed = new EventEmitter<void>();
+  @Output() settingsRequested = new EventEmitter<void>();
 
-  profile = signal<PlayerProfile | null>(null);
+  readonly profile = this.playerState.profile;
   stats = signal<PlayerStats | null>(null);
   achievements = signal<PlayerAchievement[] | null>(null);
   loadError = signal(false);
   confirmingLogout = signal(false);
-  confirmingDelete = signal(false);
-  deletePassword = signal('');
-  deleteError = signal('');
-  deleting = signal(false);
 
   readonly SEGMENTS = SEGMENTS;
 
@@ -125,10 +188,7 @@ export class ProfileModalComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['open']?.currentValue === true) {
       this.loadError.set(false);
-      this.api
-        .getProfile()
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({ next: (p) => this.profile.set(p), error: () => this.loadError.set(true) });
+      this.playerState.loadProfile();
       this.api
         .getPlayerStats()
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -149,15 +209,16 @@ export class ProfileModalComponent implements OnChanges {
   // Close modal
   close(): void {
     this.confirmingLogout.set(false);
-    this.confirmingDelete.set(false);
-    this.deletePassword.set('');
-    this.deleteError.set('');
     this.closed.emit();
+  }
+
+  // Open settings panel
+  openSettings(): void {
+    this.settingsRequested.emit();
   }
 
   // Logout (inline confirm pattern)
   requestLogout(): void {
-    this.confirmingDelete.set(false);
     this.confirmingLogout.set(true);
   }
 
@@ -170,38 +231,6 @@ export class ProfileModalComponent implements OnChanges {
   // Cancel logout action
   cancelLogout(): void {
     this.confirmingLogout.set(false);
-  }
-
-  // Delete account
-  requestDelete(): void {
-    this.confirmingLogout.set(false);
-    this.confirmingDelete.set(true);
-  }
-
-  // Confirm delete account action
-  confirmDelete(): void {
-    if (!this.deletePassword() || this.deleting()) return;
-    this.deleting.set(true);
-    this.deleteError.set('');
-    this.api
-      .deleteAccount(this.deletePassword())
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.auth.logout();
-        },
-        error: () => {
-          this.deleteError.set('Incorrect password. Please try again.');
-          this.deleting.set(false);
-        },
-      });
-  }
-
-  // Cancel delete account action
-  cancelDelete(): void {
-    this.confirmingDelete.set(false);
-    this.deletePassword.set('');
-    this.deleteError.set('');
   }
 
   // Get initials from username

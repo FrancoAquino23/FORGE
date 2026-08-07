@@ -10,26 +10,22 @@
   <div
     class="fixed top-0 right-0 z-50 h-full w-80 bg-forge-surface border-l border-forge-border flex flex-col shadow-2xl profile-panel"
   >
-    <!-- CLOSE BUTTON -->
-    <button
-      class="absolute top-3 right-3 p-1.5 text-forge-muted/50 hover:text-red-400 transition-colors"
-      (click)="close()"
-    >
-      <ng-icon name="phosphorXCircleBold" size="20" />
-    </button>
-
-    <div class="flex-1 overflow-y-auto forge-scroll-thin flex flex-col gap-4 p-5 pt-10">
+    <div class="flex-1 overflow-y-auto forge-scroll-thin flex flex-col gap-4 p-5 pt-5">
       <!-- IDENTITY -->
       <div class="profile-identity forge-card p-4 flex flex-col items-center gap-3">
         <!-- AVATAR -->
         @if (profile()) {
           <div
             class="w-14 h-14 rounded-full flex items-center justify-center text-lg font-black border-2 flex-shrink-0"
-            [style.background]="prestigeGemColor(profile()!.prestige_count) + '22'"
-            [style.border-color]="prestigeGemColor(profile()!.prestige_count) + '66'"
-            [style.color]="prestigeGemColor(profile()!.prestige_count)"
+            [style.background]="(profile()!.avatar_color ?? prestigeGemColor(profile()!.prestige_count)) + '33'"
+            [style.border-color]="(profile()!.avatar_color ?? prestigeGemColor(profile()!.prestige_count)) + '88'"
+            [style.color]="profile()!.avatar_color ?? prestigeGemColor(profile()!.prestige_count)"
           >
-            {{ initials(profile()!.username) }}
+            @if (profile()!.avatar_icon) {
+              <ng-icon [name]="profile()!.avatar_icon!" size="26" />
+            } @else {
+              {{ initials(profile()!.username) }}
+            }
           </div>
           <!-- USERNAME -->
           <div class="text-center">
@@ -201,7 +197,14 @@
 
     <!-- FOOTER -->
     <div class="border-t border-forge-border p-4 flex flex-col gap-2 flex-shrink-0">
-      @if (!confirmingLogout() && !confirmingDelete()) {
+      @if (!confirmingLogout()) {
+        <button
+          class="w-full flex items-center gap-2.5 px-3 py-2 rounded-sm text-xs text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-widest uppercase font-bold"
+          (click)="openSettings()"
+        >
+          <ng-icon name="phosphorGearBold" class="text-sm leading-none flex-shrink-0" />
+          Settings
+        </button>
         <button
           class="w-full flex items-center gap-2.5 px-3 py-2 rounded-sm text-xs text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-widest uppercase font-bold"
           (click)="requestLogout()"
@@ -209,16 +212,7 @@
           <ng-icon name="phosphorSignOutBold" class="text-sm leading-none flex-shrink-0" />
           Logout
         </button>
-        <button
-          class="w-full flex items-center gap-2.5 px-3 py-2 rounded-sm text-xs text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-widest uppercase font-bold"
-          (click)="requestDelete()"
-        >
-          <ng-icon name="phosphorTrashBold" class="text-sm leading-none flex-shrink-0" />
-          Delete Account
-        </button>
-
-        <!-- LOGOUT -->
-      } @else if (confirmingLogout()) {
+      } @else {
         <div class="flex gap-2">
           <button
             class="flex-1 px-3 py-2 rounded-sm text-xs text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors tracking-wide font-black uppercase"
@@ -232,46 +226,6 @@
           >
             Cancel
           </button>
-        </div>
-
-        <!-- DELETE ACCOUNT -->
-      } @else if (confirmingDelete()) {
-        <div class="flex flex-col gap-2">
-          <p class="text-[10px] text-red-400/80 uppercase tracking-widest font-bold">Permanent deletion</p>
-          <p class="text-[10px] text-forge-muted leading-relaxed">
-            This will permanently delete your account and all progress. This action cannot be undone.
-          </p>
-          <input
-            type="password"
-            class="forge-input w-full text-xs"
-            placeholder="Confirm your password"
-            [ngModel]="deletePassword()"
-            (ngModelChange)="deletePassword.set($event)"
-            (keydown.enter)="confirmDelete()"
-          />
-          @if (deleteError()) {
-            <p class="forge-field-error">{{ deleteError() }}</p>
-          }
-          <div class="flex gap-2 mt-1">
-            <button
-              class="flex-1 px-3 py-2 rounded-sm text-xs text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors tracking-wide font-black uppercase disabled:opacity-30 disabled:cursor-not-allowed"
-              [disabled]="!deletePassword() || deleting()"
-              (click)="confirmDelete()"
-            >
-              @if (deleting()) {
-                <ng-icon name="phosphorSpinnerBold" class="animate-spin" />
-              } @else {
-                Delete
-              }
-            </button>
-            <button
-              class="flex-1 px-3 py-2 rounded-sm text-xs text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide"
-              [disabled]="deleting()"
-              (click)="cancelDelete()"
-            >
-              Cancel
-            </button>
-          </div>
         </div>
       }
     </div>

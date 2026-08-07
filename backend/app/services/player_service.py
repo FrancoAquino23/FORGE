@@ -78,6 +78,9 @@ class PlayerService:
             prestige_count=player.prestige_count,
             prestige_points_total=player.prestige_points_total,
             prestige_points_available=player.prestige_points_available,
+            timezone=player.timezone,
+            avatar_color=player.avatar_color,
+            avatar_icon=player.avatar_icon,
             attributes=attributes,
         )
 

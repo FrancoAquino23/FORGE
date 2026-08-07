@@ -20,6 +20,9 @@ class PlayerProfileResponse(BaseModel):
     prestige_count: int
     prestige_points_total: int
     prestige_points_available: int
+    timezone: str
+    avatar_color: str | None
+    avatar_icon: str | None
     attributes: list[AttributeProfile]
 
 # Model PlayerStatsResponse (Endpoint Response)
