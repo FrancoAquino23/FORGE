@@ -58,7 +58,7 @@ class Mission(Base):
     __tablename__ = "missions"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('ACTIVE', 'COMPLETED', 'PENDING')",
+            "status IN ('ACTIVE', 'COMPLETED', 'PENDING', 'DRAFT')",
             name="valid_mission_status",
         ),
         CheckConstraint(
@@ -92,7 +92,7 @@ class Mission(Base):
     category: Mapped[str | None] = mapped_column(String(20), nullable=True)
     objective_type: Mapped[str] = mapped_column(String(30), nullable=False, default="MANUAL")
     objective_target: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, server_default=func.now())
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -130,12 +130,39 @@
           </div>
         </div>
 
+        <!-- SAVE AS DRAFT TOGGLE -->
+        @if (logCategory() !== 'DAILY_GRIND') {
+          <div class="flex items-center justify-between px-3 py-2.5 rounded-sm border border-forge-border/40 bg-forge-surface/40">
+            <div class="flex flex-col gap-0.5">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-forge-text">Save as Draft</span>
+              <span class="text-[10px] text-forge-muted">
+                @if (saveAsDraft()) {
+                  No due date needed — set it when you activate
+                } @else {
+                  Plan now, activate when ready
+                }
+              </span>
+            </div>
+            <button
+              type="button"
+              class="relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0"
+              [class]="saveAsDraft() ? 'bg-forge-primary' : 'bg-forge-border'"
+              (click)="saveAsDraft.set(!saveAsDraft())"
+            >
+              <span
+                class="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200"
+                [style.left]="saveAsDraft() ? '18px' : '2px'"
+              ></span>
+            </button>
+          </div>
+        }
+
         <!-- DUE DATE -->
         @if (logCategory() !== 'DAILY_GRIND') {
           <div>
-            <label class="forge-label">Due Date</label>
+            <label class="forge-label">Due Date <span class="normal-case text-forge-text/40 font-normal">{{ saveAsDraft() ? '(optional)' : '' }}</span></label>
             <app-date-picker [value]="logDueDate()" (valueChange)="logDueDate.set($event)" [min]="todayStr" />
-            @if (formSubmitted() && !logDueDate()) {
+            @if (formSubmitted() && !saveAsDraft() && !logDueDate()) {
               <p class="forge-field-error">Due date required</p>
             }
           </div>
@@ -193,22 +220,205 @@
         <button
           class="forge-btn-primary forge-btn-action mt-1 text-xs"
           [class.btn-action-ready]="
-            !deploying() && !!logAttr() && !!logDesc().trim() && (logCategory() === 'DAILY_GRIND' || !!logDueDate())
+            !deploying() && !!logAttr() && !!logDesc().trim() && (logCategory() === 'DAILY_GRIND' || saveAsDraft() || !!logDueDate())
           "
           [class.btn-action-locked]="
-            !deploying() && (!logAttr() || !logDesc().trim() || (logCategory() !== 'DAILY_GRIND' && !logDueDate()))
+            !deploying() && (!logAttr() || !logDesc().trim() || (logCategory() !== 'DAILY_GRIND' && !saveAsDraft() && !logDueDate()))
           "
           (click)="deployMission()"
           [disabled]="deploying()"
         >
           @if (deploying()) {
             Dispatching...
+          } @else if (saveAsDraft() && logCategory() !== 'DAILY_GRIND') {
+            Save as Draft
           } @else {
             Deploy Mission
           }
         </button>
       </div>
     </div>
+  }
+
+  <!-- ================================================================
+       TAB: DRAFTS
+       ================================================================ -->
+  @if (activeTab() === 'DRAFTS') {
+    @if (loadError()) {
+      <div class="forge-state-wrap">
+        <ng-icon name="phosphorPlugsBold" size="40" class="forge-state-error-icon" />
+        <span class="forge-state-error-text">Error loading Drafts</span>
+      </div>
+    } @else if (!data()) {
+      <div class="forge-state-wrap">
+        <ng-icon name="phosphorSpinnerBold" size="40" class="forge-state-loading-icon" />
+        <span class="forge-state-loading-text">Loading Drafts...</span>
+      </div>
+    } @else if (filteredMissions().length === 0) {
+      <div class="forge-card forge-state-wrap">
+        <ng-icon name="phosphorScrollBold" size="32" class="forge-empty-icon" />
+        <span class="forge-empty-text">No staged missions yet.</span>
+      </div>
+    } @else {
+      <div class="flex flex-col gap-3">
+        @for (m of filteredMissions(); track m.mission_id) {
+          <div class="forge-card p-5 flex flex-col gap-3 border transition-shadow relative" [class]="cardClass(m)">
+            @if (editingId() === m.mission_id) {
+              <!-- INLINE EDIT FORM -->
+              <div class="flex flex-col gap-3">
+                <p class="text-xs uppercase tracking-widest text-forge-text/70 font-bold">Editing mission</p>
+                <div>
+                  <label class="forge-label">Objective</label>
+                  <input class="forge-input w-full text-xs" [(ngModel)]="editForm.objective" placeholder="Main action..." />
+                </div>
+                <div>
+                  <label class="forge-label">Description</label>
+                  <textarea class="forge-input w-full resize-none text-xs leading-relaxed" rows="3" [(ngModel)]="editForm.detail" placeholder="Optional details..."></textarea>
+                </div>
+                <div>
+                  <label class="forge-label">Priority</label>
+                  <div class="relative">
+                    <select class="forge-input w-full text-xs appearance-none pr-7" [(ngModel)]="editForm.threat_level">
+                      <option value="MINOR">Minor — Routine</option>
+                      <option value="MAJOR">Major — Important</option>
+                      <option value="CRITICAL">Critical — Urgent</option>
+                    </select>
+                    <ng-icon name="phosphorCaretDownBold" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-forge-muted/60 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <label class="forge-label">Due Date</label>
+                  <app-date-picker [(value)]="editForm.due_date" [min]="todayStr" />
+                </div>
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs uppercase tracking-widest text-forge-text/70">Checkpoints</label>
+                    <button type="button" class="forge-btn-nav" (click)="addEditCheckpoint()">
+                      <ng-icon name="phosphorPlusBold" /> Add
+                    </button>
+                  </div>
+                  @if (editForm.checkpoints.length > 0) {
+                    <div class="flex flex-col gap-1.5">
+                      @for (cp of editForm.checkpoints; track $index; let i = $index) {
+                        <div class="flex items-center gap-2">
+                          <input class="forge-input flex-1 text-xs" [(ngModel)]="editForm.checkpoints[i].description" placeholder="Step..." />
+                          <button type="button" class="text-forge-muted/40 hover:text-red-400/80 transition-colors text-base px-0.5 flex-shrink-0 self-center flex items-center" (click)="removeEditCheckpoint(i)">
+                            <ng-icon name="phosphorXCircleBold" />
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+                <div class="flex gap-2 justify-end pt-1">
+                  <button class="forge-btn-action text-[10px] py-1.5 px-3" (click)="cancelEdit()">Cancel</button>
+                  <button
+                    class="forge-btn-primary forge-btn-action text-[10px] py-1.5 px-3"
+                    [class.btn-action-ready]="!savingEdit()"
+                    (click)="saveEdit()"
+                    [disabled]="savingEdit()"
+                  >{{ savingEdit() ? 'Saving...' : 'Save' }}</button>
+                </div>
+              </div>
+            } @else {
+              <!-- CARD HEADER -->
+              <div class="flex items-start gap-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-forge-text text-sm uppercase tracking-widest leading-snug flex-1">
+                      {{ m.objective_description }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2.5 flex-wrap mt-0.5">
+                    <ng-icon [name]="attrIcon(m.attribute_code)" size="11" [class]="attrColor(m.attribute_code)" />
+                    <span class="text-[10px] text-forge-text/60 uppercase tracking-wider font-semibold">{{ categoryLabel(m.category) }}</span>
+                    <span [class]="attrColor(m.attribute_code) + ' text-[10px] tracking-wider font-medium'">{{ m.attribute_name }}</span>
+                    <span [class]="threatTextClass(m.threat_level) + ' text-[10px] uppercase tracking-widest font-black'">{{ m.threat_level }}</span>
+                    <span class="text-[10px] text-forge-muted/60 uppercase tracking-wider font-semibold">Drafted</span>
+                  </div>
+                </div>
+                <!-- THREE-DOT MENU -->
+                <div class="relative flex-shrink-0" (click)="stopPropagation($event)">
+                  <button class="p-1 rounded transition-opacity text-forge-muted/50 hover:text-forge-muted" (click)="toggleMenu(m.mission_id, $event)">
+                    <ng-icon name="phosphorDotsThreeVerticalBold" class="text-[14px]" />
+                  </button>
+                  @if (menuOpenId() === m.mission_id) {
+                    <div class="absolute right-0 top-7 z-30 bg-forge-surface border border-forge-border rounded shadow-lg overflow-hidden min-w-[120px]">
+                      @if (deleteConfirmId() === m.mission_id) {
+                        <div class="px-3 py-2 text-[10px] text-forge-muted border-b border-forge-border/40 whitespace-nowrap uppercase tracking-wider">Delete Mission?</div>
+                        <div class="flex">
+                          <button class="flex-1 px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-forge-card transition-colors tracking-wide font-bold border-r border-forge-border/40" (click)="confirmDelete(m)">Delete</button>
+                          <button class="flex-1 px-3 py-2 text-xs text-forge-muted hover:text-forge-text hover:bg-forge-card transition-colors tracking-wide" (click)="deleteConfirmId.set('')">Cancel</button>
+                        </div>
+                      } @else {
+                        <button class="forge-menu-item" (click)="startEdit(m)">Edit</button>
+                        <button class="w-full px-3 py-2 text-xs text-left text-red-400/70 hover:text-red-400 hover:bg-forge-card transition-colors tracking-wide" (click)="requestDeleteConfirm(m)">Delete</button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- DESCRIPTION -->
+              @if (m.description) {
+                <p class="text-[11px] text-forge-text/60 leading-relaxed">{{ m.description }}</p>
+              }
+
+              <!-- CHECKPOINTS -->
+              @if (m.checkpoints.length > 0) {
+                <div class="flex flex-col gap-1.5 pt-0.5">
+                  @for (cp of m.checkpoints; track cp.id) {
+                    <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input type="checkbox" class="checkpoint-cb" [checked]="cp.is_completed" disabled />
+                      <span class="text-[11px] leading-relaxed text-forge-muted">{{ cp.description }}</span>
+                    </label>
+                  }
+                </div>
+                <div>
+                  <div class="flex justify-between text-[10px] text-forge-muted mb-1.5">
+                    <span class="uppercase tracking-wider">Steps</span>
+                    <span class="text-forge-text font-bold tabular-nums">{{ checkpointSummary(m) }}</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" [style.background]="threatBarColor(m.threat_level)" style="width: 0%"></div>
+                  </div>
+                </div>
+              }
+
+              <!-- REWARDS + ACTIVATE -->
+              <div class="flex items-center justify-between flex-wrap gap-3">
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[10px] text-forge-text/60 uppercase tracking-widest font-semibold">Rewards</span>
+                  <div class="flex items-center gap-3 text-xs text-forge-text/60">
+                    <span class="forge-reward-inline">
+                      <ng-icon name="phosphorFlaskBold" size="11" class="text-violet-400" />
+                      <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ fmt(m.reward_xp) }}</b> XP
+                    </span>
+                    <span class="forge-reward-inline">
+                      <ng-icon name="phosphorNutBold" size="11" class="text-stone-400" />
+                      <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ m.reward_material_qty }}</b> mat
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2.5">
+                  @if (m.due_date) {
+                    <span class="text-[10px] text-forge-text/60 font-semibold">Due: {{ formatDueDate(m.due_date) }}</span>
+                  }
+                  <button
+                    class="forge-btn-primary forge-btn-action text-[10px]"
+                    [class.btn-action-ready]="activating() !== m.mission_id"
+                    [disabled]="!!activating()"
+                    (click)="activateMission(m)"
+                  >
+                    @if (activating() === m.mission_id) { Activating... } @else { Activate }
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
   }
 
   <!-- ================================================================
@@ -268,6 +478,52 @@
         </div>
       </div>
 
+      <!-- TUTORIAL DEMO CARD -->
+      @if (tutorial.showDemoMission() && activeTab() === 'MAIN_QUEST') {
+        <div class="forge-card p-5 flex flex-col gap-3 border border-forge-border mb-3 tutorial-mission-card">
+          <div class="tutorial-mission-header">
+            <span class="font-bold text-forge-text text-sm uppercase tracking-widest leading-snug block">
+              Complete Your First Mission
+            </span>
+            <div class="flex items-center gap-2.5 flex-wrap mt-0.5 tutorial-mission-badges">
+              <ng-icon name="phosphorSwordBold" size="11" class="text-red-400" />
+              <span class="text-[10px] text-forge-text/60 uppercase tracking-wider font-semibold">Main Quest</span>
+              <span class="text-red-400 text-[10px] tracking-wider font-medium">Strength</span>
+              <span class="text-sky-400 text-[10px] uppercase tracking-widest font-black">MINOR</span>
+            </div>
+          </div>
+          <div class="tutorial-mission-progress">
+            <div class="flex justify-between text-[10px] text-forge-muted mb-1.5">
+              <span class="uppercase tracking-wider">Progress</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="background: #38bdf8; width: 100%"></div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="tutorial-mission-rewards flex flex-col gap-0.5">
+              <span class="text-[10px] text-forge-text/60 uppercase tracking-widest font-semibold">Rewards</span>
+              <div class="flex items-center gap-3 text-xs text-forge-text/60">
+                <span class="forge-reward-inline">
+                  <ng-icon name="phosphorFlaskBold" size="11" class="text-violet-400" />
+                  <b class="text-red-400 tabular-nums">+120</b> XP
+                </span>
+                <span class="forge-reward-inline">
+                  <ng-icon name="phosphorNutBold" size="11" class="text-stone-400" />
+                  <b class="text-red-400 tabular-nums">+60</b> mat
+                </span>
+              </div>
+            </div>
+            <div class="tutorial-mission-action flex items-center gap-2.5">
+              <span class="text-[10px] text-forge-text/60 font-semibold">Due: Aug 15</span>
+              <button class="forge-btn-primary forge-btn-action text-[10px] btn-action-ready" (click)="$event.stopPropagation()">
+                Finish
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- MISSION LIST -->
       @if (filteredMissions().length) {
         <div class="flex flex-col gap-3">
@@ -316,7 +572,7 @@
                   @if (editForm.category !== 'DAILY_GRIND') {
                     <div>
                       <label class="forge-label">Due Date</label>
-                      <app-date-picker [(value)]="editForm.due_date" />
+                      <app-date-picker [(value)]="editForm.due_date" [min]="todayStr" />
                     </div>
                   }
                   @if (editForm.category !== 'DAILY_GRIND') {
@@ -572,19 +828,24 @@
                         Expires in: {{ dailyTimeLeft() }}
                       </span>
                     } @else if (m.due_date) {
-                      <span class="text-[10px] text-forge-text/60 font-semibold">
-                        Due: {{ formatDueDate(m.due_date) }}
+                      <span class="text-[10px] font-semibold flex items-center gap-1" [class]="isDueSoon(m.due_date) || isExpired(m.due_date) ? 'text-red-400' : 'text-forge-text/60'">
+                        @if (isDueSoon(m.due_date) || isExpired(m.due_date)) {
+                          <ng-icon name="phosphorWarningBold" size="10" />
+                        }
+                        {{ dueDateLabel(m.due_date) }}
                       </span>
                     }
                     <button
                       class="forge-btn-primary forge-btn-action text-[10px]"
-                      [class.btn-action-ready]="canFinish(m) && claiming() !== m.mission_id"
+                      [class.btn-action-ready]="canFinish(m) && claiming() !== m.mission_id && !isExpired(m.due_date)"
                       [class.btn-action-locked]="!canFinish(m)"
                       (click)="claim(m)"
                       [disabled]="!canFinish(m) || claiming() === m.mission_id"
                     >
                       @if (claiming() === m.mission_id) {
                         Processing...
+                      } @else if (isExpired(m.due_date)) {
+                        Expired
                       } @else if (isPending(m)) {
                         Finish
                       } @else if (m.is_completable) {

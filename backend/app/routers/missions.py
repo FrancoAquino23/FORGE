@@ -9,6 +9,7 @@ from app.core.deps import get_current_player
 from app.database import get_db
 from app.models.player import PlayerProfile
 from app.schemas.mission import (
+    ActivateMissionResponse,
     DeployMissionRequest,
     DeployMissionResponse,
     MissionClaimResponse,
@@ -61,6 +62,16 @@ async def toggle_checkpoint(
 ) -> ToggleCheckpointResponse:
     service = MissionService(session)
     return await service.toggle_checkpoint(player.id, checkpoint_id)
+
+# Endpoint (POST /missions/{mission_id}/activate) — Activate a DRAFT mission and start the timer
+@router.post("/{mission_id}/activate", response_model=ActivateMissionResponse)
+async def activate_mission(
+    mission_id: uuid.UUID,
+    player: PlayerProfile = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> ActivateMissionResponse:
+    service = MissionService(session)
+    return await service.activate(player.id, mission_id)
 
 # Endpoint (POST /missions/{mission_id}/claim) — Claim/complete a mission and receive rewards
 @router.post("/{mission_id}/claim", response_model=MissionClaimResponse)

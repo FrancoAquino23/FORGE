@@ -70,6 +70,13 @@ class DeployMissionRequest(BaseModel):
     due_date: datetime | None = None
     steps: list[str] = Field(default_factory=list)
     threat_level: ThreatLevel = "MAJOR"
+    is_draft: bool = False
+
+# Model ActivateMissionResponse (Response after activating a DRAFT mission)
+class ActivateMissionResponse(BaseModel):
+    mission_id: uuid.UUID
+    title: str
+    category: str
 
 # Model DeployMissionResponse (Response after dispatching a mission)
 class DeployMissionResponse(BaseModel):

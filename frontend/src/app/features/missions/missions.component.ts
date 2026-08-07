@@ -37,9 +37,11 @@ import {
   phosphorCaretDownBold,
   phosphorXCircleBold,
   phosphorPlusBold,
+  phosphorWarningBold,
 } from '@ng-icons/phosphor-icons/bold';
 import { phosphorStarFill } from '@ng-icons/phosphor-icons/fill';
 import {
+  ActivateMissionResponse,
   ApiService,
   CheckpointInfo,
   CheckpointUpdateItem,
@@ -51,6 +53,8 @@ import {
 } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
 import { PlayerStateService } from '../../core/player-state.service';
+import { SoundService } from '../../core/sound.service';
+import { TutorialService } from '../../core/tutorial.service';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 
 import {
@@ -66,9 +70,12 @@ import {
   threatBarColor,
   threatTextClass,
   formatDueDate,
+  isDueSoon,
+  dueDateLabel,
+  isExpired,
 } from '../../shared/ui-constants';
 
-export type MissionTab = 'NEW_MISSION' | 'DAILY_GRIND' | 'MAIN_QUEST' | 'SIDE_QUEST' | 'HISTORY';
+export type MissionTab = 'NEW_MISSION' | 'DRAFTS' | 'DAILY_GRIND' | 'MAIN_QUEST' | 'SIDE_QUEST' | 'HISTORY';
 
 const CATEGORY_LABELS: Record<string, string> = {
   MAIN_QUEST: 'Main Quest',
@@ -104,6 +111,7 @@ const CATEGORY_LABELS: Record<string, string> = {
       phosphorCaretDownBold,
       phosphorXCircleBold,
       phosphorPlusBold,
+      phosphorWarningBold,
     }),
   ],
   templateUrl: './missions.component.html',
@@ -114,6 +122,8 @@ export class MissionsComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private toast = inject(ToastService);
   private playerState = inject(PlayerStateService);
+  private sound = inject(SoundService);
+  protected tutorial = inject(TutorialService);
 
   data = signal<MissionListResponse | null>(null);
   historyData = signal<MissionHistoryItem[]>([]);
@@ -152,6 +162,8 @@ export class MissionsComponent implements OnInit {
   };
 
   deploying = signal(false);
+  saveAsDraft = signal(false);
+  activating = signal('');
   formSubmitted = signal(false);
   logAttr = signal('');
   logCategory = signal<'MAIN_QUEST' | 'SIDE_QUEST' | 'DAILY_GRIND'>('DAILY_GRIND');
@@ -167,6 +179,7 @@ export class MissionsComponent implements OnInit {
   // Tab definitions for template iteration
   readonly TABS: { value: MissionTab; label: string }[] = [
     { value: 'NEW_MISSION', label: 'New Mission' },
+    { value: 'DRAFTS', label: 'Drafts' },
     { value: 'MAIN_QUEST', label: 'Main Quests' },
     { value: 'SIDE_QUEST', label: 'Side Quests' },
     { value: 'DAILY_GRIND', label: 'Daily Grinds' },
@@ -206,6 +219,8 @@ export class MissionsComponent implements OnInit {
 
     let subset: MissionProgress[];
     switch (tab) {
+      case 'DRAFTS':
+        return all.filter((m) => m.status === 'DRAFT');
       case 'MAIN_QUEST':
         subset = all.filter((m) => m.status === 'PENDING' && m.category === 'MAIN_QUEST');
         break;
@@ -311,13 +326,14 @@ export class MissionsComponent implements OnInit {
   deployMission(): void {
     this.formSubmitted.set(true);
     if (!this.logAttr() || !this.logDesc().trim() || this.deploying()) return;
-    if (this.logCategory() !== 'DAILY_GRIND' && !this.logDueDate()) return;
+    if (this.logCategory() !== 'DAILY_GRIND' && !this.saveAsDraft() && !this.logDueDate()) return;
     this.deploying.set(true);
 
     const steps = this.logSteps()
       .split('\n')
       .map((s: string) => s.trim())
       .filter(Boolean);
+    const isDraft = this.saveAsDraft() && this.logCategory() !== 'DAILY_GRIND';
     const payload: DeployMissionRequest = {
       attribute_code: this.logAttr(),
       category: this.logCategory(),
@@ -326,6 +342,7 @@ export class MissionsComponent implements OnInit {
       detail: this.logDetail().trim() || undefined,
       due_date: this.logDueDate() || undefined,
       steps: steps.length > 0 ? steps : undefined,
+      is_draft: isDraft,
     };
 
     this.api
@@ -333,15 +350,27 @@ export class MissionsComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (_res) => {
-          this.toast.show({
-            type: 'success',
-            icon: '',
-            ngIcon: 'phosphorClipboardTextBold',
-            title: 'Mission Created',
-            message: '',
-          });
+          this.sound.playMission();
+          if (isDraft) {
+            this.toast.show({
+              type: 'success',
+              icon: '',
+              ngIcon: 'phosphorClipboardTextBold',
+              title: 'Mission Drafted',
+              message: 'Activate when ready to start the timer',
+            });
+          } else {
+            this.toast.show({
+              type: 'success',
+              icon: '',
+              ngIcon: 'phosphorClipboardTextBold',
+              title: 'Mission Created',
+              message: '',
+            });
+          }
           this.deploying.set(false);
           this.formSubmitted.set(false);
+          this.saveAsDraft.set(false);
           this.logAttr.set('');
           this.logDesc.set('');
           this.logDetail.set('');
@@ -359,6 +388,33 @@ export class MissionsComponent implements OnInit {
             'Could not deploy mission. Please try again.',
           );
           this.deploying.set(false);
+        },
+      });
+  }
+
+  // Function to activate a DRAFT mission and start its timer
+  activateMission(m: MissionProgress): void {
+    if (this.activating()) return;
+    this.activating.set(m.mission_id);
+    this.api
+      .activateMission(m.mission_id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (_res: ActivateMissionResponse) => {
+          this.sound.playMission();
+          this.toast.show({
+            type: 'success',
+            icon: '',
+            ngIcon: 'phosphorClipboardTextBold',
+            title: 'Mission Activated',
+            message: '',
+          });
+          this.activating.set('');
+          this.loadMissions();
+        },
+        error: (err) => {
+          this.toast.showError('Activation Failed', err, 'Could not activate mission.');
+          this.activating.set('');
         },
       });
   }
@@ -426,6 +482,26 @@ export class MissionsComponent implements OnInit {
   // Function to claim a mission reward
   claim(mission: MissionProgress): void {
     if (this.claiming() || !this.canFinish(mission)) return;
+
+    if (isExpired(mission.due_date)) {
+      this.claiming.set(mission.mission_id);
+      this.api
+        .deleteMission(mission.mission_id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.claiming.set('');
+            this.toast.showExpired();
+            this.loadMissions();
+          },
+          error: (err) => {
+            this.claiming.set('');
+            this.toast.showError('Mission Delete Failed', err, 'Could not dismiss mission.');
+          },
+        });
+      return;
+    }
+
     this.claiming.set(mission.mission_id);
 
     this.api
@@ -433,6 +509,8 @@ export class MissionsComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
+          this.sound.playMission();
+          if (res.leveled_up) setTimeout(() => this.sound.playUpgrade(), 600);
           this.toast.fromMissionClaim(res);
           if (res.newly_unlocked?.length) this.toast.fromAchievements(res.newly_unlocked);
           this.claiming.set('');
@@ -468,6 +546,7 @@ export class MissionsComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
+          this.sound.playMission();
           this.toast.show({
             type: 'success',
             icon: '',
@@ -538,6 +617,7 @@ export class MissionsComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
+          this.sound.playMission();
           this.savingEdit.set(false);
           this.editingId.set('');
           this.toast.show({
@@ -579,6 +659,7 @@ export class MissionsComponent implements OnInit {
             });
           }
           if (res.is_favorite) {
+            this.sound.playStreak();
             this.toast.show({
               type: 'success',
               icon: '',
@@ -650,6 +731,8 @@ export class MissionsComponent implements OnInit {
     if (tab === 'HISTORY') return this.historyTotal();
     const all = this.data()?.missions ?? [];
     switch (tab) {
+      case 'DRAFTS':
+        return all.filter((m) => m.status === 'DRAFT').length;
       case 'MAIN_QUEST':
         return all.filter((m) => m.status === 'PENDING' && m.category === 'MAIN_QUEST').length;
       case 'SIDE_QUEST':
@@ -738,6 +821,9 @@ export class MissionsComponent implements OnInit {
 
   // Function to format a due_date ISO string as "Month Day" (e.g. "May 6")
   protected formatDueDate = formatDueDate;
+  protected isDueSoon = isDueSoon;
+  protected dueDateLabel = dueDateLabel;
+  protected isExpired = isExpired;
 
   // Function to return the time remaining until local midnight (end of today's activity window)
   dailyTimeLeft(): string {
