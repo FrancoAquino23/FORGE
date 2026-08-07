@@ -5,8 +5,6 @@
 from app.models.base import Base
 from app.models.catalog import (
     Attribute,
-    ForgeConfig,
-    ForgeTierRecipe,
     VisualTier,
 )
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
@@ -20,8 +18,6 @@ from app.models.skill_tree import PlayerSkillNode
 __all__ = [
     "Base",
     "Attribute",
-    "ForgeConfig",
-    "ForgeTierRecipe",
     "VisualTier",
     "User",
     "PlayerProfile",
