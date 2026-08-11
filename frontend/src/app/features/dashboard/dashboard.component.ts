@@ -40,9 +40,6 @@ import {
   dueDateLabel,
 } from '../../shared/ui-constants';
 
-// Number of segments in each attribute bar before reaching prestige
-const PRESTIGE_THRESHOLD = 10;
-
 // Main dashboard component
 @Component({
   selector: 'app-dashboard',
@@ -75,6 +72,8 @@ export class DashboardComponent implements OnInit {
   profile = signal<PlayerProfile | null>(null);
   missions = signal<MissionProgress[]>([]);
   loadError = signal(false);
+
+  readonly threshold = computed(() => this.profile()?.threshold_level ?? 10);
 
   missionsPage = signal(0);
   readonly MISSIONS_PER_PAGE = 3;
@@ -144,14 +143,30 @@ export class DashboardComponent implements OnInit {
 
   // Function to determine glow effect for attribute bars based on level
   attrMaxGlow(attr: AttributeProfile): string {
-    if (attr.level < 10) return 'none';
+    if (attr.level < this.threshold()) return 'none';
     const color = this.xpBarColor(attr.code);
     return `0 0 5px ${color}99, 0 0 12px ${color}33`;
   }
 
+  // XP progress of the lowest ordinary attribute (Drives Luck sync bar)
+  private luckSyncPct(): number {
+    const attrs = this.profile()?.attributes ?? [];
+    const ordinary = attrs.filter((a) => a.code !== 'L');
+    if (!ordinary.length) return 0;
+    const lowest = ordinary.reduce((min, a) => {
+      if (a.level < min.level) return a;
+      if (a.level === min.level && a.xp_current < min.xp_current) return a;
+      return min;
+    });
+    return lowest.xp_to_next > 0
+      ? Math.min(100, (lowest.xp_current / lowest.xp_to_next) * 100)
+      : 100;
+  }
+
   // Function to calculate XP percentage for progress bars
   xpPct(attr: AttributeProfile): number {
-    if (attr.level >= PRESTIGE_THRESHOLD) return 100;
+    if (attr.level >= this.threshold()) return 100;
+    if (attr.code === 'L') return this.luckSyncPct();
     return attr.xp_to_next > 0 ? Math.min(100, (attr.xp_current / attr.xp_to_next) * 100) : 0;
   }
 

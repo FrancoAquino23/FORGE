@@ -1,5 +1,5 @@
 # ==================================================================
-# PLAYER SERVICE
+# PLAYER PROFILE SERVICE
 # ==================================================================
 
 from datetime import datetime, timedelta, timezone
@@ -20,7 +20,7 @@ from app.schemas.player import (
     PlayerStatsResponse,
     ThreatBreakdown,
 )
-from app.services.reward_service import RewardService
+from app.constants import MAX_ATTRIBUTE_LEVEL as _MAX_ATTRIBUTE_LEVEL
 from app.utils import local_now as _local_now
 
 # Service PlayerService (Business Logic for Player Profile Retrieval)
@@ -61,11 +61,7 @@ class PlayerService:
                 name=pa.attribute.name,
                 level=pa.level,
                 xp_current=pa.xp_current,
-                xp_to_next=(
-                    RewardService.xp_for_level(pa.level)
-                    if pa.attribute.code != "L"
-                    else 0
-                ),
+                xp_to_next=pa.xp_to_next if pa.attribute.code != "L" else 0,
                 material_name=pa.attribute.material_name,
                 material_balance=inv_by_attr.get(pa.attribute_id, 0),
             )
@@ -81,6 +77,7 @@ class PlayerService:
             timezone=player.timezone,
             avatar_color=player.avatar_color,
             avatar_icon=player.avatar_icon,
+            threshold_level=_MAX_ATTRIBUTE_LEVEL,
             attributes=attributes,
         )
 

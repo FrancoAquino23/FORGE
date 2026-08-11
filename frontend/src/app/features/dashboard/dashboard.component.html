@@ -9,7 +9,7 @@
     <p class="forge-page-subtitle">Active operations overview</p>
   </div>
 
-  <!-- STATE - LOADING / ERROR -->
+  <!-- STATE LOADING / ERROR -->
   @if (loadError()) {
     <div class="forge-state-wrap">
       <ng-icon name="phosphorPlugsBold" size="40" class="forge-state-error-icon" />
@@ -29,7 +29,11 @@
       @for (attr of profile()!.attributes; track attr.code) {
         <div class="forge-card p-4 flex flex-col gap-3">
           <div class="flex items-start justify-between">
-            <span class="text-4xl font-black leading-none transition-[text-shadow] duration-500" [class]="attrColor(attr.code)" [style.text-shadow]="attrMaxGlow(attr)">
+            <span
+              class="text-4xl font-black leading-none transition-[text-shadow] duration-500"
+              [class]="attrColor(attr.code)"
+              [style.text-shadow]="attrMaxGlow(attr)"
+            >
               {{ attr.code }}
             </span>
             <span class="badge bg-forge-surface border border-forge-border text-forge-muted tabular-nums">
@@ -43,7 +47,7 @@
           <div>
             <div class="flex justify-between text-xs text-forge-muted mb-1">
               <span>XP</span>
-              @if (attr.level >= 10) {
+              @if (attr.level >= threshold()) {
                 <span class="text-forge-primary font-black tracking-widest text-[9px]">MAX</span>
               } @else if (attr.code === 'L') {
                 <span class="text-forge-muted text-[9px] tracking-widest">SYNCED</span>
@@ -115,7 +119,16 @@
                       @if (m.category === 'DAILY_GRIND') {
                         <span class="text-[10px] font-semibold text-forge-text/60">Daily</span>
                       } @else if (m.due_date) {
-                        <span class="text-[10px] font-semibold" [class]="dueDateLabel(m.due_date) === 'Expired' ? 'text-red-400' : isDueSoon(m.due_date) ? 'text-red-400' : 'text-forge-text/60'">
+                        <span
+                          class="text-[10px] font-semibold"
+                          [class]="
+                            dueDateLabel(m.due_date) === 'Expired'
+                              ? 'text-red-400'
+                              : isDueSoon(m.due_date)
+                                ? 'text-red-400'
+                                : 'text-forge-text/60'
+                          "
+                        >
                           {{ dueDateLabel(m.due_date) }}
                         </span>
                       }

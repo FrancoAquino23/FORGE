@@ -23,6 +23,7 @@ class PlayerProfileResponse(BaseModel):
     timezone: str
     avatar_color: str | None
     avatar_icon: str | None
+    threshold_level: int
     attributes: list[AttributeProfile]
 
 # Model PlayerStatsResponse (Endpoint Response)

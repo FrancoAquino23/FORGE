@@ -13,13 +13,11 @@ from app.models.prestige import PrestigeHistory
 from app.models.relic import Relic
 from app.models.skill_tree import PlayerSkillNode
 from app.schemas.prestige import PrestigeStatusResponse, PrestigeUpResponse
-from app.constants import ORDINARY_CODES as _ORDINARY_CODES
+from app.constants import ORDINARY_CODES as _ORDINARY_CODES, MAX_ATTRIBUTE_LEVEL as _MAX_ATTRIBUTE_LEVEL
 from app.services.achievement_service import AchievementService
 from app.services.reward_service import RewardService, xp_scale_factor
 from app.services.skill_tree_service import get_node_level, node_bonus, pp_node_bonus, total_pp_for_level
 
-# Prestige threshold — all attributes must reach this level to prestige
-_DEFAULT_THRESHOLD = 10
 
 # Function to compute Stardust cost for next prestige level
 def prestige_stardust_cost(current_prestige: int) -> int:
@@ -43,7 +41,7 @@ class PrestigeService:
 
     # Returns full prestige status for the Prestige view
     async def get_status(self, player: PlayerProfile) -> PrestigeStatusResponse:
-        threshold = _DEFAULT_THRESHOLD
+        threshold = _MAX_ATTRIBUTE_LEVEL
 
         return PrestigeStatusResponse(
             prestige_count=player.prestige_count,
@@ -55,7 +53,7 @@ class PrestigeService:
 
     # Helper to perform a full prestige-up (Verify - Reset - Reward PP)
     async def prestige_up(self, player: PlayerProfile) -> PrestigeUpResponse:
-        threshold = _DEFAULT_THRESHOLD
+        threshold = _MAX_ATTRIBUTE_LEVEL
 
         # Load all catalog attributes and all player attributes (locked)
         all_attrs = (await self._db.scalars(select(Attribute))).all()

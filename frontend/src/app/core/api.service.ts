@@ -26,6 +26,7 @@ export interface PlayerProfile {
   timezone: string;
   avatar_color: string | null;
   avatar_icon: string | null;
+  threshold_level: number;
   attributes: AttributeProfile[];
 }
 
