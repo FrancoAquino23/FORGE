@@ -72,6 +72,7 @@ export class DashboardComponent implements OnInit {
   profile = signal<PlayerProfile | null>(null);
   missions = signal<MissionProgress[]>([]);
   loadError = signal(false);
+  missionsError = signal(false);
 
   readonly threshold = computed(() => this.profile()?.threshold_level ?? 10);
 
@@ -137,7 +138,7 @@ export class DashboardComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => this.missions.set(res.missions),
-        error: () => {},
+        error: () => this.missionsError.set(true),
       });
   }
 

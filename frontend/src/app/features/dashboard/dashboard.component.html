@@ -93,7 +93,12 @@
           }
         </div>
 
-        @if (urgentMissions().length === 0) {
+        @if (missionsError()) {
+          <div class="flex-1 flex flex-col items-center justify-center gap-3 text-center py-4">
+            <ng-icon name="phosphorPlugsBold" size="32" class="forge-state-error-icon" />
+            <span class="forge-state-error-text">Error loading active missions</span>
+          </div>
+        } @else if (urgentMissions().length === 0) {
           <div class="flex-1 flex flex-col items-center justify-center gap-3 text-center py-4">
             <ng-icon name="phosphorWarningBold" size="32" class="forge-empty-icon" />
             <p class="forge-empty-text">All quiet on the forge front</p>

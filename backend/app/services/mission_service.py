@@ -1,5 +1,5 @@
 # ==================================================================
-# MISSION SERVICE
+# FORGE - (MISSION SERVICE)
 # ==================================================================
 
 import math
@@ -52,8 +52,6 @@ def _streak_multiplier(streak: int) -> float:
         return 1.6
     if streak >= 3:
         return 1.3
-    if streak >= 3:
-        return 1.25
     return 1.0
 
 # Service for managing missions (fetching, generating, claiming)
@@ -176,7 +174,7 @@ class MissionService:
         ).all()
         relic_map = {r.attribute_code: r.level for r in relic_rows}
         display_xp, display_mat = RewardService.apply_mission_bonuses(
-            base["reward_xp"], base["reward_mat"],
+            mission.reward_xp, mission.reward_material_qty,
             relic_map.get(attr.code, 0), relic_map.get("L", 0),
         )
 
@@ -737,6 +735,7 @@ class MissionService:
                 selectinload(Mission.target_attribute),
                 selectinload(Mission.checkpoints),
             )
+            .with_for_update()
         )
         if not mission:
             raise NotFoundError("Mission")

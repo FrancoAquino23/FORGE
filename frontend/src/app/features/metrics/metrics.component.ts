@@ -9,6 +9,7 @@ import {
   phosphorPresentationChartBold,
   phosphorCaretCircleLeftBold,
   phosphorCaretCircleRightBold,
+  phosphorPlugsBold,
 } from '@ng-icons/phosphor-icons/bold';
 import { ApiService, AttributeMetric, PlayerMetrics } from '../../core/api.service';
 import {
@@ -28,6 +29,7 @@ import {
       phosphorPresentationChartBold,
       phosphorCaretCircleLeftBold,
       phosphorCaretCircleRightBold,
+      phosphorPlugsBold,
     }),
   ],
   templateUrl: './metrics.component.html',
@@ -38,6 +40,7 @@ export class MetricsComponent implements OnInit {
 
   metrics = signal<PlayerMetrics | null>(null);
   loading = signal(false);
+  loadError = signal(false);
   weekOffset = signal(0);
 
   // Lifecycle hook
@@ -49,6 +52,7 @@ export class MetricsComponent implements OnInit {
   load(): void {
     if (this.loading()) return;
     this.loading.set(true);
+    this.loadError.set(false);
     this.api
       .getMetrics(this.weekOffset())
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -57,7 +61,10 @@ export class MetricsComponent implements OnInit {
           this.metrics.set(m);
           this.loading.set(false);
         },
-        error: () => this.loading.set(false),
+        error: () => {
+          this.loading.set(false);
+          this.loadError.set(true);
+        },
       });
   }
 
