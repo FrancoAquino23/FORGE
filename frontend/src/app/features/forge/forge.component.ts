@@ -17,7 +17,6 @@ import {
   phosphorPlugsBold,
 } from '@ng-icons/phosphor-icons/bold';
 import {
-  ATTR_COLORS,
   ATTR_ICONS,
   ATTR_BAR_COLORS,
   fmt,
@@ -36,8 +35,8 @@ const BATCH_STEPS = [1, 5, 10, 25, 50, 100];
 const ORDINARY_CODES = ['S', 'P', 'E', 'C', 'I', 'A'];
 
 // Row border color constants
-const ROW_OK_BORDER = 'border-green-500/30';
-const ROW_BAD_BORDER = 'border-red-500/25';
+const ROW_OK_BORDER = 'border-green-500/60';
+const ROW_BAD_BORDER = 'border-red-500/55';
 const ROW_NEUTRAL_BORDER = 'border-forge-border';
 
 @Component({

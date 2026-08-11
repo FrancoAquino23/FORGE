@@ -1,0 +1,40 @@
+/* ==================================================================
+   RELIC WORKSHOP COMPONENT - STYLES
+   ================================================================== */
+
+.relic-card {
+  &:hover {
+    box-shadow: 0 0 14px color-mix(in srgb, var(--relic-hex) 60%, transparent);
+  }
+}
+
+.relic-card--mid {
+  box-shadow: 0 0 7px color-mix(in srgb, var(--relic-hex) 22%, transparent);
+
+  &:hover {
+    box-shadow: 0 0 14px color-mix(in srgb, var(--relic-hex) 60%, transparent);
+  }
+}
+
+.relic-card--max {
+  animation: relicMaxPulse 3s ease-in-out infinite;
+
+  &:hover {
+    animation: none;
+    box-shadow: 0 0 16px color-mix(in srgb, var(--relic-hex) 70%, transparent);
+  }
+}
+
+@keyframes relicMaxPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 8px color-mix(in srgb, var(--relic-hex) 28%, transparent),
+      0 0 18px color-mix(in srgb, var(--relic-hex) 10%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 14px color-mix(in srgb, var(--relic-hex) 52%, transparent),
+      0 0 26px color-mix(in srgb, var(--relic-hex) 18%, transparent);
+  }
+}

@@ -249,91 +249,65 @@ $node-radius: 14px;
   color: rgba(226, 232, 240, 0.7);
 }
 
-.node--locked {
-  .node-hex-outer {
-    background: rgba(226, 232, 240, 0.04);
-    border: 2px solid rgba(226, 232, 240, 0.2);
-  }
-  .node-hex-inner {
-    background: transparent;
-  }
+.node-wrapper.node--choice-locked {
+  opacity: 0.6;
+  filter: grayscale(1);
+}
+
+.node-hex-outer.node--locked {
+  background: rgba(226, 232, 240, 0.04);
+  border: 2px solid rgba(226, 232, 240, 0.2);
+
   .node-symbol {
     color: rgba(226, 232, 240, 0.25);
-    font-size: 1.8rem;
   }
-  .node-name {
-    opacity: 0.35;
-  }
-  .node-level {
-    opacity: 0.35;
+
+  + .node-info {
+    .node-name,
+    .node-level {
+      opacity: 0.35;
+    }
   }
 }
 
-.node--choice-locked {
-  opacity: 0.25;
-  filter: grayscale(1);
-  .node-hex-outer {
-    background: rgba(226, 232, 240, 0.03);
-    border: 2px solid rgba(226, 232, 240, 0.1);
-  }
-  .node-hex-inner {
-    background: transparent;
-  }
+.node-hex-outer.node--choice-locked {
+  background: rgba(226, 232, 240, 0.03);
+  border: 2px solid rgba(226, 232, 240, 0.1);
+
   .node-symbol {
     color: rgba(226, 232, 240, 0.2);
-    font-size: 1.8rem;
   }
 }
 
-.node--available {
-  .node-hex-outer {
-    background: rgba(226, 232, 240, 0.06);
-    border: 2px solid #e2e8f0;
-    box-shadow: 0 0 12px rgba(226, 232, 240, 0.35);
-    animation: nodeAvailPulse 2.5s ease-in-out infinite;
-  }
-  .node-hex-inner {
-    background: transparent;
-  }
+.node-hex-outer.node--available {
+  background: rgba(226, 232, 240, 0.06);
+  border: 2px solid #e2e8f0;
+
   .node-symbol {
     color: #e2e8f0;
-    font-size: 1.8rem;
   }
 }
 
-.node--active {
-  .node-hex-outer {
-    background: rgba(226, 232, 240, 0.12);
-    border: 2px solid #e2e8f0;
-    box-shadow:
-      0 0 22px rgba(226, 232, 240, 0.7),
-      0 0 48px rgba(226, 232, 240, 0.25);
-    animation: nodeActivePulse 2.5s ease-in-out infinite;
-  }
-  .node-hex-inner {
-    background: transparent;
-  }
+.node-hex-outer.node--active {
+  background: rgba(226, 232, 240, 0.12);
+  border: 2px solid #e2e8f0;
+
   .node-symbol {
-    color: #e2e8f0;
-    font-size: 1.8rem;
+    color: #e2e8f0; // overridden per level by nodeIconColor() inline style
   }
 }
 
-.node--maxed {
-  .node-hex-outer {
-    background: rgba(245, 158, 11, 0.12);
-    border: 2px solid #f59e0b;
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
-    animation: nodeMaxPulse 3s ease-in-out infinite;
-  }
-  .node-hex-inner {
-    background: transparent;
-  }
+.node-hex-outer.node--maxed {
+  background: rgba(245, 158, 11, 0.12);
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
+  animation: nodeMaxPulse 3s ease-in-out infinite;
+
   .node-symbol {
     color: #f59e0b;
-    font-size: 1.8rem;
   }
-  .node-level {
+
+  + .node-info .node-level {
     color: #f59e0b;
     opacity: 1;
   }
@@ -511,30 +485,6 @@ $node-radius: 14px;
   color: rgba(239, 68, 68, 0.5);
   padding: 5px 0;
   line-height: 1.6;
-}
-
-@keyframes nodeActivePulse {
-  0%,
-  100% {
-    box-shadow:
-      0 0 18px rgba(226, 232, 240, 0.55),
-      0 0 36px rgba(226, 232, 240, 0.18);
-  }
-  50% {
-    box-shadow:
-      0 0 28px rgba(226, 232, 240, 0.85),
-      0 0 56px rgba(226, 232, 240, 0.35);
-  }
-}
-
-@keyframes nodeAvailPulse {
-  0%,
-  100% {
-    box-shadow: 0 0 8px color-mix(in srgb, var(--path-color) 35%, transparent);
-  }
-  50% {
-    box-shadow: 0 0 18px color-mix(in srgb, var(--path-color) 70%, transparent);
-  }
 }
 
 @keyframes nodeMaxPulse {

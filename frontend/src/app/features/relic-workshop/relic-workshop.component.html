@@ -3,19 +3,22 @@
      ================================================================== -->
 
 <div class="forge-card p-5">
-  <div class="mb-4">
+  <div class="mb-4 flex items-center justify-between">
     <h3 class="forge-section-title">Relic Workshop</h3>
+    <button
+      class="text-[9px] font-bold uppercase tracking-widest border px-2 py-1 rounded-sm transition-colors"
+      [class]="previewLabel() ? 'text-forge-text border-forge-border/60' : 'text-forge-muted/50 hover:text-forge-muted border-forge-border/20 hover:border-forge-border/50'"
+      (click)="cyclePreviewLevel()"
+    >★ {{ previewLabel() ?? 'preview' }}</button>
   </div>
 
   @if (!loading() || relics().length) {
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-      @for (r of relics(); track r.attribute_code) {
+      @for (r of displayRelics(); track r.attribute_code) {
         <div
           class="relic-card bg-forge-surface border rounded-sm p-3 flex flex-col gap-2.5 transition-colors"
-          [class]="borderClass(r.attribute_code)"
-          [style]="glowStyle(r.attribute_code)"
-          (mouseenter)="hoveredRelic.set(r.attribute_code)"
-          (mouseleave)="hoveredRelic.set('')"
+          [class]="relicBorderClass(r)"
+          [style]="relicCardStyle(r)"
         >
           <!-- HEADER -->
           <div class="flex flex-col items-center gap-1 pt-1">
@@ -46,13 +49,12 @@
 
           <!-- UPGRADE BUTTON -->
           @if (r.level >= 10) {
-            <div
-              class="text-[9px] font-black text-center py-1 border rounded-sm flex items-center justify-center gap-1"
-              [class]="attrColor(r.attribute_code) + ' border-current/30'"
+            <button
+              class="relic-upgrade-btn forge-btn-primary forge-btn-action text-[9px] w-full py-1.5 btn-action-locked"
+              disabled
             >
-              <ng-icon name="phosphorStarFourBold" size="9" />
               MAX
-            </div>
+            </button>
           } @else {
             <button
               class="relic-upgrade-btn forge-btn-primary forge-btn-action text-[9px] w-full py-1.5"

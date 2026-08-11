@@ -178,6 +178,13 @@ export class SkillTreeComponent implements OnInit {
     return PATH_COLORS[path] ?? '#f59e0b';
   }
 
+  // Function to get icon color for a path — gold if any node is maxed
+  pathIconColor(group: PathGroup): string {
+    return group.nodes.some((n) => n.current_level >= n.max_level)
+      ? '#f59e0b'
+      : this.pathColor(group.path);
+  }
+
   // Function to derive visual state for a node
   nodeState(node: SkillNodeInfo): 'locked' | 'available' | 'active' | 'maxed' | 'choice-locked' {
     if (node.current_level === node.max_level) return 'maxed';
@@ -190,6 +197,22 @@ export class SkillTreeComponent implements OnInit {
   // Function to return the hex outer class string including state
   nodeHexClass(node: SkillNodeInfo): string {
     return `node-hex-outer node--${this.nodeState(node)}`;
+  }
+
+  // Function to return icon/border color based on current level (bronze / silver / gold)
+  nodeIconColor(node: SkillNodeInfo): string | null {
+    if (node.current_level === 0) return null;
+    if (node.current_level >= node.max_level) return '#f59e0b';
+    if (node.current_level === 1) return '#f97316';
+    return '#94a3b8';
+  }
+
+  // Function to return colored box-shadow glow for leveled nodes (lv1 / lv2)
+  nodeLevelGlow(node: SkillNodeInfo): string | null {
+    if (node.current_level === 0 || node.current_level >= node.max_level) return null;
+    if (node.current_level === 1)
+      return '0 0 16px rgba(249, 115, 22, 0.7), 0 0 36px rgba(249, 115, 22, 0.25)';
+    return '0 0 16px rgba(148, 163, 184, 0.7), 0 0 36px rgba(148, 163, 184, 0.25)';
   }
 
   // Function to derive connector state between node[fromIndex] and the next
@@ -257,10 +280,10 @@ export class SkillTreeComponent implements OnInit {
           if (isFirstChoice && !isMaxed) this.sound.playPath();
           else this.sound.playUpgrade();
           const medalColor = isMaxed
-            ? 'text-yellow-400'
+            ? 'text-amber-500'
             : res.new_level === 1
-              ? 'text-orange-400'
-              : 'text-slate-300';
+              ? 'text-orange-500'
+              : 'text-slate-400';
           this.toast.show({
             type: 'node',
             icon: '',
@@ -269,19 +292,8 @@ export class SkillTreeComponent implements OnInit {
             title: isMaxed
               ? `Maxed: ${node.display_name}`
               : `Level ${res.new_level}: ${node.display_name}`,
-            message: '',
+            message: isFirstChoice && !isMaxed ? 'Path committed' : '',
           });
-          if (isFirstChoice && !isMaxed) {
-            setTimeout(() => {
-              this.toast.show({
-                type: 'success',
-                icon: '',
-                ngIcon: 'phosphorFlagBold',
-                title: 'Path Chosen',
-                message: 'Path locked',
-              });
-            }, 800);
-          }
           this.loadTree();
         },
         error: (err: { error?: { detail?: string } }) => {
@@ -321,7 +333,7 @@ export class SkillTreeComponent implements OnInit {
             type: 'success',
             icon: '',
             ngIcon: 'phosphorArrowCounterClockwiseBold',
-            iconColor: 'text-white',
+            iconColor: 'text-slate-400',
             title: 'Perks Reset',
             message: `+${res.pp_refunded} PP refunded`,
           });

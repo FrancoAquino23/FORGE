@@ -52,7 +52,7 @@
                   <ng-icon
                     [name]="pathIcon(group.path)"
                     class="card-icon"
-                    [style.color]="pathColor(group.path)"
+                    [style.color]="pathIconColor(group)"
                   ></ng-icon>
                   <span class="card-name">{{ group.path }}</span>
                 </div>
@@ -67,10 +67,10 @@
                 <div class="card-nodes">
                   <div class="path-nodes">
                     @for (node of group.nodes; track node.node_id; let i = $index; let last = $last) {
-                      <div class="skill-tree-node node-wrapper" (mouseenter)="hoverNode.set(node.node_id)">
-                        <div [class]="nodeHexClass(node)">
+                      <div class="skill-tree-node node-wrapper" [class.node--choice-locked]="nodeState(node) === 'choice-locked'" (mouseenter)="hoverNode.set(node.node_id)">
+                        <div [class]="nodeHexClass(node)" [style.border-color]="nodeIconColor(node)" [style.box-shadow]="nodeLevelGlow(node)">
                           <div class="node-hex-inner">
-                            <ng-icon name="phosphorGraphBold" class="node-symbol"></ng-icon>
+                            <ng-icon name="phosphorGraphBold" class="node-symbol" [style.color]="nodeIconColor(node)"></ng-icon>
                           </div>
                         </div>
                         <div class="node-info">
@@ -84,7 +84,7 @@
               </div>
 
               <!-- CHOOSE ONE -->
-              <p class="choose-one-notice">Choose one node per path — reset tree to change your selection</p>
+              <p class="choose-one-notice">Choose one node per path</p>
 
               <div class="skill-tree-path-tabs carousel-dots">
                 @for (p of paths(); track p.path; let i = $index) {
@@ -109,6 +109,7 @@
                   <ng-icon name="phosphorCaretCircleRightBold" />
                 </button>
               </div>
+
             }
           }
         </div>
@@ -201,7 +202,7 @@
                 @if (node.current_level === node.max_level) {
                   <div class="detail-maxed">MAX LEVEL</div>
                 } @else if (nodeState(node) === 'choice-locked') {
-                  <div class="detail-choice-locked-msg">Path committed — reset tree to change selection</div>
+                  <div class="detail-choice-locked-msg">Reset tree to change selection</div>
                 } @else if (nodeState(node) === 'locked') {
                   <div class="detail-locked-msg">Unlock previous node first</div>
                 } @else {

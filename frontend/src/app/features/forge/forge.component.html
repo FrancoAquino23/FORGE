@@ -33,11 +33,6 @@
                 class="flex items-center gap-3 px-3 py-2.5 rounded-sm bg-forge-surface border transition-colors duration-300"
                 [class]="rowBorder(attr.material_balance)"
               >
-                <div
-                  class="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-300"
-                  [class.bg-green-400]="attr.material_balance >= costEach()"
-                  [class.bg-red-400]="attr.material_balance < costEach()"
-                ></div>
                 <ng-icon [name]="attrIcon(attr.code)" size="12" [class]="attrColor(attr.code)" class="flex-shrink-0" />
                 <span class="text-[9px] font-black w-3 flex-shrink-0" [class]="attrColor(attr.code)">
                   {{ attr.code }}
@@ -81,7 +76,7 @@
                 {{ fmt(stardust()?.material_balance ?? 0) }}
               </p>
             </div>
-            <div class="stardust-orb select-none" [class.animate-forge-pulse]="transmuting()">
+            <div class="stardust-orb select-none">
               <ng-icon [name]="StardustIcon" size="40" class="text-orange-400" />
             </div>
           </div>
