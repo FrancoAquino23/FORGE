@@ -142,6 +142,13 @@ export class DashboardComponent implements OnInit {
       });
   }
 
+  // Function to determine glow effect for attribute bars based on level
+  attrMaxGlow(attr: AttributeProfile): string {
+    if (attr.level < 10) return 'none';
+    const color = this.xpBarColor(attr.code);
+    return `0 0 5px ${color}99, 0 0 12px ${color}33`;
+  }
+
   // Function to calculate XP percentage for progress bars
   xpPct(attr: AttributeProfile): number {
     if (attr.level >= PRESTIGE_THRESHOLD) return 100;

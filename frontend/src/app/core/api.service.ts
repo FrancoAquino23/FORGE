@@ -71,6 +71,7 @@ export interface AchievementUnlocked {
   code: string;
   title: string;
   description: string;
+  flavor: string;
 }
 
 // Interface (Mission Claim Response - Data)
@@ -260,6 +261,7 @@ export interface PlayerStats {
   total_missions_completed: number;
   total_xp_earned: number;
   total_materials_earned: number;
+  total_stardust_produced: number;
   best_streak: number;
 }
 

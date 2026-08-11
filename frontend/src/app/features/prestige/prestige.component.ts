@@ -165,11 +165,11 @@ export class PrestigeComponent implements OnInit {
               icon: '',
               ngIcon: 'phosphorArrowFatLinesUpBold',
               title: `PRESTIGE #${res.prestige_number} ACHIEVED`,
-              message: `All attributes/relics reseted & +${res.pp_earned} PP awarded`,
+              message: `All progress reseted & +${res.pp_earned} Prestige Points awarded`,
             },
             6000,
           );
-          if (res.newly_unlocked?.length) this.toast.fromAchievements(res.newly_unlocked);
+          if (res.newly_unlocked?.length) this.toast.fromAchievements(res.newly_unlocked, 2500);
           this.prestigeFlash.set(true);
           setTimeout(() => this.prestigeFlash.set(false), 1500);
           this.load();

@@ -179,6 +179,21 @@ $forge-muted: #64748b;
   animation: rainbowShift 6s ease infinite;
 }
 
+.icon-special-rainbow {
+  animation: iconColorShift 6s ease infinite;
+}
+
+@keyframes iconColorShift {
+  0%   { color: #f87171; }
+  14%  { color: #fb923c; }
+  28%  { color: #fde047; }
+  42%  { color: #4ade80; }
+  57%  { color: #22d3ee; }
+  71%  { color: #60a5fa; }
+  85%  { color: #c084fc; }
+  100% { color: #f87171; }
+}
+
 /* =========== LOGIN & REGISTER =========== */
 .login-bg {
   position: relative;

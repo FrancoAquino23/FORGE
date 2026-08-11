@@ -2,6 +2,33 @@
    PRESTIGE STYLES
    ================================================================== */
 
+@property --hex-glow-radius {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 5px;
+}
+
+@property --hex-inner-opacity {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0.7;
+}
+
+.prestige-honeycomb {
+  animation: hexGlowSync 3s ease-in-out infinite;
+}
+
+@keyframes hexGlowSync {
+  0%, 100% {
+    --hex-glow-radius: 5px;
+    --hex-inner-opacity: 0.7;
+  }
+  50% {
+    --hex-glow-radius: 10px;
+    --hex-inner-opacity: 1;
+  }
+}
+
 .hex-cell {
   --hex-color: #f59e0b;
 
@@ -17,9 +44,7 @@
   justify-content: center;
   gap: 4px;
   cursor: default;
-  transition:
-    transform 0.2s ease,
-    filter 0.2s ease;
+  transition: transform 0.2s ease;
 
   &::before {
     content: "";
@@ -64,7 +89,17 @@
 
 .hex-ready {
   background: var(--hex-color);
-  animation: hexGlowPulse 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 var(--hex-glow-radius) var(--hex-color))
+    drop-shadow(0 0 calc(var(--hex-glow-radius) * 2) color-mix(in srgb, var(--hex-color) 50%, transparent));
+
+  &::before {
+    background: radial-gradient(
+      ellipse at center,
+      #111820 45%,
+      color-mix(in srgb, var(--hex-color) 35%, #111820) 100%
+    );
+    opacity: var(--hex-inner-opacity);
+  }
 
   .hex-name {
     color: var(--hex-color);
@@ -76,19 +111,7 @@
 
   ng-icon {
     color: var(--hex-color) !important;
-    filter: drop-shadow(0 0 4px var(--hex-color));
-  }
-}
-
-@keyframes hexGlowPulse {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 6px var(--hex-color))
-      drop-shadow(0 0 12px color-mix(in srgb, var(--hex-color) 50%, transparent));
-  }
-  50% {
-    filter: drop-shadow(0 0 14px var(--hex-color))
-      drop-shadow(0 0 28px color-mix(in srgb, var(--hex-color) 70%, transparent));
+    filter: drop-shadow(0 0 6px var(--hex-color));
   }
 }
 

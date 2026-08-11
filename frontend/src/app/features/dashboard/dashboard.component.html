@@ -29,7 +29,7 @@
       @for (attr of profile()!.attributes; track attr.code) {
         <div class="forge-card p-4 flex flex-col gap-3">
           <div class="flex items-start justify-between">
-            <span class="text-4xl font-black leading-none" [class]="attrColor(attr.code)">
+            <span class="text-4xl font-black leading-none transition-[text-shadow] duration-500" [class]="attrColor(attr.code)" [style.text-shadow]="attrMaxGlow(attr)">
               {{ attr.code }}
             </span>
             <span class="badge bg-forge-surface border border-forge-border text-forge-muted tabular-nums">
@@ -51,7 +51,7 @@
                 <span class="tabular-nums">{{ fmt(attr.xp_current) }}/{{ fmt(attr.xp_to_next) }}</span>
               }
             </div>
-            <div class="progress-bar">
+            <div class="progress-bar transition-[box-shadow] duration-500" [style.box-shadow]="attrMaxGlow(attr)">
               <div class="progress-fill" [style.background]="xpBarColor(attr.code)" [style.width.%]="xpPct(attr)"></div>
             </div>
           </div>
@@ -115,7 +115,7 @@
                       @if (m.category === 'DAILY_GRIND') {
                         <span class="text-[10px] font-semibold text-forge-text/60">Daily</span>
                       } @else if (m.due_date) {
-                        <span class="text-[10px] font-semibold" [class]="isDueSoon(m.due_date) ? 'text-red-400' : 'text-forge-text/60'">
+                        <span class="text-[10px] font-semibold" [class]="dueDateLabel(m.due_date) === 'Expired' ? 'text-red-400' : isDueSoon(m.due_date) ? 'text-red-400' : 'text-forge-text/60'">
                           {{ dueDateLabel(m.due_date) }}
                         </span>
                       }
