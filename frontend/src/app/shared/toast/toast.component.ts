@@ -2,7 +2,7 @@
    TOAST COMPONENT LOGIC
    ================================================================== */
 
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
   phosphorArrowCircleUpBold,
@@ -35,7 +35,7 @@ const TYPE_ICON_COLOR: Record<ToastType, string> = {
   loot: 'text-purple-300',
   error: 'text-red-400',
   node: 'text-amber-300',
-  prestige: 'text-white',
+  prestige: '',
   expired: 'text-red-400',
 };
 
@@ -48,6 +48,13 @@ const TYPE_BORDER: Record<ToastType, string> = {
   node: 'border-amber-400/60 text-amber-300',
   prestige: 'border-transparent toast-prestige',
   expired: 'border-red-500/60 text-red-400',
+};
+
+// Node level-specific border/text colors (must be static strings for Tailwind JIT)
+const NODE_LEVEL_BORDERS: Record<string, string> = {
+  'text-orange-500': 'border-orange-500/60 text-orange-500',
+  'text-slate-400':  'border-slate-400/60 text-slate-400',
+  'text-amber-500':  'border-amber-500/60 text-amber-500',
 };
 
 // Attribute-specific border/text colors for level-up toasts
@@ -95,6 +102,9 @@ const ATTR_TOAST_COLORS: Record<string, string> = {
 export class ToastComponent {
   svc = inject(ToastService);
 
+  regularToasts = computed(() => this.svc.toasts().filter(t => t.type !== 'loot'));
+  achievementToasts = computed(() => [...this.svc.toasts().filter(t => t.type === 'loot')].reverse());
+
   // Function to get icon color class based on toast type or explicit override
   iconColorClass(toast: Toast): string {
     return toast.iconColor ?? TYPE_ICON_COLOR[toast.type] ?? 'text-forge-muted';
@@ -103,6 +113,7 @@ export class ToastComponent {
   // Function to get border and text color classes based on toast type and optional attribute code
   borderClass(toast: Toast): string {
     if (toast.iconColor) {
+      if (NODE_LEVEL_BORDERS[toast.iconColor]) return NODE_LEVEL_BORDERS[toast.iconColor];
       const colorToken = toast.iconColor.replace('text-', '');
       return `border-${colorToken}/60 ${toast.iconColor}`;
     }

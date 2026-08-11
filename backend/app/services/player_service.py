@@ -90,6 +90,7 @@ class PlayerService:
             total_missions_completed=player.total_missions_completed,
             total_xp_earned=player.total_xp_earned,
             total_materials_earned=player.total_materials_earned,
+            total_stardust_produced=player.total_stardust_produced,
             best_streak=player.best_streak,
         )
 

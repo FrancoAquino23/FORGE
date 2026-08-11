@@ -2,9 +2,9 @@
      TOAST COMPONENT TEMPLATE
      ================================================================== -->
 
-<!-- CONTAINER -->
+<!-- REGULAR TOASTS -->
 <div class="fixed top-16 right-4 z-50 flex flex-col gap-2 w-96 pointer-events-none">
-  @for (toast of svc.toasts(); track toast.id) {
+  @for (toast of regularToasts(); track toast.id) {
     <div
       class="forge-card border p-4 flex gap-3 shadow-xl pointer-events-auto animate-drop-in"
       [class.items-center]="!toast.message"
@@ -17,7 +17,7 @@
           size="22"
           class="shrink-0"
           [class]="iconColorClass(toast)"
-          [class.text-special-rainbow]="toast.type === 'prestige'"
+          [class.icon-special-rainbow]="toast.type === 'prestige'"
         ></ng-icon>
       } @else {
         <span class="text-2xl leading-none shrink-0">{{ toast.icon }}</span>
@@ -36,12 +36,46 @@
           </p>
         }
       </div>
-      <!-- DISMISS BUTTON -->
       <button
         class="text-forge-muted hover:text-white text-lg leading-none shrink-0 cursor-pointer transition-colors"
         (click)="svc.dismiss(toast.id)"
       >
         <ng-icon name="phosphorXCircleBold" />
+      </button>
+    </div>
+  }
+</div>
+
+<!-- ACHIEVEMENT TOASTS -->
+<div class="fixed bottom-4 left-4 z-50 flex flex-col-reverse gap-2 w-[520px] pointer-events-none">
+  @for (toast of achievementToasts(); track toast.id) {
+    <div
+      class="forge-card border border-amber-400/70 p-5 flex gap-4 shadow-xl pointer-events-auto animate-drop-in items-start"
+    >
+      @if (toast.ngIcon) {
+        <ng-icon [name]="toast.ngIcon" size="18" class="shrink-0 text-amber-400 mt-0.5"></ng-icon>
+      } @else {
+        <span class="text-lg leading-none shrink-0">{{ toast.icon }}</span>
+      }
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-[10px] uppercase tracking-widest text-amber-400">{{ toast.title }}</p>
+        @if (toast.message) {
+          <p class="text-sm mt-1 font-bold text-forge-text leading-snug">{{ toast.message }}</p>
+        }
+        @if (toast.subtitle) {
+          <p class="text-xs mt-1 leading-snug text-forge-text/60">{{ toast.subtitle }}</p>
+        }
+        @if (toast.detail) {
+          <p class="text-xs mt-2 leading-snug text-forge-muted border-t border-forge-border/30 pt-2">
+            {{ toast.detail }}
+          </p>
+        }
+      </div>
+      <button
+        class="text-forge-muted hover:text-white text-sm leading-none shrink-0 cursor-pointer transition-colors"
+        (click)="svc.dismiss(toast.id)"
+      >
+        <ng-icon name="phosphorXCircleBold" size="14" />
       </button>
     </div>
   }

@@ -49,6 +49,7 @@ class AchievementUnlocked(BaseModel):
     code: str
     title: str
     description: str
+    flavor: str
 
 # Model MissionClaimResponse (Data - Response for claiming a mission)
 class MissionClaimResponse(BaseModel):

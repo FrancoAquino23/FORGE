@@ -30,6 +30,7 @@ class PlayerStatsResponse(BaseModel):
     total_missions_completed: int
     total_xp_earned: int
     total_materials_earned: int
+    total_stardust_produced: int
     best_streak: int
 
 # Model CategoryBreakdown (Data)

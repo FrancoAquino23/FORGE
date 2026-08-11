@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ConflictError, NotFoundError
 from app.models.catalog import Attribute
-from app.models.player import PlayerAttribute, PlayerInventory
+from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile
 from app.schemas.forge import TransmuteRequest, TransmuteResponse
 from app.constants import ORDINARY_CODES_ORDERED as _ORDINARY_CODES
 from app.services.skill_tree_service import get_node_level, node_bonus
@@ -85,6 +85,16 @@ class ForgeService:
             )
         ).scalar_one()
         stardust_inv.quantity += stardust_gained
+
+        # Track lifetime Stardust produced for achievements
+        profile = (
+            await self._db.execute(
+                select(PlayerProfile)
+                .where(PlayerProfile.id == player_id)
+                .with_for_update()
+            )
+        ).scalar_one()
+        profile.total_stardust_produced += stardust_gained
 
         await self._db.commit()
 

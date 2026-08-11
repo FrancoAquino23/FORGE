@@ -33,10 +33,22 @@ ACHIEVEMENTS: list[AchievementDef] = [
         flavor="HR stopped sending you birthday emails. They assume you'll outlive the company.",
     ),
     AchievementDef(
+        code="weekly_report",
+        title="Weekly Report",
+        description="Maintain a 7 day streak",
+        flavor="Seven days, zero absences. Technically that makes you Employee of the Week. Your photo goes on the wall. Nobody looks at the wall.",
+    ),
+    AchievementDef(
         code="pizza_party",
         title="Pizza Party",
         description="Maintain a 30 day streak",
-        flavor="Perfect attendance! Your reward is a lukewarm slice of pepperoni. Don't eat it all in one 15-minute break.",
+        flavor="Perfect attendance! Your reward is a lukewarm slice of pepperoni. Don't eat it all in your 15-minute break.",
+    ),
+    AchievementDef(
+        code="all_in",
+        title="All In",
+        description="Max out any single attribute",
+        flavor="Full commitment to one area of your life. The other six opened a ticket. Status: unassigned.",
     ),
     AchievementDef(
         code="overqualified",
@@ -49,6 +61,24 @@ ACHIEVEMENTS: list[AchievementDef] = [
         title="Inventory",
         description="Accumulate 1,000,000 materials",
         flavor="Resource management! You are hoarding enough supplies to survive the apocalypse.",
+    ),
+    AchievementDef(
+        code="supernova",
+        title="Supernova",
+        description="Accumulate 1,000,000 Stardust",
+        flavor="Stellar output! The Council has reviewed your numbers. They will not grant you the rank of Master.",
+    ),
+    AchievementDef(
+        code="initial_commit",
+        title="Initial Commit",
+        description="Unlock your first perk",
+        flavor="You spent imaginary points on imaginary buffs. Welcome to professional development.",
+    ),
+    AchievementDef(
+        code="merged",
+        title="Merged",
+        description="Max out any perk",
+        flavor="Approved, merged, deployed. The error logs are someone else's weekend.",
     ),
     AchievementDef(
         code="first_steps",

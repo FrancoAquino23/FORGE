@@ -31,6 +31,8 @@ export interface Toast {
   iconColor?: string;
   title: string;
   message: string;
+  subtitle?: string;
+  detail?: string;
   attrCode?: string;
 }
 
@@ -108,7 +110,7 @@ export class ToastService {
   }
 
   // Method (Show Achievement Unlocked notifications)
-  fromAchievements(unlocked: AchievementUnlocked[]): void {
+  fromAchievements(unlocked: AchievementUnlocked[], initialDelay = 0): void {
     unlocked.forEach((a, i) => {
       setTimeout(() => {
         this.sound.playAchievement();
@@ -120,10 +122,12 @@ export class ToastService {
             iconColor: 'text-amber-300',
             title: 'Achievement Unlocked',
             message: a.title,
+            subtitle: a.description,
+            detail: a.flavor,
           },
           6000,
         );
-      }, i * 800);
+      }, initialDelay + i * 800);
     });
   }
 

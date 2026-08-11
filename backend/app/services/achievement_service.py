@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.player import PlayerAchievement, PlayerAttribute, PlayerProfile
+from app.models.skill_tree import PlayerSkillNode
 from app.services.achievement_definitions import ACHIEVEMENT_MAP, ACHIEVEMENTS, AchievementDef
 
 # Service for checking & unlocking achievements
@@ -27,21 +28,36 @@ class AchievementService:
         )
         attr_levels = [row[0] for row in attrs_result.all()]
 
+        nodes_result = await self._db.execute(
+            select(PlayerSkillNode.current_level).where(PlayerSkillNode.player_id == player.id)
+        )
+        node_levels = [row[0] for row in nodes_result.all()]
+
         # Evaluate conditions for each achievement
         total_missions: int = player.total_missions_completed
         total_xp: int = player.total_xp_earned
         total_mat: int = player.total_materials_earned
+        total_stardust: int = player.total_stardust_produced
         prestige: int = player.prestige_count
         best_streak: int = player.best_streak
         all_maxed: bool = bool(attr_levels) and all(lv >= 10 for lv in attr_levels)
+
+        any_maxed: bool = any(lv >= 10 for lv in attr_levels)
+        any_perk: bool = any(lv >= 1 for lv in node_levels)
+        any_maxed_perk: bool = any(lv >= 3 for lv in node_levels)
 
         conditions: dict[str, bool] = {
             "internship":      total_missions >= 100,
             "full_time":       total_missions >= 1_000,
             "senior":          total_missions >= 10_000,
+            "weekly_report":   best_streak >= 7,
             "pizza_party":     best_streak >= 30,
+            "all_in":          any_maxed,
             "overqualified":   total_xp >= 1_000_000,
             "inventory":       total_mat >= 1_000_000,
+            "supernova":       total_stardust >= 1_000_000,
+            "merged":           any_maxed_perk,
+            "initial_commit":   any_perk,
             "first_steps":     prestige >= 1,
             "worn_path":       prestige >= 25,
             "no_turning_back": prestige >= 50,

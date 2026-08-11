@@ -55,6 +55,7 @@ class PlayerProfile(Base):
     total_missions_completed: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
     total_xp_earned: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
     total_materials_earned: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
+    total_stardust_produced: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"), default=0)
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, server_default=text("'UTC'"), default="UTC")
     avatar_color: Mapped[str | None] = mapped_column(String(16), nullable=True, default=None)
     avatar_icon: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)

@@ -199,7 +199,7 @@ class PrestigeService:
         from app.schemas.mission import AchievementUnlocked
         unlocked_defs = await AchievementService(self._db).check_and_unlock(locked_profile)
         newly_unlocked = [
-            AchievementUnlocked(code=a.code, title=a.title, description=a.description)
+            AchievementUnlocked(code=a.code, title=a.title, description=a.description, flavor=a.flavor)
             for a in unlocked_defs
         ]
 
