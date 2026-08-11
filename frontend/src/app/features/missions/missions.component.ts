@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { NgTemplateOutlet } from '@angular/common';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
 import {
   phosphorSwordBold,
@@ -85,7 +86,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 @Component({
   selector: 'app-missions',
-  imports: [NgIconComponent, FormsModule, DatePickerComponent],
+  imports: [NgIconComponent, FormsModule, DatePickerComponent, NgTemplateOutlet],
   providers: [
     provideIcons({
       phosphorSwordBold,
@@ -144,6 +145,7 @@ export class MissionsComponent implements OnInit {
   menuOpenId = signal('');
   editingId = signal('');
   savingEdit = signal(false);
+  editSubmitted = signal(false);
   deleteConfirmId = signal('');
   editForm: {
     objective: string;
@@ -586,6 +588,7 @@ export class MissionsComponent implements OnInit {
   // Function to cancel inline edit without saving
   cancelEdit(): void {
     this.editingId.set('');
+    this.editSubmitted.set(false);
   }
 
   // Function to add a blank checkpoint row to the edit form
@@ -600,7 +603,8 @@ export class MissionsComponent implements OnInit {
 
   // Function to save inline edit changes to the API and reload
   saveEdit(): void {
-    if (this.savingEdit()) return;
+    this.editSubmitted.set(true);
+    if (this.savingEdit() || !this.editForm.objective.trim()) return;
     this.savingEdit.set(true);
 
     const checkpoints: CheckpointUpdateItem[] = this.editForm.checkpoints
@@ -622,6 +626,7 @@ export class MissionsComponent implements OnInit {
           this.sound.playMission();
           this.savingEdit.set(false);
           this.editingId.set('');
+          this.editSubmitted.set(false);
           this.toast.show({
             type: 'success',
             icon: '',

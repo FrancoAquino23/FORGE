@@ -13,7 +13,6 @@ from app.constants import (
     CATEGORY_REWARDS as _CATEGORY_REWARDS,
     THREAT_LABEL as _THREAT_LABEL,
     THREAT_MULTIPLIER as _THREAT_MULTIPLIER,
-    THREAT_ORDER as _TL_ORDER,
     THREAT_VALUE as _THREAT_VALUE,
 )
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
@@ -101,7 +100,7 @@ class MissionService:
         far_future = datetime(9999, 12, 31, tzinfo=timezone.utc)
         progress_list.sort(
             key=lambda p: (
-                -_TL_ORDER.get(p.threat_level, 1),
+                -_THREAT_VALUE.get(p.threat_level, 1),
                 p.due_date or far_future,
             )
         )
@@ -482,7 +481,8 @@ class MissionService:
             mission.objective_description = request.objective_description.strip()
         if request.detail is not None:
             mission.description = request.detail.strip() or None
-        mission.due_date = request.due_date
+        if "due_date" in request.model_fields_set:
+            mission.due_date = request.due_date
         if request.threat_level is not None:
             mission.threat_level = _THREAT_VALUE.get(request.threat_level, 1)
 
@@ -713,7 +713,7 @@ class MissionService:
         ).all()
         yesterday = (local_now - timedelta(days=1)).date()
         for m in missions:
-            m.status = "PENDING" if m.objective_type == "MANUAL" else "ACTIVE"
+            m.status = "PENDING"
             m.completed_at = None
             m.issued_at = today_start_utc
             m.cycle_started_at = today_start_utc

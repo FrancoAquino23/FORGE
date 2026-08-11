@@ -33,4 +33,3 @@ CATEGORY_LABELS: dict[str, str] = {
 # Threat level mappings
 THREAT_LABEL: dict[int, str] = {0: "MINOR", 1: "MAJOR", 2: "CRITICAL"}
 THREAT_VALUE: dict[str, int] = {"MINOR": 0, "MAJOR": 1, "CRITICAL": 2}
-THREAT_ORDER: dict[str, int] = {"CRITICAL": 2, "MAJOR": 1, "MINOR": 0}
