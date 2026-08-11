@@ -47,8 +47,11 @@ export class ToastService {
   show(toast: Omit<Toast, 'id'>, durationMs = 4500): void {
     const id = ++this.counter;
     this.toasts.update((list) => {
-      const capped = list.length >= 2 ? list.slice(1) : list;
-      return [...capped, { ...toast, id }];
+      const isLoot = toast.type === 'loot';
+      const sameGroup = list.filter(t => (t.type === 'loot') === isLoot);
+      const otherGroup = list.filter(t => (t.type === 'loot') !== isLoot);
+      const trimmed = sameGroup.length >= 2 ? sameGroup.slice(1) : sameGroup;
+      return [...otherGroup, ...trimmed, { ...toast, id }];
     });
     setTimeout(() => this.dismiss(id), durationMs);
   }
