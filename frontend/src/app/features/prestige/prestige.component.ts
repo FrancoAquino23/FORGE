@@ -109,13 +109,20 @@ export class PrestigeComponent implements OnInit {
     });
   });
 
-  // Stardust shortfall for prestige upgrade
-  readonly materialShortfalls = computed(() => {
+  // Stardust info for prestige panel
+  readonly stardustInfo = computed(() => {
     const cost = this.status()?.stardust_cost ?? 0;
-    if (cost === 0) return [];
     const stardust = (this.profile()?.attributes ?? []).find((a) => a.code === 'L');
     const balance = stardust?.material_balance ?? 0;
-    if (balance >= cost) return [];
+    const sufficient = balance >= cost;
+    const fillPct = cost > 0 ? Math.min(100, Math.round((balance / cost) * 100)) : 100;
+    return { balance, cost, sufficient, fillPct };
+  });
+
+  // Stardust shortfall for prestige upgrade
+  readonly materialShortfalls = computed(() => {
+    const { cost, balance, sufficient } = this.stardustInfo();
+    if (cost === 0 || sufficient) return [];
     return [{ code: 'L', name: 'Stardust', balance, shortfall: cost - balance }];
   });
 
@@ -126,16 +133,6 @@ export class PrestigeComponent implements OnInit {
 
   // Count of attributes at threshold (Ready for PrestigeUp)
   readonly readyCount = computed(() => this.hexAttrs().filter((s) => s.ready).length);
-
-  // Stardust info for prestige panel
-  readonly stardustInfo = computed(() => {
-    const cost = this.status()?.stardust_cost ?? 0;
-    const stardust = (this.profile()?.attributes ?? []).find((a) => a.code === 'L');
-    const balance = stardust?.material_balance ?? 0;
-    const sufficient = balance >= cost;
-    const fillPct = cost > 0 ? Math.min(100, Math.round((balance / cost) * 100)) : 100;
-    return { balance, cost, sufficient, fillPct };
-  });
 
   // Next prestige number
   readonly nextPrestigeNumber = computed(() => (this.status()?.prestige_count ?? 0) + 1);
