@@ -682,6 +682,7 @@ export class MissionsComponent implements OnInit {
 
   // Function to return streak multiplier label for a daily mission
   streakMultLabel(streak: number): string {
+    if (streak >= 30) return '×3.0';
     if (streak >= 14) return '×2.0';
     if (streak >= 7) return '×1.6';
     if (streak >= 3) return '×1.3';
@@ -845,4 +846,5 @@ export class MissionsComponent implements OnInit {
   isAttrMaxed(code: string): boolean {
     return (this.playerState.profile()?.attributes.find((a) => a.code === code)?.level ?? 0) >= 10;
   }
+
 }

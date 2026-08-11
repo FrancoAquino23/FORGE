@@ -117,11 +117,8 @@
             <span class="forge-stat-label">Best streak</span>
             <span
               class="text-xs font-black tabular-nums"
-              [class]="
-                stats()!.best_streak > 0
-                  ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]'
-                  : 'text-forge-muted'
-              "
+              [class]="stats()!.best_streak > 0 ? '' : 'text-forge-muted'"
+              [style.color]="stats()!.best_streak > 0 ? streakColor(stats()!.best_streak) : null"
             >
               @if (stats()!.best_streak > 0) {
                 <ng-icon name="phosphorFireBold" class="text-[13px] leading-none" />
@@ -145,9 +142,16 @@
               {{ fmt(stats()!.total_materials_earned) }}
             </span>
           </div>
+          <div class="forge-stat-divider"></div>
+          <div class="flex justify-between items-baseline">
+            <span class="forge-stat-label">Total Stardust</span>
+            <span class="forge-stat-value text-orange-400">
+              {{ fmt(stats()!.total_stardust_produced) }}
+            </span>
+          </div>
         } @else {
           <div class="flex flex-col gap-2">
-            @for (i of [1, 2, 3, 4, 5]; track i) {
+            @for (i of [1, 2, 3, 4, 5, 6]; track i) {
               <div class="h-3 bg-forge-card rounded animate-pulse"></div>
             }
           </div>

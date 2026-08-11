@@ -44,10 +44,14 @@ from app.utils import local_now as _local_now
 
 # Reward multiplier based on streak
 def _streak_multiplier(streak: int) -> float:
-    if streak >= 21:
+    if streak >= 30:
+        return 3.0
+    if streak >= 14:
         return 2.0
     if streak >= 7:
-        return 1.5
+        return 1.6
+    if streak >= 3:
+        return 1.3
     if streak >= 3:
         return 1.25
     return 1.0
@@ -361,7 +365,7 @@ class MissionService:
         if profile:
             unlocked_defs = await AchievementService(self._db).check_and_unlock(profile)
             newly_unlocked = [
-                AchievementUnlocked(code=a.code, title=a.title, description=a.description)
+                AchievementUnlocked(code=a.code, title=a.title, description=a.description, flavor=a.flavor)
                 for a in unlocked_defs
             ]
 

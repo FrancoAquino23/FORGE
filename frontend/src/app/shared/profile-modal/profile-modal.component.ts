@@ -276,6 +276,14 @@ export class ProfileModalComponent implements OnChanges {
     return level >= seg ? 'opacity-100' : 'opacity-10 bg-forge-border';
   }
 
+  streakColor(streak: number): string {
+    if (streak >= 30) return '#a855f7';
+    if (streak >= 14) return '#dc2626';
+    if (streak >= 7)  return '#ef4444';
+    if (streak >= 3)  return '#f97316';
+    return '#f59e0b';
+  }
+
   // Constants & utility functions
   protected fmt = fmt;
 }
