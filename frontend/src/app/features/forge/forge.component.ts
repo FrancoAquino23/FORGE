@@ -16,13 +16,7 @@ import {
   phosphorSpinnerBold,
   phosphorPlugsBold,
 } from '@ng-icons/phosphor-icons/bold';
-import {
-  ATTR_ICONS,
-  ATTR_BAR_COLORS,
-  fmt,
-  attrColor,
-  attrIcon,
-} from '../../shared/ui-constants';
+import { ATTR_ICONS, ATTR_BAR_COLORS, fmt, attrColor, attrIcon } from '../../shared/ui-constants';
 import { ApiService, PlayerProfile } from '../../core/api.service';
 import { RelicWorkshopComponent } from '../relic-workshop/relic-workshop.component';
 import { ToastService } from '../../core/toast.service';
@@ -75,6 +69,7 @@ export class ForgeComponent implements OnInit {
   readonly StardustIcon = ATTR_ICONS['L'];
 
   batchSize = computed(() => BATCH_STEPS[this.sliderIndex()]);
+  // Mirror of backend
   costEach = computed(() => this.batchSize() * 150);
   minReward = computed(() => this.batchSize() * 20);
   maxReward = computed(() => this.batchSize() * 30);

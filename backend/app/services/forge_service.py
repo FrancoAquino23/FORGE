@@ -83,7 +83,9 @@ class ForgeService:
                 )
                 .with_for_update()
             )
-        ).scalar_one()
+        ).scalar_one_or_none()
+        if stardust_inv is None:
+            raise NotFoundError("Stardust inventory")
         stardust_inv.quantity += stardust_gained
 
         # Track lifetime Stardust produced for achievements
