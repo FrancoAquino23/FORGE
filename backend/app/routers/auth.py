@@ -14,6 +14,8 @@ from app.database import get_db
 from app.models.artifact import Artifact
 from app.models.catalog import Attribute
 from app.models.player import PlayerAttribute, PlayerInventory, PlayerProfile, User
+from app.models.relic import Relic
+from app.constants import ORDINARY_CODES_ORDERED as _ORDINARY_CODES_ORDERED
 from app.schemas.auth import (
     AvatarUpdateRequest,
     PasswordUpdateRequest,
@@ -65,6 +67,10 @@ async def register(
     for attr in attributes:
         session.add(PlayerAttribute(player_id=profile.id, attribute_id=attr.id))
         session.add(PlayerInventory(player_id=profile.id, attribute_id=attr.id))
+
+    # Create one Relic row per upgradeable attribute (ordinary + Luck)
+    for code in (*_ORDINARY_CODES_ORDERED, "L"):
+        session.add(Relic(player_id=profile.id, attribute_code=code, level=0, total_invested=0))
 
     try:
         await session.commit()

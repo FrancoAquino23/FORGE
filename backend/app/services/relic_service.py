@@ -4,6 +4,7 @@
 
 import uuid
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ConflictError, NotFoundError
 from app.models.catalog import Attribute
@@ -133,7 +134,7 @@ class RelicService:
             new_bonus_pct=round(relic.level * RewardService.RELIC_BONUS_PER_LEVEL * 100),
         )
 
-    # Helper method to ensure all relics exist for the player, creating any missing ones
+    # Helper method to ensure all relics exist for the player
     async def _ensure_relics(self, player_id: uuid.UUID) -> list[Relic]:
         existing = {
             r.attribute_code: r
@@ -143,13 +144,20 @@ class RelicService:
                 )
             ).all()
         }
-        created = False
-        for code in _UPGRADEABLE_CODES:
-            if code not in existing:
-                r = Relic(player_id=player_id, attribute_code=code, level=0, total_invested=0)
-                self._db.add(r)
-                existing[code] = r
-                created = True
-        if created:
+        missing = [c for c in _UPGRADEABLE_CODES if c not in existing]
+        if missing:
+            await self._db.execute(
+                pg_insert(Relic)
+                .values([
+                    {"player_id": player_id, "attribute_code": code, "level": 0, "total_invested": 0}
+                    for code in missing
+                ])
+                .on_conflict_do_nothing(constraint="uq_player_relic")
+            )
             await self._db.commit()
+            all_relics = (
+                await self._db.scalars(select(Relic).where(Relic.player_id == player_id))
+            ).all()
+            relic_map = {r.attribute_code: r for r in all_relics}
+            return [relic_map[code] for code in _UPGRADEABLE_CODES]
         return [existing[code] for code in _UPGRADEABLE_CODES]
