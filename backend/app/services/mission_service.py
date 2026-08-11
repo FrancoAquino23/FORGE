@@ -379,7 +379,7 @@ class MissionService:
             newly_unlocked=newly_unlocked,
         )
 
-    # Helper to return the last 20 completed missions for the history tab
+    # Helper to return paginated completed missions (up to 20 total) for the history tab
     async def get_history(
         self, player_id: uuid.UUID, page: int = 1, page_size: int = 5
     ) -> MissionHistoryResponse:

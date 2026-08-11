@@ -849,44 +849,42 @@
     } @else {
       <div class="flex flex-col gap-3">
         @for (m of historyData(); track m.mission_id) {
-          @if (!threatFilter() || m.threat_level === threatFilter()) {
-            <div class="forge-card p-4 flex items-center justify-between gap-4 border border-forge-border/40">
-              <div class="flex-1 min-w-0">
-                <p class="font-bold text-forge-text text-sm uppercase tracking-widest leading-snug truncate">
-                  {{ m.objective_description }}
-                </p>
-                <div class="flex items-center gap-2.5 flex-wrap mt-0.5">
-                  <ng-icon [name]="attrIcon(m.attribute_code)" size="11" [class]="attrColor(m.attribute_code)" />
-                  <span class="text-[10px] text-forge-text/60 uppercase tracking-wider font-semibold">
-                    {{ categoryLabel(m.category) }}
-                  </span>
+          <div class="forge-card p-4 flex items-center justify-between gap-4 border border-forge-border/40">
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-forge-text text-sm uppercase tracking-widest leading-snug truncate">
+                {{ m.objective_description }}
+              </p>
+              <div class="flex items-center gap-2.5 flex-wrap mt-0.5">
+                <ng-icon [name]="attrIcon(m.attribute_code)" size="11" [class]="attrColor(m.attribute_code)" />
+                <span class="text-[10px] text-forge-text/60 uppercase tracking-wider font-semibold">
+                  {{ categoryLabel(m.category) }}
+                </span>
 
-                  <span [class]="attrColor(m.attribute_code) + ' text-[10px] tracking-wider'">
-                    {{ m.attribute_name }}
-                  </span>
+                <span [class]="attrColor(m.attribute_code) + ' text-[10px] tracking-wider'">
+                  {{ m.attribute_name }}
+                </span>
 
-                  <span [class]="threatTextClass(m.threat_level) + ' text-[10px] uppercase tracking-widest font-black'">
-                    {{ m.threat_level }}
-                  </span>
-                </div>
-              </div>
-              <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                <div class="flex items-center gap-3 text-xs text-forge-text/60">
-                  <span class="forge-reward-inline">
-                    <ng-icon name="phosphorFlaskBold" size="11" class="text-violet-400" />
-                    <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ fmt(m.reward_xp) }}</b>
-                  </span>
-                  <span class="forge-reward-inline">
-                    <ng-icon name="phosphorNutBold" size="11" class="text-stone-400" />
-                    <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ m.reward_material_qty }}</b>
-                  </span>
-                </div>
-                <span class="text-[10px] text-forge-text/60 font-semibold tracking-wider">
-                  {{ formatCompletedAt(m.completed_at) }}
+                <span [class]="threatTextClass(m.threat_level) + ' text-[10px] uppercase tracking-widest font-black'">
+                  {{ m.threat_level }}
                 </span>
               </div>
             </div>
-          }
+            <div class="flex flex-col items-end gap-1 flex-shrink-0">
+              <div class="flex items-center gap-3 text-xs text-forge-text/60">
+                <span class="forge-reward-inline">
+                  <ng-icon name="phosphorFlaskBold" size="11" class="text-violet-400" />
+                  <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ fmt(m.reward_xp) }}</b>
+                </span>
+                <span class="forge-reward-inline">
+                  <ng-icon name="phosphorNutBold" size="11" class="text-stone-400" />
+                  <b [class]="attrColor(m.attribute_code)" class="tabular-nums">+{{ m.reward_material_qty }}</b>
+                </span>
+              </div>
+              <span class="text-[10px] text-forge-text/60 font-semibold tracking-wider">
+                {{ formatCompletedAt(m.completed_at) }}
+              </span>
+            </div>
+          </div>
         }
       </div>
     }
