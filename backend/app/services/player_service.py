@@ -99,12 +99,12 @@ class PlayerService:
             hour=0, minute=0, second=0, microsecond=0
         )
         monday_local = monday_local + timedelta(weeks=week_offset)
-        sunday_local = monday_local + timedelta(days=7)
+        next_monday_local = monday_local + timedelta(days=7)
 
         week_start_utc = monday_local.astimezone(timezone.utc)
-        week_end_utc = sunday_local.astimezone(timezone.utc)
+        week_end_utc = next_monday_local.astimezone(timezone.utc)
 
-        end_day = sunday_local - timedelta(days=1)
+        end_day = next_monday_local - timedelta(days=1)
         week_label = (
             f"{monday_local.strftime('%b')} {monday_local.day}"
             f" – {end_day.strftime('%b')} {end_day.day}"
@@ -205,8 +205,8 @@ class PlayerService:
             reverse=True,
         )
 
-        # Query 4: Check if any completed missions exist before this week
-        has_previous = (
+        # Query 4: Check if any completed missions exist before this week (standard + recurring)
+        has_previous_std = (
             await self._db.scalar(
                 select(func.count()).where(
                     Mission.player_id == player.id,
@@ -215,6 +215,17 @@ class PlayerService:
                 )
             ) or 0
         ) > 0
+
+        has_previous_rec = (
+            await self._db.scalar(
+                select(func.count()).where(
+                    DailyCompletion.player_id == player.id,
+                    DailyCompletion.completed_at < week_start_utc,
+                )
+            ) or 0
+        ) > 0
+
+        has_previous = has_previous_std or has_previous_rec
 
         # Round hours (1 Decimal) 
         def _round_hours(val: float | None) -> float | None:
