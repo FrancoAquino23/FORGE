@@ -210,8 +210,15 @@ class SkillTreeService:
         # Block upgrade if a sibling node in the same path is already active
         path = _NODES[node_id][0]
         siblings = [s for s, (p, _, _) in _NODES.items() if p == path and s != node_id]
-        for sibling_id in siblings:
-            if await get_node_level(self._db, player.id, sibling_id) > 0:
+        if siblings:
+            active_sibling = await self._db.scalar(
+                select(PlayerSkillNode.node_id).where(
+                    PlayerSkillNode.player_id == player.id,
+                    PlayerSkillNode.node_id.in_(siblings),
+                    PlayerSkillNode.current_level > 0,
+                )
+            )
+            if active_sibling:
                 raise ConflictError(f"Another node in '{path}' is already active. Reset the tree to change your choice.")
 
         cost = _NODE_COSTS[current_level + 1]
@@ -250,6 +257,7 @@ class SkillTreeService:
             new_level=new_level,
             pp_spent=cost,
             pp_available=locked_profile.prestige_points_available,
+            next_effect=_effect_label(node_id, new_level + 1) if new_level < _MAX_NODE_LEVEL else None,
         )
 
     # Helper method to reset the entire skill tree

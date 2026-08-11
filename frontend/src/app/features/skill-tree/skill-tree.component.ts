@@ -266,7 +266,7 @@ export class SkillTreeComponent implements OnInit {
                           current_level: res.new_level,
                           cost_to_upgrade: res.new_level < n.max_level ? res.new_level + 1 : null,
                           current_effect: n.next_effect ?? n.current_effect,
-                          next_effect: res.new_level < n.max_level ? null : null,
+                          next_effect: res.new_level < n.max_level ? res.next_effect : null,
                         }
                       : n,
                   ),

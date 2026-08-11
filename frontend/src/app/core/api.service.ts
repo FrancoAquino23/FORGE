@@ -249,6 +249,7 @@ export interface UpgradeNodeResponse {
   new_level: number;
   pp_spent: number;
   pp_available: number;
+  next_effect: string | null;
 }
 
 // Interface (Reset Tree Response - Data)

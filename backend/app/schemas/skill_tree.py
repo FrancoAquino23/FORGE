@@ -39,6 +39,7 @@ class UpgradeNodeResponse(BaseModel):
     new_level: int
     pp_spent: int
     pp_available: int
+    next_effect: str | None
 
 
 # Model ResetTreeResponse (Response after resetting all skill nodes)
