@@ -144,7 +144,6 @@ class PrestigeService:
                 select(Relic).where(Relic.player_id == player.id).with_for_update()
             )
         ).scalars().all()
-        existing_codes = [r.attribute_code for r in all_relics]
         for relic in all_relics:
             await self._db.delete(relic)
 

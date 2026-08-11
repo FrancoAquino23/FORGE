@@ -21,7 +21,6 @@ import { PlayerStateService } from '../../core/player-state.service';
 import { ToastService } from '../../core/toast.service';
 import { SoundService } from '../../core/sound.service';
 import {
-  ATTR_COLORS,
   ATTR_HEX,
   ATTR_ICONS,
   ATTR_NAMES,
@@ -64,7 +63,6 @@ export class PrestigeComponent implements OnInit {
   loadError = signal(false);
   prestiging = signal(false);
   prestigeFlash = signal(false);
-  hoveredCode = signal<string | null>(null);
 
   // Lifecycle
   ngOnInit(): void {
@@ -165,7 +163,7 @@ export class PrestigeComponent implements OnInit {
               icon: '',
               ngIcon: 'phosphorArrowFatLinesUpBold',
               title: `PRESTIGE #${res.prestige_number} ACHIEVED`,
-              message: `All progress reseted & +${res.pp_earned} Prestige Points awarded`,
+              message: `All progress reset & +${res.pp_earned} Prestige Points awarded`,
             },
             6000,
           );

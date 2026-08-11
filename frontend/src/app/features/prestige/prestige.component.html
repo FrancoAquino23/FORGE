@@ -26,8 +26,6 @@
                 [class.hex-ready]="attr.ready"
                 [class.hex-dim]="!attr.ready"
                 [style.--hex-color]="attr.hex"
-                (mouseenter)="hoveredCode.set(attr.code)"
-                (mouseleave)="hoveredCode.set(null)"
               >
                 <ng-icon [name]="attr.icon" size="22" />
                 <span class="hex-name">{{ attr.name }}</span>
@@ -43,8 +41,6 @@
                 [class.hex-ready]="attr.ready"
                 [class.hex-dim]="!attr.ready"
                 [style.--hex-color]="attr.hex"
-                (mouseenter)="hoveredCode.set(attr.code)"
-                (mouseleave)="hoveredCode.set(null)"
               >
                 <ng-icon [name]="attr.icon" size="22" />
                 <span class="hex-name">{{ attr.name }}</span>
