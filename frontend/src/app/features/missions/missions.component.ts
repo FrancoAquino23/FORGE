@@ -174,7 +174,9 @@ export class MissionsComponent implements OnInit {
   logSteps = signal('');
   attrDropdownOpen = signal(false);
 
-  readonly todayStr = new Date().toISOString().split('T')[0];
+  get todayStr(): string {
+    return new Date().toISOString().split('T')[0];
+  }
 
   // Tab definitions for template iteration
   readonly TABS: { value: MissionTab; label: string }[] = [

@@ -108,7 +108,7 @@ class MissionService:
 
         return MissionListResponse(missions=progress_list)
 
-    # Helper to claim a completed mission and receive rewards
+    # Helper to create & deploy a new mission for the player
     async def deploy(
         self, player_id: uuid.UUID, request: DeployMissionRequest
     ) -> DeployMissionResponse:
