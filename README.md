@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)
 
 **Frontend**
-![Angular](https://img.shields.io/badge/Angular-21-DD0031?logo=angular&logoColor=white)
+![Angular](https://img.shields.io/badge/Angular-21.2-DD0031?logo=angular&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?logo=tailwindcss&logoColor=white)
 
@@ -61,6 +61,10 @@ Materials earned from missions don't sit in your inventory forever. The Forge is
 
 - **Stardust Condenser** — transform 6 ordinary materials into Stardust. The math is simple. The grind is not.
 - **Relic Workshop** — invest materials into attribute specific relics for permanent passive bonuses. The ones you upgrade first say a lot about you.
+
+### Achievements
+
+Milestones that track your long-term progress across every system. Each one unlocks permanently in your profile. With a company-approved message that somehow makes you feel worse about winning.
 
 ### Prestige & Perks
 
