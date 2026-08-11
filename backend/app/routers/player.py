@@ -11,7 +11,7 @@ from app.core.security import verify_password
 from app.database import get_db
 from app.models.player import PlayerProfile
 from app.models.player import User
-from app.schemas.player import DeleteAccountRequest, PlayerMetricsResponse, PlayerProfileResponse, PlayerStatsResponse
+from app.schemas.player import DeleteAccountRequest, PlayerAchievementResponse, PlayerMetricsResponse, PlayerProfileResponse, PlayerStatsResponse
 from app.services.achievement_service import AchievementService
 from app.services.player_service import PlayerService
 
@@ -39,11 +39,11 @@ async def get_stats(
     return await service.get_stats(player)
 
 # Endpoint (GET /player/achievements) to retrieve all achievements
-@router.get("/achievements")
+@router.get("/achievements", response_model=list[PlayerAchievementResponse])
 async def get_achievements(
     player: PlayerProfile = Depends(get_current_player),
     session: AsyncSession = Depends(get_db),
-) -> list[dict]:
+) -> list[PlayerAchievementResponse]:
 
     return await AchievementService(session).get_all(player)
 

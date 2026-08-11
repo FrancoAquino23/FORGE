@@ -149,6 +149,8 @@
               {{ fmt(stats()!.total_stardust_produced) }}
             </span>
           </div>
+        } @else if (statsError()) {
+          <p class="text-xs text-red-400/70 text-center py-2">Error loading stats</p>
         } @else {
           <div class="flex flex-col gap-2">
             @for (i of [1, 2, 3, 4, 5, 6]; track i) {
@@ -191,6 +193,8 @@
               }
             </div>
           }
+        } @else if (achievementsError()) {
+          <p class="text-xs text-red-400/70 text-center py-2">Error loading achievements</p>
         } @else {
           @for (i of [1, 2, 3, 4, 5]; track i) {
             <div class="h-8 bg-forge-card rounded animate-pulse"></div>

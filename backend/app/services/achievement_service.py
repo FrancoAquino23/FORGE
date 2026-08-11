@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.player import PlayerAchievement, PlayerAttribute, PlayerProfile
 from app.models.skill_tree import PlayerSkillNode
+from app.schemas.player import PlayerAchievementResponse
 from app.services.achievement_definitions import ACHIEVEMENT_MAP, ACHIEVEMENTS, AchievementDef
 
 # Service for checking & unlocking achievements
@@ -80,20 +81,20 @@ class AchievementService:
         return newly_unlocked
 
     # Helper to get all achievements with "Unlocked" status
-    async def get_all(self, player: PlayerProfile) -> list[dict]:
+    async def get_all(self, player: PlayerProfile) -> list[PlayerAchievementResponse]:
         result = await self._db.execute(
             select(PlayerAchievement).where(PlayerAchievement.player_id == player.id)
         )
         unlocked_rows = {row.achievement_code: row.unlocked_at for row in result.scalars().all()}
 
         return [
-            {
-                "code": a.code,
-                "title": a.title,
-                "description": a.description,
-                "flavor": a.flavor,
-                "unlocked": a.code in unlocked_rows,
-                "unlocked_at": unlocked_rows[a.code].isoformat() if a.code in unlocked_rows else None,
-            }
+            PlayerAchievementResponse(
+                code=a.code,
+                title=a.title,
+                description=a.description,
+                flavor=a.flavor,
+                unlocked=a.code in unlocked_rows,
+                unlocked_at=unlocked_rows[a.code].isoformat() if a.code in unlocked_rows else None,
+            )
             for a in ACHIEVEMENTS
         ]

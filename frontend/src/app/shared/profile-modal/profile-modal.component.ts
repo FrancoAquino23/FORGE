@@ -180,6 +180,8 @@ export class ProfileModalComponent implements OnChanges {
   stats = signal<PlayerStats | null>(null);
   achievements = signal<PlayerAchievement[] | null>(null);
   loadError = signal(false);
+  statsError = signal(false);
+  achievementsError = signal(false);
   confirmingLogout = signal(false);
 
   readonly SEGMENTS = SEGMENTS;
@@ -188,15 +190,23 @@ export class ProfileModalComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['open']?.currentValue === true) {
       this.loadError.set(false);
+      this.statsError.set(false);
+      this.achievementsError.set(false);
       this.playerState.loadProfile();
       this.api
         .getPlayerStats()
         .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({ next: (s) => this.stats.set(s) });
+        .subscribe({
+          next: (s) => this.stats.set(s),
+          error: () => this.statsError.set(true),
+        });
       this.api
         .getAchievements()
         .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({ next: (a) => this.achievements.set(a) });
+        .subscribe({
+          next: (a) => this.achievements.set(a),
+          error: () => this.achievementsError.set(true),
+        });
     }
   }
 

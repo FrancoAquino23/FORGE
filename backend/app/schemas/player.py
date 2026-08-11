@@ -71,6 +71,15 @@ class PlayerMetricsResponse(BaseModel):
     attribute_breakdown: list[AttributeMetric]
     avg_resolution_hours: AvgResolutionTime
 
+# Model PlayerAchievementResponse (Data - Single achievement with unlock status)
+class PlayerAchievementResponse(BaseModel):
+    code: str
+    title: str
+    description: str
+    flavor: str
+    unlocked: bool
+    unlocked_at: str | None
+
 # Model DeleteAccountRequest (Endpoint Response - Password confirmation)
 class DeleteAccountRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)

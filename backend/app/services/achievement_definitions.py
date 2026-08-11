@@ -106,5 +106,5 @@ ACHIEVEMENTS: list[AchievementDef] = [
     ),
 ]
 
-# Map of achievemnent codes 
+# Map of achievement codes 
 ACHIEVEMENT_MAP: dict[str, AchievementDef] = {a.code: a for a in ACHIEVEMENTS}
