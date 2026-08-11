@@ -30,12 +30,14 @@ export class LoginComponent {
 
   // Function to handle login form submission
   submit(): void {
-    if (!this.email() || !this.password()) return;
+    const email = this.email().trim();
+    const password = this.password().trim();
+    if (!email || !password) return;
     this.loading.set(true);
     this.error.set('');
 
     this.auth
-      .login(this.email(), this.password())
+      .login(email, password)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => this.router.navigate(['/dashboard']),

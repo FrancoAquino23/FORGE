@@ -31,12 +31,17 @@ export class RegisterComponent {
 
   // Function to handle register form submission
   submit(): void {
-    if (!this.username() || !this.email() || !this.password()) return;
+    const username = this.username().trim();
+    const email = this.email().trim();
+    const password = this.password().trim();
+    if (!username || !email || !password) return;
+    if (username.length < 3) { this.error.set('Username must be at least 3 characters'); return; }
+    if (password.length < 8) { this.error.set('Password must be at least 8 characters'); return; }
     this.loading.set(true);
     this.error.set('');
 
     this.auth
-      .register(this.username(), this.email(), this.password())
+      .register(username, email, password)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => this.router.navigate(['/dashboard']),
