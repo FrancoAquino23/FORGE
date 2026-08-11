@@ -65,6 +65,7 @@ import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { PlayerStateService } from '../../core/player-state.service';
 import { SoundService } from '../../core/sound.service';
+import { ToastService } from '../../core/toast.service';
 
 // Available icons for avatar selection
 export const AVATAR_ICONS: string[] = [
@@ -169,6 +170,7 @@ export class SettingsPanelComponent implements OnChanges {
   private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
   private playerState = inject(PlayerStateService);
+  private toast = inject(ToastService);
   protected sound = inject(SoundService);
 
   @Input() open = false;
@@ -242,7 +244,9 @@ export class SettingsPanelComponent implements OnChanges {
         },
         error: (err) => {
           this.usernameError.set(
-            err.status === 409 ? 'Username already taken.' : 'Incorrect password.',
+            err.status === 409
+              ? 'Username already taken.'
+              : (err.error?.detail ?? 'Could not update username.'),
           );
           this.usernameSaving.set(false);
         },
@@ -265,8 +269,8 @@ export class SettingsPanelComponent implements OnChanges {
           this.newPassword.set('');
           this.passwordSaving.set(false);
         },
-        error: () => {
-          this.passwordError.set('Incorrect current password.');
+        error: (err) => {
+          this.passwordError.set(err.error?.detail ?? 'Could not update password.');
           this.passwordSaving.set(false);
         },
       });
@@ -284,7 +288,8 @@ export class SettingsPanelComponent implements OnChanges {
           this.avatarSaving.set(false);
           this.playerState.loadProfile();
         },
-        error: () => {
+        error: (err) => {
+          this.toast.showError('Could not save avatar', err);
           this.avatarSaving.set(false);
         },
       });
